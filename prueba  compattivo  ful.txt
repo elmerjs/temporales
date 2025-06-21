@@ -1,0 +1,53 @@
+SELECT 
+  f.nombre_fac_min AS facultad,
+  d.depto_nom_propio AS departamento,
+  t.tipo_docente AS tipo,
+
+  -- 2025-2 (Periodo actual)
+  SUM(CASE WHEN t.anio_semestre = '2025-2' THEN t.total_profesores ELSE 0 END) AS total_actual,
+  SUM(CASE WHEN t.anio_semestre = '2025-2' THEN t.total_tc ELSE 0 END) AS tiempo_completo_actual,
+  SUM(CASE WHEN t.anio_semestre = '2025-2' THEN t.total_mt ELSE 0 END) AS medio_tiempo_actual,
+  SUM(CASE WHEN t.anio_semestre = '2025-2' THEN t.total_horas ELSE 0 END) AS total_horas_periodo_actual,
+
+  -- 2025-1 (Periodo anterior)
+  SUM(CASE WHEN t.anio_semestre = '2025-1' THEN t.total_profesores ELSE 0 END) AS total_periodo_anterior,
+  SUM(CASE WHEN t.anio_semestre = '2025-1' THEN t.total_tc ELSE 0 END) AS tiempo_completo_periodo_anterior,
+  SUM(CASE WHEN t.anio_semestre = '2025-1' THEN t.total_mt ELSE 0 END) AS medio_tiempo_periodo_anterior,
+  SUM(CASE WHEN t.anio_semestre = '2025-1' THEN t.total_horas ELSE 0 END) AS total_horas_periodo_anterior
+
+FROM (
+  SELECT 
+    anio_semestre,
+    facultad_id,
+    departamento_id,
+    tipo_docente,
+    COUNT(DISTINCT cedula) AS total_profesores,
+
+    SUM(CASE 
+          WHEN tipo_docente = 'Ocasional' AND (tipo_dedicacion = 'TC' OR tipo_dedicacion_r = 'TC') THEN 1
+          ELSE 0 
+        END) AS total_tc,
+
+    SUM(CASE 
+          WHEN tipo_docente = 'Ocasional' AND (tipo_dedicacion = 'MT' OR tipo_dedicacion_r = 'MT') THEN 1
+          ELSE 0 
+        END) AS total_mt,
+
+    SUM(CASE 
+          WHEN tipo_docente = 'Ocasional' AND (tipo_dedicacion = 'TC' OR tipo_dedicacion_r = 'TC') THEN 40
+          WHEN tipo_docente = 'Ocasional' AND (tipo_dedicacion = 'MT' OR tipo_dedicacion_r = 'MT') THEN 20
+          WHEN tipo_docente = 'Catedra' THEN COALESCE(horas, 0) + COALESCE(horas_r, 0)
+          ELSE 0
+        END) AS total_horas
+
+  FROM solicitudes
+  WHERE anio_semestre IN ('2025-2', '2025-1')
+  GROUP BY anio_semestre, facultad_id, departamento_id, tipo_docente
+) AS t
+
+-- Join con las tablas de facultad y departamento para obtener los nombres
+JOIN deparmanentos d ON d.PK_DEPTO = t.departamento_id
+JOIN facultad f ON f.PK_FAC = d.FK_FAC
+
+GROUP BY t.facultad_id, t.departamento_id, t.tipo_docente
+ORDER BY f.nombre_fac_min, d.depto_nom_propio, t.tipo_docente;

@@ -1,0 +1,29 @@
+<?php
+require 'cn.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $idSolicitud = $_POST['id_solicitud'];
+    $visado = $_POST['visado'];
+
+    // Sanitizar los inputs
+    $idSolicitud = intval($idSolicitud);
+    $visado = intval($visado);
+
+    // Actualizar la base de datos
+    $sql = "UPDATE solicitudes SET visado = ? WHERE id_solicitud = ?";
+    $stmt = $conn->prepare($sql);
+    if ($stmt) {
+        $stmt->bind_param('ii', $visado, $idSolicitud);
+        if ($stmt->execute()) {
+            echo "Visado actualizado";
+        } else {
+            echo "Error actualizando visado: " . $stmt->error;
+        }
+        $stmt->close();
+    } else {
+        echo "Error preparando la consulta: " . $conn->error;
+    }
+}
+
+$conn->close();
+?>

@@ -1,0 +1,440 @@
+Inicio del script
+Parámetros recibidos - facultad_id: 3, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 3, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 2, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 2, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2024-2
+Estado del período obtenido: 1
+El período está cerrado. Respuesta enviada: {"status":"closed","message":"El per\u00edodo est\u00e1 cerrado y no se puede deshacer el env\u00edo."}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2024-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 8, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-1
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 8, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 8, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 8, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 8, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 8, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 4, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 4, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 4, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 4, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 4, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 4, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 4, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 5, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 5, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 9, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 9, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 3, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 3, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 3, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 8, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 2, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 1, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 6, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 7, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 5, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 4, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 2, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado
+Inicio del script
+Parámetros recibidos - facultad_id: 8, anio_semestre: 2025-2
+Estado del período obtenido: 0
+Consulta ejecutada correctamente. Respuesta enviada: {"status":"success"}
+Script finalizado

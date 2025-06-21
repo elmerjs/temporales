@@ -1,0 +1,61 @@
+<?php
+// Archivo: insert_periodo.php
+
+require 'conn.php';
+
+// Verificar si se ha enviado el formulario
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $periodo = $_POST['periodo'];
+
+    // Verificar si el periodo no está vacío
+    if (!empty($periodo)) {
+        // Verificar si el período ya existe en la tabla periodo
+        $sql_check_periodo = "SELECT nombre_periodo FROM periodo WHERE nombre_periodo = ?";
+        $stmt_check_periodo = $conn->prepare($sql_check_periodo);
+        $stmt_check_periodo->bind_param("s", $periodo);
+        $stmt_check_periodo->execute();
+        $stmt_check_periodo->store_result();
+
+        // Si no existe, insertarlo en la tabla periodo
+        if ($stmt_check_periodo->num_rows == 0) {
+            $sql_insert_periodo = "INSERT INTO periodo (nombre_periodo, estado_periodo) VALUES (?, '0')";
+            $stmt_insert_periodo = $conn->prepare($sql_insert_periodo);
+            $stmt_insert_periodo->bind_param("s", $periodo);
+            $stmt_insert_periodo->execute();
+            $stmt_insert_periodo->close();
+            $sql_insert_periodo
+        }
+
+        // Consultar todos los departamentos existentes
+        $sql_departamentos = "SELECT PK_DEPTO FROM deparmanentos";
+        $result_departamentos = $conn->query($sql_departamentos);
+
+        if ($result_departamentos->num_rows > 0) {
+            // Preparar la consulta de inserción en depto_periodo
+            $stmt_insert_depto_periodo = $conn->prepare("INSERT INTO depto_periodo (fk_depto_dp, periodo) VALUES (?, ?)");
+
+            // Insertar cada departamento con el periodo proporcionado
+            while ($row = $result_departamentos->fetch_assoc()) {
+                $fk_depto_dp = $row['PK_DEPTO'];
+                $stmt_insert_depto_periodo->bind_param("is", $fk_depto_dp, $periodo);
+                $stmt_insert_depto_periodo->execute();
+            }
+
+            echo "Período insertado correctamente para todos los departamentos.";
+            $stmt_insert_depto_periodo->close();
+        } else {
+            echo "No se encontraron departamentos.";
+        }
+
+        // Cerrar la conexión
+        $result_departamentos->close();
+    } else {
+        echo "Por favor, ingrese un período válido.";
+    }
+
+    // Cerrar la conexión
+    $conn->close();
+} else {
+    echo "Método de solicitud no válido.";
+}
+?>

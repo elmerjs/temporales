@@ -1,0 +1,186 @@
+
+/* custom style for login page */
+.card {    
+    padding: 15px;
+    max-width: 400px;
+    height: auto;
+    margin: 10px auto;
+    text-align: center;
+}
+/* /end custom style for login page */
+
+body {
+    background:#E6E6E6;
+}
+
+p {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+ h1, h3 {
+    margin-top: 30px;
+}
+
+        /* Colores Unicauca (referencia, ajusta si tienes los exactos) */
+        :root {
+            --unicauca-red: #A52A2A; /* Un rojo vino distintivo */
+            --unicauca-red-dark: #8B0000;
+            --unicauca-blue: #000066; /* Azul oscuro institucional */
+            --unicauca-blue-light: #000080;
+            --unicauca-gray-light: #f4f7f6; /* Gris claro para fondos */
+            --unicauca-gray-medium: #e9ecef; /* Gris medio para bordes o fondos sutiles */
+        }
+
+        /* --- Estilos Generales y Tipografía --- */
+        body {
+            font-family: 'Open Sans', sans-serif; /* Fuente legible y moderna */
+            background-color: var(--unicauca-gray-light); /* Fondo suave para toda la página */
+        }
+
+        .login-page-bg {
+            min-height: 100vh; /* Asegura que el fondo cubra toda la altura de la vista */
+            display: flex; /* Para centrar el contenido verticalmente si se desea */
+            align-items: center; /* Centra el contenido verticalmente */
+            justify-content: center; /* Centra el contenido horizontalmente */
+            padding: 20px; /* Relleno general para que no esté pegado a los bordes */
+        }
+
+        .main-title {
+            color: var(--unicauca-blue); /* Título principal en azul Unicauca */
+            font-weight: 700; /* Más negrita para mayor impacto */
+            margin-bottom: 30px; /* Espacio debajo del título */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1); /* Sombra sutil para el texto */
+            font-size: 2.2em; /* Un poco más grande */
+            font-family: 'Montserrat', sans-serif; /* Puedes usar una fuente diferente para títulos si quieres */
+        }
+
+        /* --- Tarjeta de Login --- */
+        .login-card {
+            border: none; /* Quitamos el borde por defecto de la tarjeta */
+            border-radius: 10px; /* Bordes redondeados */
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15); /* Sombra más pronunciada para un efecto flotante */
+            overflow: hidden; /* Asegura que los bordes redondeados se apliquen correctamente */
+            background-color: white; /* Fondo blanco para la tarjeta */
+        }
+
+        .loginBox {
+            padding: 30px; /* Aumentamos el padding dentro de la caja de login */
+        }
+
+       .login-logo {
+    max-width: 120px; /* Reducimos el tamaño máximo del logo */
+    margin-bottom: 15px; /* Reducimos el margen inferior */
+}
+        /* --- Campos de Formulario --- */
+        .unicauca-input {
+            border: 1px solid var(--unicauca-gray-medium); /* Borde sutil */
+            border-radius: 0 5px 5px 0; /* Solo bordes redondeados a la derecha */
+            padding: 6px 15px; /* Aumentamos el padding para inputs más cómodos */
+            font-size: 1em;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .unicauca-input:focus {
+            border-color: var(--unicauca-red); /* Borde rojo al enfocar */
+            box-shadow: 0 0 0 0.2rem rgba(165, 42, 42, 0.25); /* Sombra de enfoque rojiza */
+            outline: none; /* Elimina el contorno azul por defecto de algunos navegadores */
+        }
+        
+        /* Input Group Addon for Icons */
+        .input-group-prepend .unicauca-input-icon {
+            background-color: var(--unicauca-blue); /* Fondo azul para el ícono */
+            color: white; /* Ícono blanco */
+            border: 1px solid var(--unicauca-blue); /* Borde azul para el ícono */
+            border-right: none; /* Sin borde a la derecha para unirse al input */
+            border-radius: 5px 0 0 5px; /* Bordes redondeados a la izquierda */
+            width: 45px; /* Ancho fijo para el ícono */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0; /* Eliminar padding extra */
+            height: calc(2.25rem + 2px); /* Coincide con la altura de un input de Bootstrap */
+        }
+
+        /* --- Botones --- */
+        .unicauca-btn-primary-lg {
+            background-color: var(--unicauca-red); /* Botón principal en rojo Unicauca */
+            border-color: var(--unicauca-red);
+            color: white;
+            font-weight: 600; /* Seminegrita */
+            padding: 12px 25px; /* Padding generoso para un botón clickeable */
+            border-radius: 5px; /* Bordes redondeados */
+            transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+            font-size: 1.1em; /* Un poco más grande */
+        }
+
+        .unicauca-btn-primary-lg:hover {
+            background-color: var(--unicauca-red-dark); /* Rojo más oscuro al pasar el ratón */
+            border-color: var(--unicauca-red-dark);
+            transform: translateY(-2px); /* Efecto sutil de "elevación" */
+        }
+
+        .unicauca-btn-secondary {
+            background-color: var(--unicauca-blue); /* Botón secundario en azul Unicauca */
+            border-color: var(--unicauca-blue);
+            color: white;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .unicauca-btn-secondary:hover {
+            background-color: var(--unicauca-blue-light);
+            border-color: var(--unicauca-blue-light);
+        }
+
+        /* --- Enlaces y Separadores --- */
+        .unicauca-link {
+            color: var(--unicauca-blue); /* Enlaces en azul Unicauca */
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .unicauca-link:hover {
+            color: var(--unicauca-red); /* Rojo Unicauca al pasar el ratón */
+            text-decoration: underline;
+        }
+
+        .unicauca-hr {
+            border-top: 1px solid var(--unicauca-gray-medium); /* Separador con color Unicauca */
+            margin-top: 25px;
+            margin-bottom: 25px;
+        }
+
+        /* Estilo para el "well" del colapso (Cambiar Contraseña) */
+        .well { /* Use 'well' class as it is in your HTML */
+            background-color: #e9ecef; /* Un fondo gris claro para el well */
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 15px; /* Espacio arriba del well */
+            margin-bottom: 15px; /* Espacio abajo del well */
+        }
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 576px) {
+            .loginBox {
+                padding: 20px; /* Reduce el padding en pantallas pequeñas */
+            }
+            .main-title {
+                font-size: 1.8em; /* Reduce el tamaño del título en móviles */
+            }
+        }
+ /* --- Estilos Generales y Tipografía --- */
+body.login-page-bg {
+    font-family: 'Open Sans', sans-serif;
+    background-color: var(--unicauca-gray-light);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    padding-bottom: 100px; /* Aumentamos el padding-bottom para subir más el contenido */
+}

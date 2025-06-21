@@ -1,0 +1,35 @@
+SELECT 
+  anio_semestre,
+  facultad_id,
+  departamento_id,
+  tipo_docente,
+  COUNT(DISTINCT cedula) AS total_profesores,
+
+  
+  SUM(CASE 
+        WHEN tipo_docente = 'Ocasional' AND (tipo_dedicacion = 'TC' OR tipo_dedicacion_r = 'TC') THEN 1
+        ELSE 0 
+      END) AS total_tc,
+
+  
+  SUM(CASE 
+        WHEN tipo_docente = 'Ocasional' AND (tipo_dedicacion = 'MT' OR tipo_dedicacion_r = 'MT') THEN 1
+        ELSE 0 
+      END) AS total_mt,
+
+  
+  SUM(CASE 
+        WHEN tipo_docente = 'Ocasional' AND (tipo_dedicacion = 'TC' OR tipo_dedicacion_r = 'TC') THEN 40
+        WHEN tipo_docente = 'Ocasional' AND (tipo_dedicacion = 'MT' OR tipo_dedicacion_r = 'MT') THEN 20
+        WHEN tipo_docente = 'Catedra' THEN COALESCE(horas, 0) + COALESCE(horas_r, 0)
+        ELSE 0
+      END) AS total_horas
+
+FROM 
+  solicitudes
+GROUP BY 
+  anio_semestre,
+  facultad_id,
+  departamento_id,
+  tipo_docente  
+ORDER BY `solicitudes`.`anio_semestre` DESC
