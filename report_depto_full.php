@@ -223,6 +223,8 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+
     <style>
     #avanceChartContainer, #facultadesChartContainer {
         width: 250px;
@@ -254,7 +256,14 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
 
     table td {
         text-align: left;
+        font-family: 'Open Sans', sans-serif; /* <-- Añade/Modifica esta línea */
+ color: #000066;   
     }
+
+    table th {
+        text-align: left;
+                font-family: 'Open Sans', sans-serif; /* <-- Añade/Modifica esta línea */
+ color: #000066;     }
 
     /* Contenedor general */
     .container {
@@ -292,19 +301,21 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
     margin-bottom: 10px;
     padding: 3px;
     border: 1px solid #c2dcf0;  /* Borde azul claro institucional */
-    background-color: #e8f4ff;  /* Fondo azul claro institucional (#16A8E1 con 10% de opacidad) */
+    background-color: #ECF0FF;  /* Fondo azul claro institucional (#16A8E1 con 10% de opacidad) */
     border-radius: 5px;
-    font-family: Arial, sans-serif;
+        font-family: 'Open Sans', sans-serif; /* <-- Añade/Modifica esta línea */
 }
 
 .encabezado-facultad .nombre-facultad,
 .encabezado-facultad .estado-envio {
     flex: 1;
     padding: 5px;
+            font-family: 'Open Sans', sans-serif; /* <-- Añade/Modifica esta línea */
+
 }
 
 .encabezado-facultad strong {
-    color: #002A9E;  /* Azul oscuro institucional */
+    color: #1F2124;  /* Azul oscuro institucional */
     margin-right: 5px;
 }    
 
@@ -572,6 +583,8 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
         align-items: center;
         justify-content: space-between;
         color: white; /* Asegura el color del texto del header */
+            font-family: 'Open Sans', sans-serif; /* <-- This is the added line */
+
     }
     .card-header h5, .card-header h6 {
         color: white; /* Asegura el color del texto del header */
@@ -632,7 +645,7 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
 
     /* Estilos para la tarjeta "Plazo remisión a Vicerrectoría Académica" (segundo menú) */
     .card-plazo-fac .card-header {
-        background-color: var(--unicauca-blue-primary) !important;
+        background-color: var(--unicauca-blue-dark) !important;
         color: white;
     }
     .card-plazo-fac .card-body {
@@ -1331,6 +1344,8 @@ td[title]:hover::after {
     font-weight: normal;  /* Sin negrita */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: 0.95rem;
+        font-family: 'Open Sans', sans-serif !important; /* <-- This is the added line */
+
 }
 </style>
 
@@ -1341,13 +1356,13 @@ td[title]:hover::after {
     <div class="container">
 <div class="card card-plazo mb-4">
 
-         <div class="card-header bg-unicauca-blue text-white d-flex justify-content-between align-items-center">
+         <div class="card-header bg-unicauca-blue-dark text-white d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Consulta por Facultad y  Sede <?php echo $anio_semestre; ?></h5>
         </div>
     
         <div class="row g-3 p-3">  <!-- Agregamos espaciado entre columnas -->
             <div class="col-md-8">   
-                             <div class="content-main bg-white p-4 rounded shadow-sm h-100 border-start border-4 border-primary">
+                             <div class="content-main bg-unicauca-light p-4 rounded shadow-sm h-100 border-start border-4 border-primary">
    
                 <?php
                 $envio=0;
@@ -1654,17 +1669,19 @@ document.addEventListener('DOMContentLoaded', function () {
     --unicauca-success: #249337;
     --unicauca-danger: #E52724;
     --unicauca-warning: #F8AE15;
-    --unicauca-light: #e8f4ff;
+        --unicauca-light: #ECF0FF;
+
+    --unicauca-lightb: #F5F7FF;
     --unicauca-dark: #1a1a2e;
 }
 
 /* Fondo y bordes */
 .bg-unicauca-light {
-    background-color: var(--unicauca-light);
+    background-color: var(--unicauca-lightb);
 }
 
 .border-unicauca {
-    border-color: var(--unicauca-accent) !important;
+  /*  border-color: var(--unicauca-accent) !important;*/
 }
 
 /* Textos */
@@ -1816,7 +1833,7 @@ document.addEventListener('DOMContentLoaded', function () {
 }
 </style>
 <div class="col-md-4">
-    <div class="content-sidebar bg-unicauca-light p-4 rounded-3 border border-unicauca h-100 shadow-sm">
+    <div class="content-sidebar bg-unicauca-light p-4 rounded-3 border border-unicauca h-100 shadow-sm" style="font-family: 'Open Sans', sans-serif !important;">
         <div class="d-flex align-items-center justify-content-center mb-4">
         <i class="fas fa-tasks fa-2x text-unicauca-primary me-2"></i>
         <h4 class="text-center text-unicauca-primary fw-bold mb-0">Avance: Departamentos</h4>
@@ -1862,19 +1879,19 @@ document.addEventListener('DOMContentLoaded', function () {
                            class="btn btn-unicauca-primary btn-lg <?= ($aceptacion == 0) ? 'disabled' : '' ?>" 
                            <?= ($aceptacion == 0) ? 'tabindex="-1" aria-disabled="true" title="Debe existir al menos un departamento aceptado para enviar"' : '' ?> 
                            onclick="return confirmarAprobacion(<?= $aceptacion ?>)">
-                            <i class="fas fa-file-download me-2"></i> Aprobar y Generar Documento
+                             <i class="fas fa-file-download me-2"></i> Aprobar y Generar Documento
                         </a>
                     </div>
                 <?php else : ?>
                     <div class="d-grid mb-3">
                         <a href="oficio_fac2_nuevaplantillatopcero_reimprimirb.php?facultad_id=<?= urlencode($facultad_id) ?>&anio_semestre=<?= urlencode($anio_semestre) ?>" 
                            class="btn btn-unicauca-secondary btn-lg">
-                            <i class="fas fa-print me-2"></i> Reimprimir Documento
+                             <i class="fas fa-print me-2"></i> Reimprimir Documento
                         </a>
                     </div>
                 <?php endif; 
-            
-                            $decano = obtenerDecano($facultad_id);
+                
+                                 $decano = obtenerDecano($facultad_id);
 ?>
                 
                 <div class="status-card mb-3">
@@ -1919,7 +1936,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 ?>
                 
-                 <div class="status-card mb-3">
+                   <div class="status-card mb-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="fw-medium">Respuesta V.R.A.:</span>
                         <span class="badge bg-<?= $color_class ?>">
