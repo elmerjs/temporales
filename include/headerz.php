@@ -1,3 +1,5 @@
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+
 <?php
 session_start();
 $currentYear = date("Y");
@@ -80,25 +82,27 @@ $con->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solicitud Aval Temporales</title>
-    <style>
+<style>
 /* Colores institucionales Unicauca */
-        /* Colores institucionales Unicauca */
 :root {
-    --unicauca-azul: #001282;          /* Azul principal */
-    --unicauca-azul-oscuro: #000b41;   /* Azul oscuro, usado para submenús */
-    --unicauca-rojo: #A61717;          /* Rojo institucional */
-    --unicauca-rojo-claro: #D32F2F;    /* Rojo más claro */
-    --unicauca-blanco: #FFFFFF;        /* Blanco */
-    --unicauca-gris: #6C757D;          /* Gris para textos */
-    --unicauca-gris-claro: #F8F9FA;    /* Un gris muy claro para fondos sutiles */
-    --unicauca-gris-medio: #E9ECEF;    /* Gris un poco más oscuro para bordes */
-    --unicauca-success: #28a745;       /* Verde para éxito/descarga XLS */
-    --unicauca-info: #17a2b8;          /* Azul claro para información o 'reimprimir' si no se usa el azul principal */
-    --unicauca-blue-light: #2196F3;    /* Un azul más claro para hover en el botón de reimprimir si se usa el azul principal */
-    --unicauca-orange: #FF5722;        /* Un color naranja para acciones externas, por ejemplo */
+    --unicauca-azul: #000066;            /* Azul principal */
+    --unicauca-azul-oscuro: #000b41;    /* Azul oscuro, usado para submenús */
+    --unicauca-rojo: #A61717;            /* Rojo institucional */
+    --unicauca-rojo-claro: #D32F2F;      /* Rojo más claro */
+    --unicauca-blanco: #FFFFFF;          /* Blanco */
+    --unicauca-gris: #6C757D;            /* Gris para textos */
+    --unicauca-gris-claro: #F8F9FA;      /* Un gris muy claro para fondos sutiles */
+    --unicauca-gris-medio: #E9ECEF;      /* Gris un poco más oscuro para bordes */
+    --unicauca-success: #28a745;         /* Verde para éxito/descarga XLS */
+    --unicauca-info: #17a2b8;            /* Azul claro para información o 'reimprimir' si no se usa el azul principal */
+    --unicauca-blue-light: #2196F3;      /* Un azul más claro para hover en el botón de reimprimir si se usa el azul principal */
+    --unicauca-orange: #FF5722;          /* Un color naranja para acciones externas, por ejemplo */
     --unicauca-orange-dark: #E64A19;
-}
 
+    /* Nuevas variables para los colores solicitados */
+    --nuevo-fondo-menu: #ECF0FF;
+    --nueva-letra-menu: #1F2124;
+}
 
 /* Opción 2 - Efecto de pulso con colores Unicauca */
 .pulse-badge {
@@ -134,14 +138,14 @@ $con->close();
 
 /* Estilos del encabezado MEJORADO */
 header {
-    background: var(--unicauca-azul); /* Usamos la variable para consistencia */
+    background: var(--nuevo-fondo-menu); /* Usamos la nueva variable para el fondo */
     width: 100%;
     height: 70px;
     position: fixed;
     top: 0;
     left: 0;
     z-index: 99;
-    color: var(--unicauca-blanco);
+    color: var(--nueva-letra-menu); /* Cambiamos el color de texto general del header */
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -157,9 +161,11 @@ header h1 {
     font-weight: bold;
     display: flex;
     align-items: center;
-    color: var(--unicauca-blanco); /* Asegura que el color del texto sea blanco */
+    color: var(--nueva-letra-menu); /* Asegura que el color del texto del título sea el nuevo */
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2); /* Sutil sombra de texto */
     letter-spacing: 0.5px; /* Ligeramente más espaciado */
+    font-family: 'Open Sans', sans-serif; /* <-- Añadido aquí */
+
 }
 
 /* Estilos del menú principal */
@@ -185,21 +191,25 @@ nav ul li a {
     text-decoration: none;
     display: block;
     padding: 15px 18px; /* Ajustar padding para más espacio sin afectar el alto del header */
-    color: var(--unicauca-blanco);
+    color: var(--nueva-letra-menu); /* Cambiamos el color de la letra de los ítems del menú */
     transition: all 0.3s ease;
     font-weight: 500;
     position: relative;
     border-radius: 4px; /* Un poco de border-radius para un look más suave */
-    font-size: 0.9em; /* <-- AÑADE ESTO para el tamaño de fuente del submenú */
+    font-size: 0.9em;
+        font-family: 'Open Sans', sans-serif; /* <-- Añade/Modifica esta línea */
 
 }
 
-nav ul li a:hover {
-    background-color: rgba(255, 255, 255, 0.2); /* Fondo más visible al pasar el ratón */
-    color: var(--unicauca-blanco);
+/* MODIFICADO: Aplicar estilos de hover también al estado activo */
+nav ul li a:hover,
+nav ul li.active > a { /* Cuando el LI tiene la clase 'active' */
+    background-color: rgba(0, 0, 0, 0.1); /* Fondo más oscuro y sutil al pasar el mouse/activo */
+    color: var(--unicauca-azul); /* Puedes usar un color que contraste bien, por ejemplo el azul Unicauca */
     transform: translateY(-2px); /* Pequeño efecto de elevación */
 }
 
+/* MODIFICADO: Aplicar ::after de hover también al estado activo */
 nav ul li a::after {
     content: '';
     position: absolute;
@@ -211,22 +221,23 @@ nav ul li a::after {
     transition: all 0.3s ease;
 }
 
-nav ul li a:hover::after {
+nav ul li a:hover::after,
+nav ul li.active > a::after { /* Cuando el LI tiene la clase 'active' */
     width: 100%;
     left: 0;
 }
 
 /* Submenús */
 nav ul li ul.submenu {
-    display: none;
+    display: none; /* Ocultar por defecto */
     position: absolute;
     top: 100%;
     left: 0;
     list-style: none;
     padding: 0;
     margin: 0;
-    background: var(--unicauca-azul-oscuro); /* Fondo más oscuro para submenú */
-    border: 1px solid rgba(255, 255, 255, 0.15); /* Borde más definido */
+    background: var(--nuevo-fondo-menu); /* **CAMBIADO: Fondo del submenú** */
+    border: 1px solid rgba(0, 0, 0, 0.15); /* **CAMBIADO: Borde del submenú (más oscuro para contraste)** */
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); /* Sombra más profunda */
     z-index: 1000;
     min-width: 220px; /* Ancho mínimo para submenú */
@@ -242,8 +253,8 @@ nav ul li ul.submenu li {
 
 nav ul li ul.submenu li a {
     padding: 12px 20px;
-    color: var(--unicauca-blanco);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Borde inferior más notorio */
+    color: var(--nueva-letra-menu); /* **CAMBIADO: Color de la letra de los ítems del submenú** */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08); /* **CAMBIADO: Borde inferior más notorio y acorde al nuevo fondo** */
 }
 
 nav ul li ul.submenu li:last-child a {
@@ -251,26 +262,134 @@ nav ul li ul.submenu li:last-child a {
 }
 
 nav ul li ul.submenu li a:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* Fondo más claro al pasar el ratón */
+    background-color: rgba(0, 0, 0, 0.05); /* **CAMBIADO: Fondo más claro al pasar el ratón en submenú** */
     padding-left: 25px;
-    color: var(--unicauca-blanco); /* Asegurar el color blanco en hover */
+    color: var(--unicauca-azul); /* **CAMBIADO: Color de la letra en hover del submenú (azul Unicauca)** */
 }
 
-nav ul li:hover ul.submenu {
+/* MODIFICADO: Mostrar submenu al hacer hover en el padre O si el padre tiene la clase 'active' */
+nav ul li:hover ul.submenu,
+nav ul li.active > ul.submenu { /* Cuando el LI tiene la clase 'active' */
     display: block;
+}
+
+/* Estilos para los elementos 'a' dentro del submenu cuando están activos */
+nav ul li ul.submenu li.active a {
+    background-color: rgba(0, 0, 0, 0.1); /* **CAMBIADO: Fondo distintivo para el sub-ítem activo** */
+    font-weight: bold; /* Hacer el texto más audaz */
+    color: var(--unicauca-rojo-claro); /* Puedes usar un color diferente si lo deseas */
 }
 
 /* Submenús anidados */
 nav ul li ul.submenu li ul.submenu {
     left: 100%;
     top: 0;
+    background: var(--nuevo-fondo-menu); /* **CAMBIADO: Fondo del submenú anidado** */
     border-left: 4px solid var(--unicauca-rojo); /* Borde lateral para anidados */
     border-top: none; /* Eliminar borde superior duplicado */
     border-radius: 0 6px 6px 0; /* Bordes redondeados a la derecha */
 }
 
 /* Estilos del login/información de usuario MEJORADO */
+#login {
+    color: var(--nueva-letra-menu); /* Cambia el color del texto del usuario */
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.1); /* Un fondo sutil para el área de login que contraste con el nuevo fondo */
+    padding: 8px 15px;
+    border-radius: 8px; /* Bordes más redondeados */
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1); /* Sombra interna sutil */
+    gap: 15px; /* Espacio entre el texto de usuario y el botón de logout, y el botón de presupuesto */
+}
 
+#login i {
+    font-style: normal; /* Para que la 'i' de "usuario" no se vea cursiva si no es necesario */
+    color: var(--nueva-letra-menu); /* Color para el texto del usuario */
+        font-family: 'Open Sans', sans-serif; /* <-- Añade/Modifica esta línea */
+
+}
+
+#login a { /* Esto aplica a todos los <a> dentro de #login, incluyendo el de logout */
+    color: var(--unicauca-blanco); /* Mantén el blanco para los botones dentro de login */
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+/* Estilos específicos para el botón de Logout */
+#login .btn-logout {
+    background-color: var(--unicauca-rojo);
+    border: 1px solid var(--unicauca-rojo);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);    font-family: 'Open Sans', sans-serif; /* <-- Añade/Modifica esta línea */
+
+}
+
+#login .btn-logout:hover {
+    background-color: var(--unicauca-rojo-claro);
+    border-color: var(--unicauca-rojo-claro);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Nuevo estilo para el botón de Presupuesto (externo) */
+.btn-external-link {
+    background-color: var(--unicauca-azul) !important; /* Color distintivo para enlace externo */
+    border: 1px solid var(--unicauca-azul-oscuro) !important;
+    color: var(--unicauca-blanco) !important;
+    text-decoration: none !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important; /* Keep transition for smooth effect */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+        font-family: 'Open Sans', sans-serif; /* <-- Añade/Modifica esta línea */
+
+}
+
+.btn-external-link:hover {
+    background-color: var(--nuevo-fondo-menu) !important;
+    border-color: var(--unicauca-azul-oscuro) !important;
+    color: var(--unicauca-azul-oscuro) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.btn-external-link .fas,
+.btn-external-link .fa-solid { /* Asegurar que los iconos tengan margen */
+    margin-right: 5px;
+}
+
+/* Contenido principal */
+#contenido {
+    margin-top: 70px;
+    padding: 20px;
+}
+
+/* !!! CAMBIOS PRINCIPALES PARA EL ESTADO ACTIVO !!! */
+/* Estilos para los elementos 'a' dentro del submenu cuando están activos */
+nav ul li ul.submenu li.active a {
+    background-color: rgba(0, 0, 0, 0.1); /* Fondo distintivo para el sub-ítem activo */
+    font-weight: bold; /* Hacer el texto más audaz */
+    color: var(--unicauca-rojo-claro); /* Puedes usar un color diferente si lo deseas */
+}
+
+/* Si quieres una línea diferente para los elementos de submenu activos */
+nav ul li ul.submenu li.active a::after {
+    content: '';
+    position: absolute;
+    top: 0; /* Coloca la línea arriba para un submenú */
+    left: 0;
+    width: 3px; /* Es una línea vertical */
+    height: 100%;
+    background: var(--unicauca-rojo);
+}
 
 #login a:hover {
     background-color: var(--unicauca-rojo-claro); /* Rojo más claro al pasar el ratón */
@@ -339,354 +458,286 @@ nav ul li ul.submenu li ul.submenu {
 .unacauca-btn-reprint .fas {
     margin-right: 8px; /* Consistent spacing for icons */
 }
-        
-
-/* ... (Mantén todo el CSS anterior para el header, nav, submenus, etc.) ... */
-
-/* Estilos del login/información de usuario MEJORADO */
-#login {
-    color: var(--unicauca-blanco);
-    font-family: Arial, sans-serif;
-    font-size: 12px;
-
-    display: flex;
-    align-items: center;
-    background-color: rgba(0, 0, 0, 0.2); /* Un fondo sutil para el área de login */
-    padding: 8px 15px;
-    border-radius: 8px; /* Bordes más redondeados */
-    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3); /* Sombra interna sutil */
-    /* Añadido para espaciar los elementos internos si hay más de uno, como un botón extra */
-    gap: 15px; /* Espacio entre el texto de usuario y el botón de logout, y el botón de presupuesto */
-}
-
-#login i {
-    font-style: normal; /* Para que la 'i' de "usuario" no se vea cursiva si no es necesario */
-    color: var(--unicauca-blanco); /* Color para el texto del usuario */
-    /* margin-right: 5px; Eliminar este si usas 'gap' en el contenedor flex */
-}
-
-#login a { /* Esto aplica a todos los <a> dentro de #login, incluyendo el de logout */
-    color: var(--unicauca-blanco);
-    text-decoration: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    /* margin-left: 10px; Eliminar si usas 'gap' en el contenedor flex */
-    font-weight: 500;
-    /* Los estilos de color y borde se sobrescribirán por las clases específicas */
-}
-
-/* Estilos específicos para el botón de Logout */
-#login .btn-logout {
-    background-color: var(--unicauca-rojo);
-    border: 1px solid var(--unicauca-rojo);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-#login .btn-logout:hover {
-    background-color: var(--unicauca-rojo-claro);
-    border-color: var(--unicauca-rojo-claro);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-/* Nuevo estilo para el botón de Presupuesto (externo) */
-.btn-external-link {
-    background-color: var(--unicauca-orange) !important; /* Color distintivo para enlace externo */
-    border: 1px solid var(--unicauca-orange) !important;
-    color: var(--unicauca-blanco) !important;
-    text-decoration: none !important;
-    padding: 6px 12px !important;
-    border-radius: 6px !important;
-    font-weight: 500 !important;
-    transition: all 0.3s ease !important; /* Keep transition for smooth effect */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
-}
-
-.btn-external-link:hover {
-    background-color: var(--unicauca-orange-dark) !important;
-    border-color: var(--unicauca-orange-dark) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
-}
-.btn-external-link .fas,
-.btn-external-link .fa-solid { /* Asegurar que los iconos tengan margen */
-    margin-right: 5px;
-}
 </style>
 </head>
 <body>
 <header>
-        <h1>Solicitud Aval - Profesores Temporales</h1>
-        <nav>
-            <ul>
-                <li><a href="../../temporales/menu_inicio.php">Inicio</a></li>
-                <?php if ($tipo_usuario == 3): ?>
-                    <li>
-                        <a href="#" title="Administrar solicitud inicial para el próximo periodo; dar visto bueno y enviarlas a la facultad para su revisión">
-                            Gestión Depto
-                        </a>    
-                        <ul class="submenu">
-                            <?php foreach ($departamentos as $departamento): ?>
-                                <?php if ($tipo_usuario == 1): // Usuario tipo 1: Mostrar todos los periodos ?>
-                                    <li>
-                                        <a href="#" class="periodo-link" 
-                                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" 
-                                            data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>" 
-                                            data-anio-semestre="<?php echo $previousPeriod; ?>"><?php echo $previousPeriod; ?></a>
-                                    </li>
-                                    <li>
-                                        <a href="#" class="periodo-link" 
-                                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" 
-                                            data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>" 
-                                            data-anio-semestre="<?php echo $periodo_work; ?>"><?php echo $periodo_work; ?></a>
-                                    </li>
-                                <?php elseif ($tipo_usuario == 3): // Usuario tipo 3: Mostrar periodo actual y siguiente ?>
-                                    <li>
-                                        <a href="#" class="periodo-link" 
-                                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" 
-                                            data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>" 
-                                            data-anio-semestre="<?php echo $periodo_work; ?>"><?php echo $periodo_work; ?></a>
-                                    </li>
-                                <?php endif; ?>
-                                <li>
-                                    <a href="#" class="periodo-link" 
-                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" 
-                                        data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>" 
-                                        data-anio-semestre="<?php echo $nextPeriod; ?>"><?php echo $nextPeriod; ?></a>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </li>
-                <?php endif; ?>     
-                
-                <?php if ($tipo_usuario == 1 || $tipo_usuario == 2): ?>
-                    <li class="menu-item">
-                        <a href="#" title="Gestionar solicitud inicial de vinculación de temporales para el periodo siguiente">
-                            Gestión Facultad
-                        </a>
-                        <ul class="submenu">
-                            <?php if ($tipo_usuario == 1): // Mostrar todos los periodos para tipo 1 ?>
-                                <li>
-                                    <a href="#" class="report-link" data-facultad-id="<?php //echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>">
-                                        <?php echo $previousPeriod; ?>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>">
-                                        <?php echo $periodo_work; ?>
-                                    </a>
-                                </li>
-                            <?php endif; ?>
-                            <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
-                                <li>
-                                    <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
-                                        <?php echo $nextPeriod; ?>
-                                    </a>
-                                </li>
-                            <?php endif; ?>
-                        </ul>
-                    </li>
-                <?php endif; ?>
-                
-                <?php if ($tipo_usuario == 1 || $tipo_usuario == 2): ?>
-                    <li class="menu-item">
-                        <a href="#" title="comparativo profesores periodo actual vs anterior">
-                            Comparativo <span class="new-badge">New!</span>
-                        </a>
-                        <ul class="submenu">
-                            <?php if ($tipo_usuario == 1): // Mostrar todos los periodos para tipo 1 ?>
-                                <li>
-                                    <a href="#" class="report-linkb" data-facultad-id="<?php //echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>">
-                                        <?php echo $previousPeriod; ?>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#" class="report-linkb" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>">
-                                        <?php echo $periodo_work; ?>
-                                    </a>
-                                </li>
-                            <?php endif; ?>
-                            <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
-                                <li>
-                                    <a href="#" class="report-linkb" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
-                                        <?php echo $nextPeriod; ?>
-                                    </a>
-                                </li>
-                            <?php endif; ?>
-                        </ul>
-                    </li>
-                <?php endif; ?>
+    <h1>Solicitud Aval - Profesores Temporales</h1>
+    <nav>
+        <ul>
+            <li class="<?= ($active_menu_item == 'inicio') ? 'active' : '' ?>">
+                <a href="../../temporales/menu_inicio.php">Inicio</a>
+            </li>
 
-                <li class="submenu-container" style="display: none;" > <a href="#" title="Novedades que se presentan para los profesores temporales vinculados en el periodo actual">
-                        Novedades
+            <?php if ($tipo_usuario == 3): ?>
+                <li class="menu-item <?= ($active_menu_item == 'gestion_depto') ? 'active' : '' ?>">
+                    <a href="#" title="Administrar solicitud inicial para el próximo periodo; dar visto bueno y enviarlas a la facultad para su revisión">
+                        Gestión Depto
                     </a>
-                    <ul class="submenu novedades-submenu">
-                        <?php 
-                        $periodosMostrados = [];
-                        if ($tipo_usuario == 1):
-                            foreach ($departamentos as $departamento):
-                                if (!in_array($previousPeriod, $periodosMostrados)): 
-                                    $periodosMostrados[] = $previousPeriod; ?>
-                                    <li>
-                                        <a href="#" class="novedades-periodo" 
-                                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" 
-                                            data-anio-semestre="<?php echo $previousPeriod; ?>" 
-                                            data-tipo-usuario="<?php echo $tipo_usuario; ?>" 
-                                            data-email-user="<?php echo $email_user; ?>">
-                                            <?php echo $previousPeriod; ?>
-                                        </a>
-                                    </li>
-                                <?php endif; 
-                                if (!in_array($periodo_work, $periodosMostrados)): 
-                                    $periodosMostrados[] = $periodo_work; ?>
-                                    <li>
-                                        <a href="#" class="novedades-periodo" 
-                                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" 
-                                            data-anio-semestre="<?php echo $periodo_work; ?>" 
-                                            data-tipo-usuario="<?php echo $tipo_usuario; ?>" 
-                                            data-email-user="<?php echo $email_user; ?>">
-                                            <?php echo $periodo_work; ?>
-                                        </a>
-                                    </li>
-                                <?php endif; 
-                                if (!in_array($nextPeriod, $periodosMostrados)): 
-                                    $periodosMostrados[] = $nextPeriod; ?>
-                                    <li>
-                                        <a href="#" class="novedades-periodo" 
-                                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" 
-                                            data-anio-semestre="<?php echo $nextPeriod; ?>" 
-                                            data-tipo-usuario="<?php echo $tipo_usuario; ?>" 
-                                            data-email-user="<?php echo $email_user; ?>">
-                                            <?php echo $nextPeriod; ?>
-                                        </a>
-                                    </li>
-                                <?php endif; 
-                            endforeach;
-                        elseif ($tipo_usuario == 2 || $tipo_usuario == 3): // Caso para tipo usuario 2 o 3 - Solo ver $periodo_work (adaptado temporalmente)
-                             foreach ($departamentos as $departamento):
-                                if (!in_array($previousPeriod, $periodosMostrados)): 
-                                    $periodosMostrados[] = $previousPeriod; ?>
-                                    <li>
-                                        <a href="#" class="novedades-periodo" 
-                                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" 
-                                            data-anio-semestre="<?php echo $previousPeriod; ?>" 
-                                            data-tipo-usuario="<?php echo $tipo_usuario; ?>" 
-                                            data-email-user="<?php echo $email_user; ?>">
-                                            <?php echo $previousPeriod; ?>
-                                        </a>
-                                    </li>
-                                <?php endif; 
-                                if (!in_array($periodo_work, $periodosMostrados)): 
-                                    $periodosMostrados[] = $periodo_work; ?>
-                                    <li>
-                                        <a href="#" class="novedades-periodo" 
-                                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" 
-                                            data-anio-semestre="<?php echo $periodo_work; ?>" 
-                                            data-tipo-usuario="<?php echo $tipo_usuario; ?>" 
-                                            data-email-user="<?php echo $email_user; ?>">
-                                            <?php echo $periodo_work; ?>
-                                        </a>
-                                    </li>
-                                <?php endif; 
-                                if (!in_array($nextPeriod, $periodosMostrados)): 
-                                    $periodosMostrados[] = $nextPeriod; ?>
-                                    <li>
-                                        <a href="#" class="novedades-periodo" 
-                                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" 
-                                            data-anio-semestre="<?php echo $nextPeriod; ?>" 
-                                            data-tipo-usuario="<?php echo $tipo_usuario; ?>" 
-                                            data-email-user="<?php echo $email_user; ?>">
-                                            <?php echo $nextPeriod; ?>
-                                        </a>
-                                    </li>
-                                <?php endif; 
-                            endforeach;
-                        endif; ?>
+                    <ul class="submenu">
+                        <?php foreach ($departamentos as $departamento): ?>
+                            <?php if ($tipo_usuario == 1): // Usuario tipo 1: Mostrar todos los periodos ?>
+                                <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                                    <a href="#" class="periodo-link"
+                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                                        data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+                                        data-anio-semestre="<?php echo $previousPeriod; ?>"><?php echo $previousPeriod; ?></a>
+                                </li>
+                                <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                                    <a href="#" class="periodo-link"
+                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                                        data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+                                        data-anio-semestre="<?php echo $periodo_work; ?>"><?php echo $periodo_work; ?></a>
+                                </li>
+                            <?php elseif ($tipo_usuario == 3): // Usuario tipo 3: Mostrar periodo actual y siguiente ?>
+                                <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                                    <a href="#" class="periodo-link"
+                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                                        data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+                                        data-anio-semestre="<?php echo $periodo_work; ?>"><?php echo $periodo_work; ?></a>
+                                </li>
+                            <?php endif; ?>
+                            <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                                <a href="#" class="periodo-link"
+                                    data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                                    data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+                                    data-anio-semestre="<?php echo $nextPeriod; ?>"><?php echo $nextPeriod; ?></a>
+                            </li>
+                        <?php endforeach; ?>
                     </ul>
                 </li>
-                
-                <?php if (
-                    $tipo_usuario == 1
-                    && (
-                        $id_user == 92
-                        || $id_user == 93
-                        || $id_user == 94 || $id_user == 4
-                    )
-                ): ?>
-                    <li class="menu-item">
-                        <a href="#" title="numero de observaciones labor">
-                            Observaciones <span class="new-badge">New!</span>
-                        </a>
-                        <ul class="submenu">
-                            <?php if ($tipo_usuario == 1): // Mostrar todos los periodos para tipo 1 ?>
-                                <li>
-                                    <a href="#" class="report-linkc" data-facultad-id="<?php //echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>">
+            <?php endif; ?>
+
+            <?php if ($tipo_usuario == 1 || $tipo_usuario == 2): ?>
+                <li class="menu-item <?= ($active_menu_item == 'gestion_facultad') ? 'active' : '' ?>">
+                    <a href="#" title="Gestionar solicitud inicial de vinculación de temporales para el periodo siguiente">
+                        Gestión Facultad
+                    </a>
+                    <ul class="submenu">
+                        <?php if ($tipo_usuario == 1): // Mostrar todos los periodos para tipo 1 ?>
+                            <li class="<?= ($active_menu_item == 'gestion_facultad' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                                <a href="#" class="report-link" data-facultad-id="<?php //echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>">
+                                    <?php echo $previousPeriod; ?>
+                                </a>
+                            </li>
+                            <li class="<?= ($active_menu_item == 'gestion_facultad' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                                <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>">
+                                    <?php echo $periodo_work; ?>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                        <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
+                            <li class="<?= ($active_menu_item == 'gestion_facultad' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                                <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
+                                    <?php echo $nextPeriod; ?>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </li>
+            <?php endif; ?>
+
+            <?php if ($tipo_usuario == 1 || $tipo_usuario == 2): ?>
+                <li class="menu-item <?= ($active_menu_item == 'comparativo') ? 'active' : '' ?>">
+                    <a href="#" title="comparativo profesores periodo actual vs anterior">
+                        Comparativo <span class="new-badge">New!</span>
+                    </a>
+                    <ul class="submenu">
+                        <?php if ($tipo_usuario == 1): // Mostrar todos los periodos para tipo 1 ?>
+                            <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                                <a href="#" class="report-linkb" data-facultad-id="<?php //echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>">
+                                    <?php echo $previousPeriod; ?>
+                                </a>
+                            </li>
+                            <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                                <a href="#" class="report-linkb" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>">
+                                    <?php echo $periodo_work; ?>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                        <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
+                            <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                                <a href="#" class="report-linkb" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
+                                    <?php echo $nextPeriod; ?>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </li>
+            <?php endif; ?>
+
+            <li class="submenu-container <?= ($active_menu_item == 'novedades') ? 'active' : '' ?>" style="display: none;">
+                <a href="#" title="Novedades que se presentan para los profesores temporales vinculados en el periodo actual">
+                    Novedades
+                </a>
+                <ul class="submenu novedades-submenu">
+                    <?php
+                    $periodosMostrados = [];
+                    if ($tipo_usuario == 1):
+                        foreach ($departamentos as $departamento):
+                            if (!in_array($previousPeriod, $periodosMostrados)):
+                                $periodosMostrados[] = $previousPeriod; ?>
+                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                                    <a href="#" class="novedades-periodo"
+                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                                        data-anio-semestre="<?php echo $previousPeriod; ?>"
+                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
+                                        data-email-user="<?php echo $email_user; ?>">
                                         <?php echo $previousPeriod; ?>
                                     </a>
                                 </li>
-                                <li>
-                                    <a href="#" class="report-linkc" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>">
+                            <?php endif;
+                            if (!in_array($periodo_work, $periodosMostrados)):
+                                $periodosMostrados[] = $periodo_work; ?>
+                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                                    <a href="#" class="novedades-periodo"
+                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                                        data-anio-semestre="<?php echo $periodo_work; ?>"
+                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
+                                        data-email-user="<?php echo $email_user; ?>">
                                         <?php echo $periodo_work; ?>
                                     </a>
                                 </li>
-                            <?php endif; ?>
-                            <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
-                                <li>
-                                    <a href="#" class="report-linkc" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
+                            <?php endif;
+                            if (!in_array($nextPeriod, $periodosMostrados)):
+                                $periodosMostrados[] = $nextPeriod; ?>
+                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                                    <a href="#" class="novedades-periodo"
+                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                                        data-anio-semestre="<?php echo $nextPeriod; ?>"
+                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
+                                        data-email-user="<?php echo $email_user; ?>">
                                         <?php echo $nextPeriod; ?>
                                     </a>
                                 </li>
-                            <?php endif; ?>
-                        </ul>
-                    </li>
-                <?php endif; ?>
-                
-                <?php if ($tipo_usuario == 1 && ! in_array($id_user, [92, 93, 94])): ?>
-                    <li><a href="../../temporales/gestion_periodos.php">Gestión periodos</a></li>
-                <?php endif; ?>
-                <?php if ($tipo_usuario == 1): ?>
-                    <li><a href="../../temporales/powerbics.php">PB-Gráficos</a></li>
-                <?php endif; ?>
-                <li>
-                    <a href="../../temporales/tutorial.php?tipo_usuario=<?php echo urlencode($tipo_usuario); ?>">Video tutorial</a>
-                </li>           
-            </ul>
-        </nav>
-        <div id="login">
-            <?php
-                // Definir los IDs de usuario permitidos (92, 93, 94, 4) para Presupuesto
-                $usuarios_presupuesto_permitidos = [92, 4]; // Mantenemos los mismos de tu lógica original
-                
-                // MOVER el enlace de Presupuesto aquí
-                if ($tipo_usuario == 1 && in_array($id_user, $usuarios_presupuesto_permitidos)):    
-            ?>
-                <a href="/presupuesto_novedades/" class="btn-external-link" title="Módulo de novedades presupuestales" target="_blank">
-                    <i class="fas fa-money-bill-wave me-2"></i> Presupuesto
-                </a>
+                            <?php endif;
+                        endforeach;
+                    elseif ($tipo_usuario == 2 || $tipo_usuario == 3): // Caso para tipo usuario 2 o 3 - Solo ver $periodo_work (adaptado temporalmente)
+                        foreach ($departamentos as $departamento):
+                            if (!in_array($previousPeriod, $periodosMostrados)):
+                                $periodosMostrados[] = $previousPeriod; ?>
+                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                                    <a href="#" class="novedades-periodo"
+                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                                        data-anio-semestre="<?php echo $previousPeriod; ?>"
+                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
+                                        data-email-user="<?php echo $email_user; ?>">
+                                        <?php echo $previousPeriod; ?>
+                                    </a>
+                                </li>
+                            <?php endif;
+                            if (!in_array($periodo_work, $periodosMostrados)):
+                                $periodosMostrados[] = $periodo_work; ?>
+                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                                    <a href="#" class="novedades-periodo"
+                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                                        data-anio-semestre="<?php echo $periodo_work; ?>"
+                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
+                                        data-email-user="<?php echo $email_user; ?>">
+                                        <?php echo $periodo_work; ?>
+                                    </a>
+                                </li>
+                            <?php endif;
+                            if (!in_array($nextPeriod, $periodosMostrados)):
+                                $periodosMostrados[] = $nextPeriod; ?>
+                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                                    <a href="#" class="novedades-periodo"
+                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                                        data-anio-semestre="<?php echo $nextPeriod; ?>"
+                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
+                                        data-email-user="<?php echo $email_user; ?>">
+                                        <?php echo $nextPeriod; ?>
+                                    </a>
+                                </li>
+                            <?php endif;
+                        endforeach;
+                    endif; ?>
+                </ul>
+            </li>
+
+            <?php if (
+                $tipo_usuario == 1
+                && (
+                    $id_user == 92
+                    || $id_user == 93
+                    || $id_user == 94 || $id_user == 4
+                )
+            ): ?>
+                <li class="menu-item <?= ($active_menu_item == 'observaciones') ? 'active' : '' ?>">
+                    <a href="#" title="numero de observaciones labor">
+                        Observaciones <span class="new-badge">New!</span>
+                    </a>
+                    <ul class="submenu">
+                        <?php if ($tipo_usuario == 1): // Mostrar todos los periodos para tipo 1 ?>
+                            <li class="<?= ($active_menu_item == 'observaciones' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                                <a href="#" class="report-linkc" data-facultad-id="<?php //echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>">
+                                    <?php echo $previousPeriod; ?>
+                                </a>
+                            </li>
+                            <li class="<?= ($active_menu_item == 'observaciones' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                                <a href="#" class="report-linkc" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>">
+                                    <?php echo $periodo_work; ?>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                        <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
+                            <li class="<?= ($active_menu_item == 'observaciones' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                                <a href="#" class="report-linkc" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
+                                    <?php echo $nextPeriod; ?>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </li>
             <?php endif; ?>
 
-            <?php
-                if (isset($_SESSION['loggedin'])) {
-                    if ($tipo_usuario==3) {
-                       echo "<i>depto: ".$departamento['depto_nom_propio']. "</i> - " ;
-                    }
-                    echo "<i> usuario: " . $_SESSION['name'] . "</i> <a href='../../temporales/logout.php' class='btn-logout'>Logout</a>";
-                } else {
-                    echo "SESSION loggedin: " . ($_SESSION['loggedin'] ? 'true' : 'false') . "<br>";
-                    
-                    echo "Email fac: " . $email_fac . "<br>";
-                    echo "<div class='alert alert-danger mt-4' role='alert'>
-                        <h4>You need to login to access this page.</h4>
-                        <p><a href='/temporales/index.html'>Login Here!</a></p>
-                    </div>";
+            <?php if ($tipo_usuario == 1 && ! in_array($id_user, [92, 93, 94])): ?>
+                <li class="<?= ($active_menu_item == 'gestion_periodos') ? 'active' : '' ?>">
+                    <a href="../../temporales/gestion_periodos.php">Gestión periodos</a>
+                </li>
+            <?php endif; ?>
+
+            <?php if ($tipo_usuario == 1): ?>
+                <li class="<?= ($active_menu_item == 'pb_graficos') ? 'active' : '' ?>">
+                    <a href="../../temporales/powerbics.php">PB-Gráficos</a>
+                </li>
+            <?php endif; ?>
+
+            <li class="<?= ($active_menu_item == 'video_tutorial') ? 'active' : '' ?>">
+                <a href="../../temporales/tutorial.php?tipo_usuario=<?php echo urlencode($tipo_usuario); ?>">Video tutorial</a>
+            </li>
+        </ul>
+    </nav>
+    <?php
+        // Definir los IDs de usuario permitidos (92, 93, 94, 4) para Presupuesto
+        $usuarios_presupuesto_permitidos = [92, 4]; // Mantenemos los mismos de tu lógica original
+
+        // MOVER el enlace de Presupuesto aquí
+        if ($tipo_usuario == 1 && in_array($id_user, $usuarios_presupuesto_permitidos)):
+    ?>
+            <a href="/presupuesto_novedades/" class="btn-external-link" title="Módulo de novedades presupuestales" target="_blank" style="border-radius: 25px; padding: 10px 20px;">
+                <i class="fas fa-money-bill-wave me-2"></i> Presupuesto
+            </a>
+    <?php endif; ?>
+    <div id="login">
+        <?php
+            if (isset($_SESSION['loggedin'])) {
+                if ($tipo_usuario==3) {
+                    echo "<i>depto: ".$departamento['depto_nom_propio']. "</i> - " ;
                 }
-            ?>
-        </div>
-    </header>
+                echo "<i> usuario: " . $_SESSION['name'] . "</i> <a href='../../temporales/logout.php' class='btn-logout'>Logout</a>";
+            } else {
+                echo "SESSION loggedin: " . ($_SESSION['loggedin'] ? 'true' : 'false') . "<br>";
+
+                echo "Email fac: " . $email_fac . "<br>";
+                echo "<div class='alert alert-danger mt-4' role='alert'>
+                    <h4>You need to login to access this page.</h4>
+                    <p><a href='/temporales/index.html'>Login Here!</a></p>
+                </div>";
+            }
+        ?>
+    </div>
+</header>
     <div id="contenido">
         </div>
    
