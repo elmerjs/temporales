@@ -1362,7 +1362,7 @@ td[title]:hover::after {
     
         <div class="row g-3 p-3">  <!-- Agregamos espaciado entre columnas -->
             <div class="col-md-8">   
-                             <div class="content-main bg-unicauca-light p-4 rounded shadow-sm h-100 border-start border-4 border-primary">
+                             <div class="content-main bg-unicauca-light p-4 rounded shadow-sm h-100 border-start border-4">
    
                 <?php
                 $envio=0;

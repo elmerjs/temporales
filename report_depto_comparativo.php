@@ -24,6 +24,11 @@ $anio_semestre = isset($_POST['anio_semestre'])
     ? $_POST['anio_semestre'] 
     : (isset($_GET['anio_semestre']) ? $_GET['anio_semestre'] : $anio_semestre_default);
 
+// Capture departamento_id if it's sent
+$departamento_id_param = isset($_POST['departamento_id'])
+    ? $_POST['departamento_id']
+    : (isset($_GET['departamento_id']) ? $_GET['departamento_id'] : null);
+
 // Obtener el período anterior
 list($anio, $semestre) = explode('-', $anio_semestre);
 
@@ -63,10 +68,17 @@ while ($rowper = $resultadoper->fetch_assoc()) {
    
 }
 
-if ($tipo_usuario != '1') {
-        $where = " WHERE PK_FAC = '$pk_fac'";
+if ($tipo_usuario == '1') {
+    // No specific WHERE clause needed for tipo_usuario 1 (admin/full access)
+    $where = "";
+} elseif ($tipo_usuario == '2') {
+    // For tipo_usuario 2, filter by faculty
+    $where = " WHERE f.PK_FAC = '$pk_fac'";
+} elseif ($tipo_usuario == '3') {
+ 
+        // Fallback: if departamento_id wasn't passed, use the department linked to the user session
+        $where = " WHERE d.PK_DEPTO = '$depto_user'";
     }
-
 ?>
 
 <!DOCTYPE html>
@@ -602,31 +614,32 @@ echo '<button type="submit" class="btn-unicauca-secondary px-4">';
 echo '<i class="fas fa-copy mr-2"></i>Comparativo Espejo';
 echo '</button>';
 echo '</form>';
+if ($tipo_usuario != '3') {
+    // Botón Puntos y Costos
+    echo '<form action="report_depto_comparativo_costos.php" method="GET" class="mb-0">';
+    echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
+    echo '<button type="submit" class="btn-unicauca-primary px-4">';
+    echo '<i class="fas fa-calculator mr-2"></i>Puntos y Costos';
+    echo '</button>';
+    echo '</form>';
 
-// Botón Puntos y Costos
-echo '<form action="report_depto_comparativo_costos.php" method="GET" class="mb-0">';
-echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
-echo '<button type="submit" class="btn-unicauca-primary px-4">';
-echo '<i class="fas fa-calculator mr-2"></i>Puntos y Costos';
-echo '</button>';
-echo '</form>';
-// Nuevo Botón Comparativo Costos Espejo
-echo '<form action="report_depto_comparativo_costos_espejo.php" method="GET" class="mb-0">';
-echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
-echo '<button type="submit" class="btn-unicauca-info px-4">';
-echo '<i class="fas fa-exchange-alt mr-2"></i>Costos Espejo';
-echo '</button>';
-echo '</form>';
+    // Botón Comparativo Costos Espejo
+    echo '<form action="report_depto_comparativo_costos_espejo.php" method="GET" class="mb-0">';
+    echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
+    echo '<button type="submit" class="btn-unicauca-info px-4">';
+    echo '<i class="fas fa-exchange-alt mr-2"></i>Costos Espejo';
+    echo '</button>';
+    echo '</form>';
 
-// Botón Exportar Excel
-echo '<form action="excel_compartivo.php" method="POST" class="mb-0">';
-echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
-echo '<input type="hidden" name="anio_semestre_anterior" value="' . htmlspecialchars($anio_semestre_anterior) . '">';
-echo '<button type="submit" class="btn-unicauca-success px-4">';
-echo '<i class="fas fa-file-excel mr-2"></i>Exportar';
-echo '</button>';
-echo '</form>';
-
+    // Botón Exportar Excel
+    echo '<form action="excel_compartivo.php" method="POST" class="mb-0">';
+    echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
+    echo '<input type="hidden" name="anio_semestre_anterior" value="' . htmlspecialchars($anio_semestre_anterior) . '">';
+    echo '<button type="submit" class="btn-unicauca-success px-4">';
+    echo '<i class="fas fa-file-excel mr-2"></i>Exportar';
+    echo '</button>';
+    echo '</form>';
+}
 echo '</div>';
 echo '</div>';
     echo "<div class='table-container'>";

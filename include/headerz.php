@@ -537,36 +537,41 @@ nav ul li ul.submenu li.active a::after {
                 </li>
             <?php endif; ?>
 
-            <?php if ($tipo_usuario == 1 || $tipo_usuario == 2): ?>
-                <li class="menu-item <?= ($active_menu_item == 'comparativo') ? 'active' : '' ?>">
-                    <a href="#" title="comparativo profesores periodo actual vs anterior">
-                        Comparativo <span class="new-badge">New!</span>
-                    </a>
-                    <ul class="submenu">
-                        <?php if ($tipo_usuario == 1): // Mostrar todos los periodos para tipo 1 ?>
-                            <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
-                                <a href="#" class="report-linkb" data-facultad-id="<?php //echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>">
-                                    <?php echo $previousPeriod; ?>
-                                </a>
-                            </li>
-                            <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $periodo_work) ? 'active' : '' ?>">
-                                <a href="#" class="report-linkb" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>">
-                                    <?php echo $periodo_work; ?>
-                                </a>
-                            </li>
-                        <?php endif; ?>
-                        <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
-                            <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
-                                <a href="#" class="report-linkb" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
-                                    <?php echo $nextPeriod; ?>
-                                </a>
-                            </li>
-                        <?php endif; ?>
-                    </ul>
-                </li>
-            <?php endif; ?>
-
-            <li class="submenu-container <?= ($active_menu_item == 'novedades') ? 'active' : '' ?>" style="display: none;">
+            <li class="menu-item <?= ($active_menu_item == 'comparativo') ? 'active' : '' ?>">
+    <a href="#" title="comparativo profesores periodo actual vs anterior">
+        Comparativo <span class="new-badge">New!</span>
+    </a>
+    <ul class="submenu">
+        <?php if ($tipo_usuario == 1): // Mostrar todos los periodos para tipo 1 ?>
+            <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                <a href="#" class="report-linkb"
+                   data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                   data-anio-semestre="<?php echo $previousPeriod; ?>"
+                   data-departamento-id="<?php echo $departamento['PK_DEPTO']; // Add this line ?>">
+                    <?php echo $previousPeriod; ?>
+                </a>
+            </li>
+            <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                <a href="#" class="report-linkb"
+                   data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                   data-anio-semestre="<?php echo $periodo_work; ?>"
+                   data-departamento-id="<?php echo $departamento['PK_DEPTO']; // Add this line ?>">
+                    <?php echo $periodo_work; ?>
+                </a>
+            </li>
+        <?php endif; ?>
+        <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
+            <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                <a href="#" class="report-linkb"
+                   data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                   data-anio-semestre="<?php echo $nextPeriod; ?>"
+                   data-departamento-id="<?php echo $departamento['PK_DEPTO']; // Add this line ?>">
+                    <?php echo $nextPeriod; ?>
+                </a>
+            </li>
+        <?php endif; ?>
+    </ul>
+</li>             <li class="submenu-container <?= ($active_menu_item == 'novedades') ? 'active' : '' ?>" style="display: none;">
                 <a href="#" title="Novedades que se presentan para los profesores temporales vinculados en el periodo actual">
                     Novedades
                 </a>
@@ -862,32 +867,41 @@ document.querySelectorAll('.novedades-periodo').forEach(function(link) {
                 form.submit();
             });
         });
-          document.querySelectorAll('.report-linkb').forEach(function(link) {
-            link.addEventListener('click', function(event) {
-                event.preventDefault();
-                var facultadId = this.dataset.facultadId;
-                var anioSemestre = this.dataset.anioSemestre;
+        document.querySelectorAll('.report-linkb').forEach(function(link) {
+        link.addEventListener('click', function(event) {
+            event.preventDefault();
+            var facultadId = this.dataset.facultadId;
+            var anioSemestre = this.dataset.anioSemestre;
+            var departamentoId = this.dataset.departamentoId; // Get the new data attribute
 
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '../../temporales/report_depto_comparativo.php';
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '../../temporales/report_depto_comparativo.php';
 
-                var inputFacultad = document.createElement('input');
-                inputFacultad.type = 'hidden';
-                inputFacultad.name = 'facultad_id';
-                inputFacultad.value = facultadId;
-                form.appendChild(inputFacultad);
+            var inputFacultad = document.createElement('input');
+            inputFacultad.type = 'hidden';
+            inputFacultad.name = 'facultad_id';
+            inputFacultad.value = facultadId;
+            form.appendChild(inputFacultad);
 
-                var inputAnioSemestre = document.createElement('input');
-                inputAnioSemestre.type = 'hidden';
-                inputAnioSemestre.name = 'anio_semestre';
-                inputAnioSemestre.value = anioSemestre;
-                form.appendChild(inputAnioSemestre);
+            var inputAnioSemestre = document.createElement('input');
+            inputAnioSemestre.type = 'hidden';
+            inputAnioSemestre.name = 'anio_semestre';
+            inputAnioSemestre.value = anioSemestre;
+            form.appendChild(inputAnioSemestre);
 
-                document.body.appendChild(form);
-                form.submit();
-            });
+            // Create and append the hidden input for departamento_id
+            var inputDepartamento = document.createElement('input');
+            inputDepartamento.type = 'hidden';
+            inputDepartamento.name = 'departamento_id';
+            inputDepartamento.value = departamentoId;
+            form.appendChild(inputDepartamento);
+
+            document.body.appendChild(form);
+            form.submit();
         });
+    });
+        
         
               document.querySelectorAll('.report-linkc').forEach(function(link) {
             link.addEventListener('click', function(event) {

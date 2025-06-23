@@ -309,7 +309,7 @@ $semanas_ocasant = ceil($dias_ocasant / 7);
     
 </head>
 <body>
-   <?php if ($tipo_usuario != 3): ?>
+   <?php if ($tipo_usuario != 4): ?>
    <?php
 if (isset($_POST['envia'])) {
     if ($_POST['envia'] === 'rcc') {
