@@ -95,6 +95,8 @@ if ($tipo_usuario == '1') {
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+
  <style>
 /* ===== COLORS ===== */
 :root {
@@ -469,6 +471,41 @@ select:disabled {
 .btn-unicauca-info:hover {
   background-color: #138496;
 }
+.btn-activo {
+    border: 2px solid var(--unicauca-azul); /* Uses the main Unicauca blue for a strong border */
+    background-color: var(--unicauca-azul-oscuro); /* Dark Unicauca blue background */
+    font-weight: bold;
+    color: white; /* White text for contrast */
+    font-family: 'Open Sans', sans-serif; /* Set font to Open Sans */
+    padding: 0.75rem 1.5rem; /* Consistent padding for original height */
+    border-radius: 0.5rem; /* Slightly rounded corners for a modern look */
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth transitions for interaction */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow for depth */
+}
+
+.btn-activo:hover {
+    background-color: var(--unicauca-primary); /* Slightly lighter dark blue on hover for depth */
+    color: white; /* Text remains white on hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Shadow expands slightly on hover */
+    cursor: pointer; /* Indicates it's clickable */
+}
+
+.btn-activo:active {
+    background-color: var(--unicauca-azul-oscuro); /* Even darker blue when pressed */
+    border-color: var(--unicauca-azul); /* Border stays the main blue */
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); /* Inset shadow for a "pressed" effect */
+    transform: translateY(1px); /* Slight downward shift when pressed */
+}
+
+.btn-activo:disabled {
+    border-color: var(--unicauca-gray-medium); /* Lighter, subtle border for disabled state */
+    background-color: var(--unicauca-light-gray-subtle); /* Very light gray background */
+    color: var(--unicauca-gray-dark); /* Muted text color */
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: none;
+}
+
 </style>
     <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
@@ -599,10 +636,19 @@ echo '<h3 class="mb-0 mr-3 text-unicauca-primary">Comparativo ' . htmlspecialcha
 echo '</div>';
 echo '<div class="d-flex align-items-center gap-3">';
 
-// Botón Comparativo Tradicional (Nuevo)
+// Obtener el nombre del script actual
+$current_page = basename($_SERVER['PHP_SELF']);
+
+// Función para determinar si está activo
+function botonActivo($archivo) {
+    global $current_page;
+    return $current_page === $archivo ? ' btn-activo' : '';
+}
+
+// Botón Comparativo Tradicional
 echo '<form action="report_depto_comparativo.php" method="GET" class="mb-0">';
 echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
-echo '<button type="submit" class="btn-unicauca-light px-4">';
+echo '<button type="submit" class="btn-unicauca-light px-4' . botonActivo('report_depto_comparativo.php') . '">';
 echo '<i class="fas fa-file-alt mr-2"></i>Comparativo Tradicional';
 echo '</button>';
 echo '</form>';
@@ -610,15 +656,16 @@ echo '</form>';
 // Botón Comparativo Espejo
 echo '<form action="comparativo_espejo.php" method="GET" class="mb-0">';
 echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
-echo '<button type="submit" class="btn-unicauca-secondary px-4">';
+echo '<button type="submit" class="btn-unicauca-light px-4' . botonActivo('comparativo_espejo.php') . '">';
 echo '<i class="fas fa-copy mr-2"></i>Comparativo Espejo';
 echo '</button>';
 echo '</form>';
+
 if ($tipo_usuario != '3') {
     // Botón Puntos y Costos
     echo '<form action="report_depto_comparativo_costos.php" method="GET" class="mb-0">';
     echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
-    echo '<button type="submit" class="btn-unicauca-primary px-4">';
+    echo '<button type="submit" class="btn-unicauca-light px-4' . botonActivo('report_depto_comparativo_costos.php') . '">';
     echo '<i class="fas fa-calculator mr-2"></i>Puntos y Costos';
     echo '</button>';
     echo '</form>';
@@ -626,12 +673,12 @@ if ($tipo_usuario != '3') {
     // Botón Comparativo Costos Espejo
     echo '<form action="report_depto_comparativo_costos_espejo.php" method="GET" class="mb-0">';
     echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
-    echo '<button type="submit" class="btn-unicauca-info px-4">';
+    echo '<button type="submit" class="btn-unicauca-light px-4' . botonActivo('report_depto_comparativo_costos_espejo.php') . '">';
     echo '<i class="fas fa-exchange-alt mr-2"></i>Costos Espejo';
     echo '</button>';
     echo '</form>';
 
-    // Botón Exportar Excel
+    // Botón Exportar Excel (NO se marca como activo)
     echo '<form action="excel_compartivo.php" method="POST" class="mb-0">';
     echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
     echo '<input type="hidden" name="anio_semestre_anterior" value="' . htmlspecialchars($anio_semestre_anterior) . '">';
@@ -640,7 +687,9 @@ if ($tipo_usuario != '3') {
     echo '</button>';
     echo '</form>';
 }
+
 echo '</div>';
+
 echo '</div>';
     echo "<div class='table-container'>";
     
