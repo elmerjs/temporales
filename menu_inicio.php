@@ -391,6 +391,8 @@ if ($result_destiempo->num_rows > 0) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
 <style>
        
     /* --- */
@@ -427,7 +429,10 @@ if ($result_destiempo->num_rows > 0) {
     --unicauca-light-purple: #EFE6FA; 
 }
     
-
+  /* Apply Open Sans to all text elements */
+        body, h1, h2, h3, h4, h5, h6, p, span, div, a, li, td, th {
+            font-family: 'Open Sans', sans-serif !important;
+        }
     /* Estilos generales de tarjeta */
     .card {
         border-radius: 0.75rem;

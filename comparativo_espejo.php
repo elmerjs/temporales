@@ -434,7 +434,12 @@ select:disabled {
   display: inline-flex;
   align-items: center;
 }
+.text-unicauca-primary {
+  color: var(--unicauca-azul);
+  font-weight: 600;
+        font-family: 'Open Sans', sans-serif; /* Set font to Open Sans */
 
+}
 .btn-unicauca-light:hover {
   background-color: #e2e6ea;
   border-color: #d1d7dc;

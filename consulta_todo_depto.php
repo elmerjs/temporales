@@ -41,7 +41,8 @@ $facultad_id = isset($_POST['facultad_id']) ? $_POST['facultad_id'] : null;
 
 <!-- Cargar solo Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+            <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -60,7 +61,6 @@ $facultad_id = isset($_POST['facultad_id']) ? $_POST['facultad_id'] : null;
     }
 
     body {
-        font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif; /* Prioriza fuentes limpias y comunes */
         margin: 15px auto;
         padding: 15px;
         max-width: 95%;
@@ -390,7 +390,7 @@ th {
         
         body {
             background-color: #f8fafc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Open Sans', sans-serif !important;
             padding: 20px;
         }
         :root {
@@ -699,7 +699,10 @@ th {
     .summary-data-list li:not(:last-child)::after {
         content: none; /* Oculta el separador '|' cuando los elementos están apilados */
     }
-}    
+}     /* Apply Open Sans to all text elements */
+        body, h1, h2, h3, h4, h5, h6, p, span, div, a, li, td, th {
+            font-family: 'Open Sans', sans-serif !important;
+        }
     </style>
     
     <script>
@@ -1417,8 +1420,7 @@ $resultb = $conn->query($sqlb);
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    margin: 15px 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Open Sans', sans-serif !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     overflow: hidden;
@@ -1729,7 +1731,7 @@ th[title]:hover::after {
     border-bottom: 1px solid #e0e6ed;
     color: #343A40;  /* Azul institucional medio */
     font-weight: normal;  /* Sin negrita */
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Open Sans', sans-serif !important;
     font-size: 0.95rem;
 }
 </style>

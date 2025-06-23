@@ -100,7 +100,8 @@ $semanas_ocasant = ceil($dias_ocasant / 7);
 <!-- jQuery y Bootstrap JS -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    
+         <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+   
     
 <!-- Cargar Bootstrap 5 y Font Awesome -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
@@ -298,7 +299,11 @@ $semanas_ocasant = ceil($dias_ocasant / 7);
         
         #textoObservacion {
     white-space: pre-line;
-}
+} /* Apply Open Sans to all text elements */
+        body, h1, h2, h3, h4, h5, h6, p, span, div, a, li, td, th {
+            font-family: 'Open Sans', sans-serif !important;
+        }
+    /* Estilos generales de tarjeta */
             
     </style>
     <script>
@@ -427,6 +432,7 @@ function obtenerTRDDepartamento($departamento_id) {
             color: rgba(255, 255, 255, 0.7) !important; /* Gris claro para el slash y nombre facultad */
         }
     </style>
+<div class="card card-plazo mb-4">
 
  <div class="navigation-header">
         <div>
@@ -1035,7 +1041,7 @@ while ($rowCedula = $resultCedulasAnteriores->fetch_assoc()) {
 
     echo "<div class='box-gray'>";
     echo "<div class='estado-container'>
-        <h5 class='mb-0'>Vinculación: " . $tipo_docente . " (Periodo anterior) - " . 
+        <h5 class='mb-0'>Vinculación: " . $tipo_docente . " - " . 
         (($tipo_docente === "Ocasional") ? $semanas_ocasant : $semanas_catant) . " semanas" . 
         "</h5>
       </div>";
@@ -1424,7 +1430,7 @@ document.querySelectorAll('.delete-form').forEach(function(form) {
   });
 });
 </script>
-    
+    </div>
 </body>
     
 </html>

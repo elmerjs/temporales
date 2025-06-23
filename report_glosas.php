@@ -34,7 +34,8 @@ $anio_semestre = isset($_POST['anio_semestre']) ? $_POST['anio_semestre'] : (iss
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
-    
+            <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --unicauca-azul: #001282;
@@ -151,6 +152,12 @@ $anio_semestre = isset($_POST['anio_semestre']) ? $_POST['anio_semestre'] : (iss
     font-weight: normal;
     font-style: italic;
 }
+            
+  /* Apply Open Sans to all text elements */
+        body, h1, h2, h3, h4, h5, h6, p, span, div, a, li, td, th {
+            font-family: 'Open Sans', sans-serif !important;
+        }
+    /* Est
     </style>
 </head>
     

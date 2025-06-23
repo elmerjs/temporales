@@ -435,8 +435,10 @@ select:disabled {
 }
 
 .text-unicauca-primary {
-  color: var(--unicauca-primary);
+  color: var(--unicauca-azul);
   font-weight: 600;
+        font-family: 'Open Sans', sans-serif; /* Set font to Open Sans */
+
 }
      .btn-unicauca-light {
   background-color: #f8f9fa;
