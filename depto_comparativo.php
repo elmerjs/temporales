@@ -1,4 +1,6 @@
 <?php
+echo "<div id='seccionTablas'></div>";
+
 require('include/headerz.php');
 require 'funciones.php';
 // Conexión a la base de datos (ajusta los parámetros según tu configuración)
@@ -112,7 +114,6 @@ $semanas_ocasant = ceil($dias_ocasant / 7);
 
 <!-- Cargar solo Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     
     <style>
       
@@ -406,7 +407,7 @@ function obtenerTRDDepartamento($departamento_id) {
         }
 
         .navigation-header .btn-back {
-            background-color: #e74c3c; /* Azul más oscuro para el botón */
+            background-color: #FDB12D; /* Azul más oscuro para el botón */
             color: var(--unicauca-blanco);
             border: 1px solid var(--unicauca-azul-oscuro);
             padding: 8px 15px; /* Ajusta el padding del botón */
@@ -432,13 +433,12 @@ function obtenerTRDDepartamento($departamento_id) {
             color: rgba(255, 255, 255, 0.7) !important; /* Gris claro para el slash y nombre facultad */
         }
     </style>
-<div class="card card-plazo mb-4">
-
- <div class="navigation-header">
-        <div>
+<div class="card card-plazo mb-4" >
+    <div class="navigation-header">
+        <div >
             <a href="<?= $archivo_regreso ?>?anio_semestre=<?= urlencode($anio_semestre) ?>"
-               class="btn-back"
-               title="Regresar a 'Gestión facultad'">
+                class="btn-back"
+                title="Regresar a 'Gestión facultad'">
                 <i class="fas fa-arrow-left me-2"></i> Regresar
             </a>
         </div>
@@ -451,12 +451,19 @@ function obtenerTRDDepartamento($departamento_id) {
                 <?= mb_strimwidth(obtenerNombreDepartamento($_POST['departamento_id']), 0, 65, '...') ?>
             </h2>
         </div>
-        <div></div> </div>
+        <div>
+           <a href="#seccionGraficos"
+   class="btn btn-sm d-flex align-items-center gap-1"
+   style="background-color: #696FC7; border-color: #696FC7; color: white;"
+   title="Ir a la sección de gráficos">
+    <i class="fas fa-chart-bar"></i> Dashboard
+</a>
+            </div>
+    </div>
 
-    <div class="container">
-        
+    <div class="container" id="contentToToggle">
         <div class="box">
-<h4 class=""> <strong>
+            <h4 class=""> <strong>
     <?php echo 'Periodo en revisión: ' . htmlspecialchars($_POST['anio_semestre']) . '.'; ?></strong>
 </h4>       
             
@@ -510,7 +517,11 @@ $total_consolidado = 0;
 $contadorVerdes = 0;
 $contadorVerdesOc = 0; // For 'Ocasional' new professors
 $contadorVerdesCa = 0; // For 'Catedra' new professors
-
+// Nuevas variables para almacenar el total de profesores por tipo
+$totalProfesoresOcasional = 0;
+$totalProfesoresCatedra = 0;
+            $totalProyectadoOcasional = 0;
+$totalProyectadoCatedra = 0;
 // --- LOOP THROUGH EACH DOCENTE TYPE ---
 while ($rowtipo = $resultadotipo->fetch_assoc()) {
     $tipo_docente = $rowtipo['tipo_d'];
@@ -596,7 +607,12 @@ while ($rowtipo = $resultadotipo->fetch_assoc()) {
     $sqlCount = "SELECT COUNT(*) as count FROM solicitudes WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
     $resultCount = $conn->query($sqlCount);
     $count = $resultCount->fetch_assoc()['count'];
-
+ // Acumular el total de profesores para cada tipo
+    if ($tipo_docente == 'Ocasional') {
+        $totalProfesoresOcasional += $count;
+    } elseif ($tipo_docente == 'Catedra') {
+        $totalProfesoresCatedra += $count;
+    }
     // --- TABLE STRUCTURE AND HEADERS ---
     if ($result && $result->num_rows > 0) { // Ensure query was successful and has rows
         echo "<table border='1'>
@@ -921,6 +937,12 @@ echo "<td colspan='".($tipo_usuario == 1 ? ($tipo_docente == "Ocasional" || $tip
 echo "<td>$".number_format($total_proyect/1000000, 2)." M</td>";
 echo "</tr>";
     echo "</table>";
+ // NUEVO: Acumular el total proyectado por tipo de nómina
+    if ($tipo_docente == 'Ocasional') {
+        $totalProyectadoOcasional += $total_proyect;
+    } elseif ($tipo_docente == 'Catedra') {
+        $totalProyectadoCatedra += $total_proyect;
+    }
 
 }
  else {
@@ -993,7 +1015,12 @@ $resultadotipo->data_seek(0); // Reinicia el puntero del resultado para volver a
     $contadorRojos = 0; // ▶ Inicializar contador de eliminados
  $contadorRojosOc= 0;
         $contadorRojosCa= 0;
-            
+// Nuevas variables para almacenar el total de profesores por tipo en el PERIODO ANTERIOR
+$totalProfesoresOcasionalAnterior = 0;
+$totalProfesoresCatedraAnterior = 0;
+  // NUEVO: Variables para almacenar el total de proyección por tipo de nómina (Periodo Anterior)
+$totalProyectadoOcasionalAnterior = 0;
+$totalProyectadoCatedraAnterior = 0;          
      $cedulasGlobalesPeriodoActual = [];
 $sqlCedulasGlobalesActuales = "SELECT cedula FROM solicitudes  
                       WHERE facultad_id = '$facultad_id' 
@@ -1038,7 +1065,15 @@ while ($rowCedula = $resultCedulasAnteriores->fetch_assoc()) {
             ORDER BY solicitudes.nombre ASC";
 
     $result = $conn->query($sql);
-
+ // Si hay resultados para este tipo de docente en el periodo anterior, sumar al total
+    if ($result) {
+        $countAnterior = $result->num_rows; // Obtiene el número de filas directamente del resultado
+        if ($tipo_docente == 'Ocasional') {
+            $totalProfesoresOcasionalAnterior += $countAnterior;
+        } elseif ($tipo_docente == 'Catedra') {
+            $totalProfesoresCatedraAnterior += $countAnterior;
+        }
+    }
     echo "<div class='box-gray'>";
     echo "<div class='estado-container'>
         <h5 class='mb-0'>Vinculación: " . $tipo_docente . " - " . 
@@ -1297,7 +1332,12 @@ echo "<td colspan='".($tipo_usuario == 1 ? ($tipo_docente == "Ocasional" || $tip
 echo "<td>$".number_format($total_proyectant/1000000, 2)." M</td>";
 echo "</tr>";
         echo "</table>";
-        
+        // NUEVO: Acumular el total proyectado por tipo de nómina para el periodo anterior
+if ($tipo_docente == 'Ocasional') {
+    $totalProyectadoOcasionalAnterior += $total_proyectant;
+} elseif ($tipo_docente == 'Catedra') {
+    $totalProyectadoCatedraAnterior += $total_proyectant;
+}
 
     } else {
         echo "<p style='text-align: center;'>No se encontraron resultados para el periodo anterior.</p>";
@@ -1431,9 +1471,7 @@ document.querySelectorAll('.delete-form').forEach(function(form) {
 });
 </script>
     </div>
-</body>
-    
-</html>
+
 <?php       // Función para obtener el cierreo no de departamento
     
 echo "<div style='margin-bottom: 10px; font-size: 0.9em;'>
@@ -1465,7 +1503,7 @@ if ($porcentaje > 0) {
 
 // Mostrar el indicador (versión compacta en una sola línea)
 echo <<<HTML
-<div class="text-end mb-3">
+<div class="text-end mb-3"  id="seccionGraficos">
     <span class="text-muted me-2">Variación en proyecto presupuestal:</span>
     <span class="badge bg-{$color}-subtle text-{$color}">
         <i class="{$icono} me-1"></i>
@@ -1476,8 +1514,473 @@ HTML;
 echo "<div>
 
 </div>  ";
+?>
+ <div>
+            <div class="dashboard-profesores">
+    <div class="card-container">
+        <div class="card">
+            <div class="card-percentage <?= ($totalProfesoresOcasional >= $totalProfesoresOcasionalAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                <?php
+                $diff = $totalProfesoresOcasional - $totalProfesoresOcasionalAnterior;
+                $percentage = ($totalProfesoresOcasionalAnterior != 0) ? ($diff / $totalProfesoresOcasionalAnterior) * 100 : 0;
+                echo ($percentage >= 0 ? '+' : '') . number_format($percentage, 1) . '%';
+                ?>
+            </div>
+            <h3 class="card-title">Profesores Ocasionales</h3>
+            <div class="card-main-value">
+                <?= $totalProfesoresOcasional ?>
+                <span class="card-variation <?= ($totalProfesoresOcasional >= $totalProfesoresOcasionalAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                    <?php 
+                    echo ($diff >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diff;
+                    ?>
+                </span>
+            </div>
+            <div class="card-subtext">
+                <span class="new-count positive-alert">+<?= $contadorVerdesOc ?> nuevos</span>
+                <span class="removed-count negative-favorable">-<?= $contadorRojosOc ?> no continúan</span>
+                <span class="previous-count">Anterior: <?= $totalProfesoresOcasionalAnterior ?></span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-percentage <?= ($totalProfesoresCatedra >= $totalProfesoresCatedraAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                <?php
+                $diff = $totalProfesoresCatedra - $totalProfesoresCatedraAnterior;
+                $percentage = ($totalProfesoresCatedraAnterior != 0) ? ($diff / $totalProfesoresCatedraAnterior) * 100 : 0;
+                echo ($percentage >= 0 ? '+' : '') . number_format($percentage, 1) . '%';
+                ?>
+            </div>
+            <h3 class="card-title">Profesores Cátedra</h3>
+            <div class="card-main-value">
+                <?= $totalProfesoresCatedra ?>
+                <span class="card-variation <?= ($totalProfesoresCatedra >= $totalProfesoresCatedraAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                    <?php 
+                    echo ($diff >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diff;
+                    ?>
+                </span>
+            </div>
+            <div class="card-subtext">
+                <span class="new-count positive-alert">+<?= $contadorVerdesCa ?> nuevos</span>
+                <span class="removed-count negative-favorable">-<?= $contadorRojosCa ?> no continúan</span>
+                <span class="previous-count">Anterior: <?= $totalProfesoresCatedraAnterior ?></span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-container">
+        <div class="card">
+            <div class="card-percentage <?= ($totalProyectadoOcasional >= $totalProyectadoOcasionalAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                <?php
+                $diff = $totalProyectadoOcasional - $totalProyectadoOcasionalAnterior;
+                $percentage = ($totalProyectadoOcasionalAnterior != 0) ? ($diff / $totalProyectadoOcasionalAnterior) * 100 : 0;
+                echo ($percentage >= 0 ? '+' : '') . number_format($percentage, 1) . '%';
+                ?>
+            </div>
+            <h3 class="card-title">Proyección Ocasional</h3>
+            <div class="card-main-value">
+                $<?= number_format($totalProyectadoOcasional, 0, ',', '.') ?>
+                <span class="card-variation <?= ($totalProyectadoOcasional >= $totalProyectadoOcasionalAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                    <?php 
+                    echo ($diff >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diff, 0, ',', '.');
+                    ?>
+                </span>
+            </div>
+            <div class="card-subtext">
+                <span class="previous-count">Anterior: $<?= number_format($totalProyectadoOcasionalAnterior, 0, ',', '.') ?></span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-percentage <?= ($totalProyectadoCatedra >= $totalProyectadoCatedraAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                <?php
+                $diff = $totalProyectadoCatedra - $totalProyectadoCatedraAnterior;
+                $percentage = ($totalProyectadoCatedraAnterior != 0) ? ($diff / $totalProyectadoCatedraAnterior) * 100 : 0;
+                echo ($percentage >= 0 ? '+' : '') . number_format($percentage, 1) . '%';
+                ?>
+            </div>
+            <h3 class="card-title">Proyección Cátedra</h3>
+            <div class="card-main-value">
+                $<?= number_format($totalProyectadoCatedra, 0, ',', '.') ?>
+                <span class="card-variation <?= ($totalProyectadoCatedra >= $totalProyectadoCatedraAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                    <?php 
+                    echo ($diff >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diff, 0, ',', '.');
+                    ?>
+                </span>
+            </div>
+            <div class="card-subtext">
+                <span class="previous-count">Anterior: **$**<?= number_format($totalProyectadoCatedraAnterior, 0, ',', '.') ?></span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="graficos-container">
+        <div class="grafico-card">
+            <canvas id="profesorCantidadChart"></canvas>
+        </div>
+        <div class="grafico-card">
+            <canvas id="valoresProyectadosChart"></canvas>
+        </div>
+    </div>
+                 <div class="text-center mt-5 mb-4"> <a href="#seccionTablas"
+   class="btn btn-sm d-inline-flex align-items-center gap-1"
+   style="background-color: #696FC7; border-color: #696FC7; color: white;"
+   title="Volver a las tablas comparativas">
+   <i class="fas fa-arrow-up"></i> Volver a Tablas
+</a>
+            </div>
+</div>
+
+<style>
+.dashboard-profesores {
+    font-family: 'Open Sans', sans-serif !important;
+    max-width: 100%;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+/* Contenedor de tarjetas */
+.card-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+/* Estilo base de tarjeta */
+.card {
+    flex: 1;
+    min-width: 250px;
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    position: relative; /* Necesario para posicionar el porcentaje */
+}
+
+/* Porcentaje en la esquina superior derecha */
+.card-percentage {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 5px;
+    z-index: 1; /* Asegura que esté por encima de otros elementos */
+}
+
+.card-title {
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    padding-right: 60px; /* Deja espacio para el porcentaje */
+}
+
+/* Valor principal */
+.card-main-value {
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+/* Variación (al lado del valor principal) */
+.card-variation {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* --- CLASES DE COLOR --- */
+.positive-alert {
+    background-color: rgba(220, 53, 69, 0.15); /* Rojo claro */
+    color: #dc3545; /* Rojo oscuro */
+}
+
+.negative-favorable {
+    background-color: rgba(40, 167, 69, 0.15); /* Verde claro */
+    color: #28a745; /* Verde oscuro */
+}
+/* --- FIN CLASES DE COLOR --- */
 
 
+/* Texto secundario */
+.card-subtext {
+    font-size: 0.9rem;
+    color: #6c757d;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Ajuste de colores para "nuevos" y "no continúan" según la nueva lógica */
+.new-count.positive-alert {
+    color: #dc3545; /* Rojo, ya que son "nuevos" (incremento) */
+    font-weight: 600;
+}
+
+.removed-count.negative-favorable {
+    color: #28a745; /* Verde, ya que son "no continúan" (disminución) */
+    font-weight: 600;
+}
+
+.previous-count {
+    opacity: 0.8;
+}
+
+/* Contenedor de gráficos */
+.graficos-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.grafico-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.grafico-card canvas {
+    width: 100% !important;
+    height: 300px !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .card {
+        min-width: 100%;
+    }
+    
+    .graficos-container {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuración común para ambos gráficos
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) label += ': ';
+                        if (context.parsed.y !== null) {
+                            if (context.chart.data.labels[context.dataIndex].includes('Actual')) {
+                                label += context.parsed.y.toLocaleString('es-CO');
+                            } else {
+                                label += context.parsed.y.toLocaleString('es-CO');
+                            }
+                        }
+                        return label;
+                    }
+                }
+            },
+            datalabels: {
+                display: true,
+                color: '#333',
+                anchor: 'end',
+                align: 'top',
+                formatter: function(value) {
+                    return value.toLocaleString('es-CO');
+                }
+            }
+        },
+        layout: {
+            padding: {
+                top: 20,
+                right: 20,
+                bottom: 20,
+                left: 20
+            }
+        }
+    };
+
+    // Gráfico de Cantidad de Profesores
+    new Chart(
+        document.getElementById('profesorCantidadChart').getContext('2d'),
+        {
+            type: 'bar',
+            data: {
+                labels: ['Ocasional Actual', 'Ocasional Anterior', 'Cátedra Actual', 'Cátedra Anterior'],
+                datasets: [{
+                    label: 'Cantidad de Profesores',
+                    data: [
+                        <?= $totalProfesoresOcasional ?>,
+                        <?= $totalProfesoresOcasionalAnterior ?>,
+                        <?= $totalProfesoresCatedra ?>,
+                        <?= $totalProfesoresCatedraAnterior ?>
+                    ],
+                    backgroundColor: [
+                        'rgba(220, 53, 69, 0.7)',    // Rojo actual
+                        'rgba(220, 53, 69, 0.3)',    // Rojo claro anterior
+                        'rgba(40, 167, 69, 0.7)',    // Verde actual
+                        'rgba(40, 167, 69, 0.3)'     // Verde claro anterior
+                    ],
+                    borderColor: [
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(40, 167, 69, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: {
+                        display: true,
+                        text: 'Comparación de Cantidad de Profesores',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 20
+                        }
+                    },
+                    datalabels: {
+                        ...commonOptions.plugins.datalabels,
+                        formatter: function(value) {
+                            return value.toLocaleString('es-CO');
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0,
+                            callback: function(value) {
+                                return value.toLocaleString('es-CO');
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        }
+    );
+
+    // Gráfico de Valores Proyectados
+    new Chart(
+        document.getElementById('valoresProyectadosChart').getContext('2d'),
+        {
+            type: 'bar',
+            data: {
+                labels: ['Ocasional Actual', 'Ocasional Anterior', 'Cátedra Actual', 'Cátedra Anterior'],
+                datasets: [{
+                    label: 'Valor Proyectado',
+                    data: [
+                        <?= $totalProyectadoOcasional / 1000000 ?>,
+                        <?= $totalProyectadoOcasionalAnterior / 1000000 ?>,
+                        <?= $totalProyectadoCatedra / 1000000 ?>,
+                        <?= $totalProyectadoCatedraAnterior / 1000000 ?>
+                    ],
+                    backgroundColor: [
+                        'rgba(220, 53, 69, 0.7)',    // Rojo actual
+                        'rgba(220, 53, 69, 0.3)',    // Rojo claro anterior
+                        'rgba(40, 167, 69, 0.7)',    // Verde actual
+                        'rgba(40, 167, 69, 0.3)'     // Verde claro anterior
+                    ],
+                    borderColor: [
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(40, 167, 69, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: {
+                        display: true,
+                        text: 'Comparación de Valores Proyectados (en millones)',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 20
+                        }
+                    },
+                    datalabels: {
+                        ...commonOptions.plugins.datalabels,
+                        formatter: function(value) {
+                            return '$' + value.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'M';
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.parsed.y.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' millones';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString('es-CO', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'M';
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        }
+    );
+});
+</script>
+
+<!-- Añade esta librería para las etiquetas de datos -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    </div>
+    
+    </body>
+    
+</html>
+<?php
 function obtenerCierreDeptoCatedra($departamento_id,$aniose) {
         $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
         $sql = "SELECT depto_periodo.dp_estado_catedra FROM depto_periodo WHERE fk_depto_dp = '$departamento_id' and periodo ='$aniose'";
