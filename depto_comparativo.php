@@ -695,7 +695,9 @@ function obtenerTRDDepartamento($departamento_id) {
                 $num_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['acta_periodo']) : "";
                 $fecha_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['fecha_acta']) : "";
                 $total_proyect = 0; // Initialize variable for accumulating total
-            
+            $contadorCambioAOcasional = 0; // Contará los profesores que eran Cátedra y ahora son Ocasional
+                    $contadorCambioACatedra = 0;   // Contará los profesores que eran Ocasional y ahora son Cátedra
+
                 // --- LOOP TO DISPLAY EACH PROFESSOR'S ROW ---
                 while ($row = $result->fetch_assoc()) {
                     $cedula = $row['cedula'];
@@ -719,6 +721,8 @@ function obtenerTRDDepartamento($departamento_id) {
                         $claseFila = 'fondo-amarillo';
                         $claseTexto = 'cedula-nueva';
                         $tooltipText = 'Este profesor tuvo vinculación temporal diferente en el periodo anterior ('.$periodo_anterior.')';
+       
+
                     } elseif ($esNueva) {
                         $claseTexto = 'cedula-nueva';
                         $tooltipText = 'Profesor nuevo para este periodo, no registrado en el periodo anterior ('.$periodo_anterior.')';
@@ -1393,7 +1397,6 @@ document.querySelectorAll('.delete-form').forEach(function(form) {
   });
 });
 </script>
-    </div>
 
 <?php       // Función para obtener el cierreo no de departamento
     
@@ -1447,77 +1450,94 @@ echo "<div>
     / <?= mb_strimwidth(obtenerNombreFacultad($departamento_id), 0, 65, '...') ?>
 </h2>
 
+<div class="card-container">
+    <div class="card">
+        <?php
+        $diffOcasional = $totalProfesoresOcasional - $totalProfesoresOcasionalAnterior;
+        $percentageOcasional = ($totalProfesoresOcasionalAnterior != 0) ? ($diffOcasional / $totalProfesoresOcasionalAnterior) * 100 : 0;
+        $classOcasional = ($diffOcasional >= 0) ? 'positive-alert' : 'negative-favorable';
 
-        <div class="card-container">
-            <div class="card">
-                <?php
-                $diffOcasional = $totalProfesoresOcasional - $totalProfesoresOcasionalAnterior;
-                $percentageOcasional = ($totalProfesoresOcasionalAnterior != 0) ? ($diffOcasional / $totalProfesoresOcasionalAnterior) * 100 : 0;
-                $classOcasional = ($diffOcasional >= 0) ? 'positive-alert' : 'negative-favorable';
-                ?>
-                <div class="card-percentage <?= $classOcasional ?>">
-                    <?= ($percentageOcasional >= 0 ? '+' : '') . number_format($percentageOcasional, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Profesores Ocasionales (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    <?= $totalProfesoresOcasional ?>
-                    <span class="card-variation <?= $classOcasional ?>">
-                        <?= ($diffOcasional >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffOcasional ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="new-count positive-alert">+<?= $contadorVerdesOc ?> nuevos</span>
-                    <span class="removed-count negative-favorable">-<?= $contadorRojosOc ?> no continúan</span>
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresOcasionalAnterior ?></span>
-                </div>
-            </div>
-
-            <div class="card">
-                <?php
-                $diffCatedra = $totalProfesoresCatedra - $totalProfesoresCatedraAnterior;
-                $percentageCatedra = ($totalProfesoresCatedraAnterior != 0) ? ($diffCatedra / $totalProfesoresCatedraAnterior) * 100 : 0;
-                $classCatedra = ($diffCatedra >= 0) ? 'positive-alert' : 'negative-favorable';
-                ?>
-                <div class="card-percentage <?= $classCatedra ?>">
-                    <?= ($percentageCatedra >= 0 ? '+' : '') . number_format($percentageCatedra, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Profesores Cátedra (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    <?= $totalProfesoresCatedra ?>
-                    <span class="card-variation <?= $classCatedra ?>">
-                        <?= ($diffCatedra >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffCatedra ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="new-count positive-alert">+<?= $contadorVerdesCa ?> nuevos</span>
-                    <span class="removed-count negative-favorable">-<?= $contadorRojosCa ?> no continúan</span>
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresCatedraAnterior ?></span>
-                </div>
-            </div>
-
-            <div class="card total-card">
-                <?php
-                $totalProfesoresTotal = $totalProfesoresOcasional + $totalProfesoresCatedra;
-                $totalProfesoresTotalAnterior = $totalProfesoresOcasionalAnterior + $totalProfesoresCatedraAnterior;
-                $diffTotalProfesores = $totalProfesoresTotal - $totalProfesoresTotalAnterior;
-                $percentageTotalProfesores = ($totalProfesoresTotalAnterior != 0) ? ($diffTotalProfesores / $totalProfesoresTotalAnterior) * 100 : 0;
-                $classTotalProfesores = ($diffTotalProfesores >= 0) ? 'positive-alert' : 'negative-favorable';
-                ?>
-                <div class="card-percentage <?= $classTotalProfesores ?>">
-                    <?= ($percentageTotalProfesores >= 0 ? '+' : '') . number_format($percentageTotalProfesores, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Total Profesores (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    <?= $totalProfesoresTotal ?>
-                    <span class="card-variation <?= $classTotalProfesores ?>">
-                        <?= ($diffTotalProfesores >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffTotalProfesores ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresTotalAnterior ?></span>
-                </div>
-            </div>
+        // Calcula la discrepancia para Ocasional
+        // Esto representa la cantidad de profesores que entran/salen de Ocasional por CAMBIO DE VINCULACIÓN
+        // (es decir, no son "nuevos" del todo ni "removidos" del todo, sino que cambiaron de Cátedra a Ocasional o viceversa)
+        $discrepanciaOcasional = $diffOcasional - ($contadorVerdesOc - $contadorRojosOc);
+        ?>
+        <div class="card-percentage <?= $classOcasional ?>">
+            <?= ($percentageOcasional >= 0 ? '+' : '') . number_format($percentageOcasional, 1) . '%' ?>
         </div>
+        <h3 class="card-title">Profesores Ocasionales (<?= $anio_semestre ?>)</h3>
+        <div class="card-main-value">
+            <?= $totalProfesoresOcasional ?>
+            <span class="card-variation <?= $classOcasional ?>">
+                <?= ($diffOcasional >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffOcasional ?>
+            </span>
+        </div>
+        <div class="card-subtext">
+            <span class="new-count positive-alert">+<?= $contadorVerdesOc ?> nuevos</span>
+            <span class="removed-count negative-favorable">-<?= $contadorRojosOc ?> no continúan</span>
+            <?php if ($discrepanciaOcasional !== 0): // Solo muestra si hay una discrepancia real ?>
+                <span class="change-vinculacion">
+                    <?= ($discrepanciaOcasional > 0 ? '+' : '') . $discrepanciaOcasional ?> cambian vinculación
+                </span>
+            <?php endif; ?>
+            <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresOcasionalAnterior ?></span>
+        </div>
+    </div>
+
+    <div class="card">
+        <?php
+        $diffCatedra = $totalProfesoresCatedra - $totalProfesoresCatedraAnterior;
+        $percentageCatedra = ($totalProfesoresCatedraAnterior != 0) ? ($diffCatedra / $totalProfesoresCatedraAnterior) * 100 : 0;
+        $classCatedra = ($diffCatedra >= 0) ? 'positive-alert' : 'negative-favorable';
+
+        // Calcula la discrepancia para Cátedra
+        $discrepanciaCatedra = $diffCatedra - ($contadorVerdesCa - $contadorRojosCa);
+        ?>
+        <div class="card-percentage <?= $classCatedra ?>">
+            <?= ($percentageCatedra >= 0 ? '+' : '') . number_format($percentageCatedra, 1) . '%' ?>
+        </div>
+        <h3 class="card-title">Profesores Cátedra (<?= $anio_semestre ?>)</h3>
+        <div class="card-main-value">
+            <?= $totalProfesoresCatedra ?>
+            <span class="card-variation <?= $classCatedra ?>">
+                <?= ($diffCatedra >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffCatedra ?>
+            </span>
+        </div>
+        <div class="card-subtext">
+            <span class="new-count positive-alert">+<?= $contadorVerdesCa ?> nuevos</span>
+            <span class="removed-count negative-favorable">-<?= $contadorRojosCa ?> no continúan</span>
+            <?php if ($discrepanciaCatedra !== 0): // Solo muestra si hay una discrepancia real ?>
+                <span class="change-vinculacion">
+                    <?= ($discrepanciaCatedra > 0 ? '+' : '') . $discrepanciaCatedra ?> cambian vinculación
+                </span>
+            <?php endif; ?>
+            <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresCatedraAnterior ?></span>
+        </div>
+    </div>
+
+    <div class="card total-card">
+        <?php
+        $totalProfesoresTotal = $totalProfesoresOcasional + $totalProfesoresCatedra;
+        $totalProfesoresTotalAnterior = $totalProfesoresOcasionalAnterior + $totalProfesoresCatedraAnterior;
+        $diffTotalProfesores = $totalProfesoresTotal - $totalProfesoresTotalAnterior;
+        $percentageTotalProfesores = ($totalProfesoresTotalAnterior != 0) ? ($diffTotalProfesores / $totalProfesoresTotalAnterior) * 100 : 0;
+        $classTotalProfesores = ($diffTotalProfesores >= 0) ? 'positive-alert' : 'negative-favorable';
+        ?>
+        <div class="card-percentage <?= $classTotalProfesores ?>">
+            <?= ($percentageTotalProfesores >= 0 ? '+' : '') . number_format($percentageTotalProfesores, 1) . '%' ?>
+        </div>
+        <h3 class="card-title">Total Profesores (<?= $anio_semestre ?>)</h3>
+        <div class="card-main-value">
+            <?= $totalProfesoresTotal ?>
+            <span class="card-variation <?= $classTotalProfesores ?>">
+                <?= ($diffTotalProfesores >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffTotalProfesores ?>
+            </span>
+        </div>
+        <div class="card-subtext">
+            <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresTotalAnterior ?></span>
+        </div>
+    </div>
+</div>
 
         <div class="card-container">
             <div class="card">
@@ -1620,7 +1640,16 @@ echo "<div>
         --total-card-bg: rgba(105, 111, 199, 0.1); /* Fondo claro para tarjeta total */
         --total-card-border: rgba(105, 111, 199, 0.8); /* Borde para tarjeta total */
     }
-
+.change-vinculacion {
+    color: #333; /* Color de texto oscuro para buen contraste */
+    background-color: #FFFACD; /* Un amarillo muy suave (Lemon Chiffon) */
+    padding: 2px 6px; /* Pequeño relleno para que se vea como una etiqueta */
+    border-radius: 4px; /* Esquinas ligeramente redondeadas */
+    font-weight: 600;
+    display: inline-block; /* Necesario para que el padding y el fondo funcionen bien */
+    margin-top: 4px; /* Un pequeño margen superior para separarlo si hay varias líneas */
+    font-size: 0.85em; /* Opcional: un poco más pequeño si ocupa mucho espacio */
+}
     .dashboard-profesores {
         font-family: 'Open Sans', sans-serif !important;
         max-width: 100%;
@@ -1789,6 +1818,37 @@ echo "<div>
             grid-template-columns: 1fr;
         }
     }
+    .card-subtext {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    position: relative;
+    min-height: 40px; /* Ajusta si necesitas más espacio */
+    padding-bottom: 20px; /* Da espacio para el texto flotante */
+}
+
+/* Estilo para posicionar el texto "Anterior" en la esquina inferior derecha */
+.previous-count {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #333;
+    background-color: #e2e6ea; /* Gris claro */
+    padding: 5px 10px;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    white-space: nowrap;
+    transition: background-color 0.3s ease;
+    cursor: default;
+}
+.previous-count:hover {
+    background-color: #d6d8db; /* Un poco más oscuro al pasar el mouse */
+}
+    
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
