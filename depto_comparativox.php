@@ -484,18 +484,16 @@ function obtenerTRDDepartamento($departamento_id) {
             </div>
     </div>
 
-   <!-- NUEVA ESTRUCTURA CON GRID PARA ALINEACIÓN -->
+    <!-- NUEVA ESTRUCTURA CON GRID PARA ALINEACIÓN -->
     <div class="grid-container" id="contentToToggle">
-        <!-- Encabezados en paralelo -->
-        <div class="grid-col">
-            <div class="grid-header">
-                <h4 class=""><strong>Periodo en revisión: <?php echo htmlspecialchars($_POST['anio_semestre']) . '.'; ?></strong></h4>
-            </div>
+        <!-- Encabezado Periodo Actual -->
+        <div class="grid-header">
+            <h4 class=""><strong>Periodo en revisión: <?php echo htmlspecialchars($_POST['anio_semestre']) . '.'; ?></strong></h4>
         </div>
-        <div class="grid-col">
-            <div class="grid-header">
-                <h4 class=""><strong>Periodo anterior: <?php echo htmlspecialchars($periodo_anterior); ?></strong></h4>
-            </div>
+        
+        <!-- Encabezado Periodo Anterior -->
+        <div class="grid-header">
+            <h4 class=""><strong>Periodo anterior: <?php echo htmlspecialchars($periodo_anterior); ?></strong></h4>
         </div>
         
         <?php
@@ -965,7 +963,6 @@ $total_proyect += $gran_total;
             }
             $total_consolidado += $total_proyect;
             echo "</div>"; // Cierre de box-gray
-            
             echo '</div>'; // Cierre de grid-col (periodo actual)
             
             // ================= COLUMNA PERIODO ANTERIOR =================
@@ -1257,36 +1254,21 @@ echo "<td title=\"" . htmlspecialchars($title) . "\">$" . number_format($gran_to
         }
         ?>
     </div> <!-- Cierre de grid-container -->
-    <?php
-// Reemplazar el código de los totales con este:
-
-echo '<div class="grid-row" style="display: flex; justify-content: space-between; margin-top: 20px;">';
     
-    // Columna izquierda - Total actual
-    echo '<div style="flex: 1; margin-right: 10px;">';
-    echo '<div style="font-weight: bold; background-color: #f2f2f2; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">';
-    echo '<div style="display: flex; justify-content: space-between;">';
-    echo '<span>Total Consolidado Actual:</span>';
-    echo '<span data-toggle="tooltip" data-placement="left" title="Valor total: $' . number_format($total_consolidado, 0, ',', '.') . '">';
-    echo '$' . number_format($total_consolidado / 1000000, 2) . ' M';
-    echo '</span>';
-    echo '</div>';
-    echo '</div>';
-    echo '</div>';
-    
-    // Columna derecha - Total anterior
-    echo '<div style="flex: 1; margin-left: 10px;">';
-    echo '<div style="font-weight: bold; background-color: #f2f2f2; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">';
-    echo '<div style="display: flex; justify-content: space-between;">';
-    echo '<span>Total Consolidado Anterior:</span>';
-    echo '<span data-toggle="tooltip" data-placement="left" title="Valor total: $' . number_format($total_cosolidado_ant, 0, ',', '.') . '">';
-    echo '$' . number_format($total_cosolidado_ant / 1000000, 2) . ' M';
-    echo '</span>';
-    echo '</div>';
-    echo '</div>';
-    echo '</div>';
+   echo '<div style="display: table; width: 100%; margin-top: 5px;">
+        <div style="display: table-row; font-weight: bold; background-color: #f2f2f2;">
+            <div style="display: table-cell; text-align: left; padding: 8px; border: 1px solid #ddd;">
+                 Total Consolidado:
+            </div>
+            <div style="display: table-cell; text-align: right; padding: 8px; border: 1px solid #ddd;">
+                <span data-toggle="tooltip" data-placement="left" title="Valor total: $' . number_format($total_cosolidado_ant, 0, ',', '.') . '">
+                    $' . number_format($total_cosolidado_ant / 1000000, 2) . ' M
+                </span>
+            </div>
+        </div>
+      
+      </div>';
 
-echo '</div>'; // Cierre de grid-row
 // Inicializar tooltips (si usas Bootstrap)
 echo '<script>
 $(document).ready(function(){
@@ -1438,589 +1420,468 @@ echo "<div>
 
 </div>  ";
 ?>
-<div>
-    <div class="dashboard-profesores">
-       <h2 class="dashboard-title">
-    Análisis Comparativo (<?= $anio_semestre ?> vs <?= $periodo_anterior ?>)
-    <br>
-    Departamento: <?= mb_strimwidth(obtenerNombreDepartamento($_POST['departamento_id']), 0, 65, '...') ?>
-    / <?= mb_strimwidth(obtenerNombreFacultad($departamento_id), 0, 65, '...') ?>
-</h2>
-
-
-        <div class="card-container">
-            <div class="card">
+ <div>
+            <div class="dashboard-profesores">
+    <div class="card-container">
+        <div class="card">
+            <div class="card-percentage <?= ($totalProfesoresOcasional >= $totalProfesoresOcasionalAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
                 <?php
-                $diffOcasional = $totalProfesoresOcasional - $totalProfesoresOcasionalAnterior;
-                $percentageOcasional = ($totalProfesoresOcasionalAnterior != 0) ? ($diffOcasional / $totalProfesoresOcasionalAnterior) * 100 : 0;
-                $classOcasional = ($diffOcasional >= 0) ? 'positive-alert' : 'negative-favorable';
+                $diff = $totalProfesoresOcasional - $totalProfesoresOcasionalAnterior;
+                $percentage = ($totalProfesoresOcasionalAnterior != 0) ? ($diff / $totalProfesoresOcasionalAnterior) * 100 : 0;
+                echo ($percentage >= 0 ? '+' : '') . number_format($percentage, 1) . '%';
                 ?>
-                <div class="card-percentage <?= $classOcasional ?>">
-                    <?= ($percentageOcasional >= 0 ? '+' : '') . number_format($percentageOcasional, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Profesores Ocasionales (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    <?= $totalProfesoresOcasional ?>
-                    <span class="card-variation <?= $classOcasional ?>">
-                        <?= ($diffOcasional >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffOcasional ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="new-count positive-alert">+<?= $contadorVerdesOc ?> nuevos</span>
-                    <span class="removed-count negative-favorable">-<?= $contadorRojosOc ?> no continúan</span>
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresOcasionalAnterior ?></span>
-                </div>
             </div>
-
-            <div class="card">
-                <?php
-                $diffCatedra = $totalProfesoresCatedra - $totalProfesoresCatedraAnterior;
-                $percentageCatedra = ($totalProfesoresCatedraAnterior != 0) ? ($diffCatedra / $totalProfesoresCatedraAnterior) * 100 : 0;
-                $classCatedra = ($diffCatedra >= 0) ? 'positive-alert' : 'negative-favorable';
-                ?>
-                <div class="card-percentage <?= $classCatedra ?>">
-                    <?= ($percentageCatedra >= 0 ? '+' : '') . number_format($percentageCatedra, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Profesores Cátedra (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    <?= $totalProfesoresCatedra ?>
-                    <span class="card-variation <?= $classCatedra ?>">
-                        <?= ($diffCatedra >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffCatedra ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="new-count positive-alert">+<?= $contadorVerdesCa ?> nuevos</span>
-                    <span class="removed-count negative-favorable">-<?= $contadorRojosCa ?> no continúan</span>
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresCatedraAnterior ?></span>
-                </div>
+            <h3 class="card-title">Profesores Ocasionales</h3>
+            <div class="card-main-value">
+                <?= $totalProfesoresOcasional ?>
+                <span class="card-variation <?= ($totalProfesoresOcasional >= $totalProfesoresOcasionalAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                    <?php 
+                    echo ($diff >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diff;
+                    ?>
+                </span>
             </div>
-
-            <div class="card total-card">
-                <?php
-                $totalProfesoresTotal = $totalProfesoresOcasional + $totalProfesoresCatedra;
-                $totalProfesoresTotalAnterior = $totalProfesoresOcasionalAnterior + $totalProfesoresCatedraAnterior;
-                $diffTotalProfesores = $totalProfesoresTotal - $totalProfesoresTotalAnterior;
-                $percentageTotalProfesores = ($totalProfesoresTotalAnterior != 0) ? ($diffTotalProfesores / $totalProfesoresTotalAnterior) * 100 : 0;
-                $classTotalProfesores = ($diffTotalProfesores >= 0) ? 'positive-alert' : 'negative-favorable';
-                ?>
-                <div class="card-percentage <?= $classTotalProfesores ?>">
-                    <?= ($percentageTotalProfesores >= 0 ? '+' : '') . number_format($percentageTotalProfesores, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Total Profesores (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    <?= $totalProfesoresTotal ?>
-                    <span class="card-variation <?= $classTotalProfesores ?>">
-                        <?= ($diffTotalProfesores >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffTotalProfesores ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresTotalAnterior ?></span>
-                </div>
+            <div class="card-subtext">
+                <span class="new-count positive-alert">+<?= $contadorVerdesOc ?> nuevos</span>
+                <span class="removed-count negative-favorable">-<?= $contadorRojosOc ?> no continúan</span>
+                <span class="previous-count">Anterior: <?= $totalProfesoresOcasionalAnterior ?></span>
             </div>
         </div>
-
-        <div class="card-container">
-            <div class="card">
+        
+        <div class="card">
+            <div class="card-percentage <?= ($totalProfesoresCatedra >= $totalProfesoresCatedraAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
                 <?php
-                $diffProyectadoOcasional = $totalProyectadoOcasional - $totalProyectadoOcasionalAnterior;
-                $percentageProyectadoOcasional = ($totalProyectadoOcasionalAnterior != 0) ? ($diffProyectadoOcasional / $totalProyectadoOcasionalAnterior) * 100 : 0;
-                $classProyectadoOcasional = ($diffProyectadoOcasional >= 0) ? 'positive-alert' : 'negative-favorable';
+                $diff = $totalProfesoresCatedra - $totalProfesoresCatedraAnterior;
+                $percentage = ($totalProfesoresCatedraAnterior != 0) ? ($diff / $totalProfesoresCatedraAnterior) * 100 : 0;
+                echo ($percentage >= 0 ? '+' : '') . number_format($percentage, 1) . '%';
                 ?>
-                <div class="card-percentage <?= $classProyectadoOcasional ?>">
-                    <?= ($percentageProyectadoOcasional >= 0 ? '+' : '') . number_format($percentageProyectadoOcasional, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Proyección Ocasional (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    $<?= number_format($totalProyectadoOcasional, 0, ',', '.') ?>
-                    <span class="card-variation <?= $classProyectadoOcasional ?>">
-                        <?= ($diffProyectadoOcasional >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diffProyectadoOcasional, 0, ',', '.') ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): $<?= number_format($totalProyectadoOcasionalAnterior, 0, ',', '.') ?></span>
-                </div>
             </div>
-
-            <div class="card">
-                <?php
-                $diffProyectadoCatedra = $totalProyectadoCatedra - $totalProyectadoCatedraAnterior;
-                $percentageProyectadoCatedra = ($totalProyectadoCatedraAnterior != 0) ? ($diffProyectadoCatedra / $totalProyectadoCatedraAnterior) * 100 : 0;
-                $classProyectadoCatedra = ($diffProyectadoCatedra >= 0) ? 'positive-alert' : 'negative-favorable';
-                ?>
-                <div class="card-percentage <?= $classProyectadoCatedra ?>">
-                    <?= ($percentageProyectadoCatedra >= 0 ? '+' : '') . number_format($percentageProyectadoCatedra, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Proyección Cátedra (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    $<?= number_format($totalProyectadoCatedra, 0, ',', '.') ?>
-                    <span class="card-variation <?= $classProyectadoCatedra ?>">
-                        <?= ($diffProyectadoCatedra >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diffProyectadoCatedra, 0, ',', '.') ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): $<?= number_format($totalProyectadoCatedraAnterior, 0, ',', '.') ?></span>
-                </div>
+            <h3 class="card-title">Profesores Cátedra</h3>
+            <div class="card-main-value">
+                <?= $totalProfesoresCatedra ?>
+                <span class="card-variation <?= ($totalProfesoresCatedra >= $totalProfesoresCatedraAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                    <?php 
+                    echo ($diff >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diff;
+                    ?>
+                </span>
             </div>
-
-            <div class="card total-card">
-                <?php
-                $totalProyectadoTotal = $totalProyectadoOcasional + $totalProyectadoCatedra;
-                $totalProyectadoTotalAnterior = $totalProyectadoOcasionalAnterior + $totalProyectadoCatedraAnterior;
-                $diffTotalProyectado = $totalProyectadoTotal - $totalProyectadoTotalAnterior;
-                $percentageTotalProyectado = ($totalProyectadoTotalAnterior != 0) ? ($diffTotalProyectado / $totalProyectadoTotalAnterior) * 100 : 0;
-                $classTotalProyectado = ($diffTotalProyectado >= 0) ? 'positive-alert' : 'negative-favorable';
-                ?>
-                <div class="card-percentage <?= $classProyectadoTotal ?>">
-                    <?= ($percentageTotalProyectado >= 0 ? '+' : '') . number_format($percentageTotalProyectado, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Total Proyectado (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    $<?= number_format($totalProyectadoTotal, 0, ',', '.') ?>
-                    <span class="card-variation <?= $classProyectadoTotal ?>">
-                        <?= ($diffTotalProyectado >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diffTotalProyectado, 0, ',', '.') ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): $<?= number_format($totalProyectadoTotalAnterior, 0, ',', '.') ?></span>
-                </div>
+            <div class="card-subtext">
+                <span class="new-count positive-alert">+<?= $contadorVerdesCa ?> nuevos</span>
+                <span class="removed-count negative-favorable">-<?= $contadorRojosCa ?> no continúan</span>
+                <span class="previous-count">Anterior: <?= $totalProfesoresCatedraAnterior ?></span>
             </div>
-        </div>
-
-        <div class="graficos-container">
-            <div class="grafico-card">
-                <canvas id="profesorCantidadChart"></canvas>
-            </div>
-            <div class="grafico-card">
-                <canvas id="valoresProyectadosChart"></canvas>
-            </div>
-        </div>
-
-        <div class="text-center mt-5 mb-4">
-            <a href="#seccionTablas"
-               class="btn btn-sm d-inline-flex align-items-center gap-1"
-               style="background-color: #696FC7; border-color: #696FC7; color: white;"
-               title="Volver a las tablas comparativas">
-                <i class="fas fa-arrow-up"></i> Volver a Tablas
-            </a>
         </div>
     </div>
+    
+    <div class="card-container">
+        <div class="card">
+            <div class="card-percentage <?= ($totalProyectadoOcasional >= $totalProyectadoOcasionalAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                <?php
+                $diff = $totalProyectadoOcasional - $totalProyectadoOcasionalAnterior;
+                $percentage = ($totalProyectadoOcasionalAnterior != 0) ? ($diff / $totalProyectadoOcasionalAnterior) * 100 : 0;
+                echo ($percentage >= 0 ? '+' : '') . number_format($percentage, 1) . '%';
+                ?>
+            </div>
+            <h3 class="card-title">Proyección Ocasional</h3>
+            <div class="card-main-value">
+                $<?= number_format($totalProyectadoOcasional, 0, ',', '.') ?>
+                <span class="card-variation <?= ($totalProyectadoOcasional >= $totalProyectadoOcasionalAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                    <?php 
+                    echo ($diff >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diff, 0, ',', '.');
+                    ?>
+                </span>
+            </div>
+            <div class="card-subtext">
+                <span class="previous-count">Anterior: $<?= number_format($totalProyectadoOcasionalAnterior, 0, ',', '.') ?></span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-percentage <?= ($totalProyectadoCatedra >= $totalProyectadoCatedraAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                <?php
+                $diff = $totalProyectadoCatedra - $totalProyectadoCatedraAnterior;
+                $percentage = ($totalProyectadoCatedraAnterior != 0) ? ($diff / $totalProyectadoCatedraAnterior) * 100 : 0;
+                echo ($percentage >= 0 ? '+' : '') . number_format($percentage, 1) . '%';
+                ?>
+            </div>
+            <h3 class="card-title">Proyección Cátedra</h3>
+            <div class="card-main-value">
+                $<?= number_format($totalProyectadoCatedra, 0, ',', '.') ?>
+                <span class="card-variation <?= ($totalProyectadoCatedra >= $totalProyectadoCatedraAnterior) ? 'positive-alert' : 'negative-favorable' ?>">
+                    <?php 
+                    echo ($diff >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diff, 0, ',', '.');
+                    ?>
+                </span>
+            </div>
+            <div class="card-subtext">
+                <span class="previous-count">Anterior: **$**<?= number_format($totalProyectadoCatedraAnterior, 0, ',', '.') ?></span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="graficos-container">
+        <div class="grafico-card">
+            <canvas id="profesorCantidadChart"></canvas>
+        </div>
+        <div class="grafico-card">
+            <canvas id="valoresProyectadosChart"></canvas>
+        </div>
+    </div>
+                 <div class="text-center mt-5 mb-4"> <a href="#seccionTablas"
+   class="btn btn-sm d-inline-flex align-items-center gap-1"
+   style="background-color: #696FC7; border-color: #696FC7; color: white;"
+   title="Volver a las tablas comparativas">
+   <i class="fas fa-arrow-up"></i> Volver a Tablas
+</a>
+            </div>
 </div>
 
 <style>
-    /* Variables CSS para colores */
-    :root {
-        --primary-color: #696FC7;
-        --text-dark: #2c3e50;
-        --text-muted: #6c757d;
-        --positive-bg: rgba(40, 167, 69, 0.15); /* Verde claro */
-        --positive-text: #28a745; /* Verde oscuro */
-        --negative-bg: rgba(220, 53, 69, 0.15); /* Rojo claro */
-        --negative-text: #dc3545; /* Rojo oscuro */
-        --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        --total-card-bg: rgba(105, 111, 199, 0.1); /* Fondo claro para tarjeta total */
-        --total-card-border: rgba(105, 111, 199, 0.8); /* Borde para tarjeta total */
-    }
+.dashboard-profesores {
+    font-family: 'Open Sans', sans-serif !important;
+    max-width: 100%;
+    margin: 20px auto;
+    padding: 0 15px;
+}
 
-    .dashboard-profesores {
-        font-family: 'Open Sans', sans-serif !important;
-        max-width: 100%;
-        margin: 20px auto;
-        padding: 0 15px;
-    }
+/* Contenedor de tarjetas */
+.card-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
 
-    .dashboard-title {
-        text-align: center;
-        color: var(--primary-color);
-        margin-bottom: 30px;
-        font-size: 1.8rem;
-        font-weight: 700;
-    }
+/* Estilo base de tarjeta */
+.card {
+    flex: 1;
+    min-width: 250px;
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    position: relative; /* Necesario para posicionar el porcentaje */
+}
 
-    /* Contenedor de tarjetas */
-    .card-container {
-        display: flex;
-        gap: 20px;
-        margin-bottom: 30px;
-        flex-wrap: wrap;
-    }
+/* Porcentaje en la esquina superior derecha */
+.card-percentage {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 5px;
+    z-index: 1; /* Asegura que esté por encima de otros elementos */
+}
 
-    /* Estilo base de tarjeta */
+.card-title {
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    padding-right: 60px; /* Deja espacio para el porcentaje */
+}
+
+/* Valor principal */
+.card-main-value {
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+/* Variación (al lado del valor principal) */
+.card-variation {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* --- CLASES DE COLOR --- */
+.positive-alert {
+    background-color: rgba(220, 53, 69, 0.15); /* Rojo claro */
+    color: #dc3545; /* Rojo oscuro */
+}
+
+.negative-favorable {
+    background-color: rgba(40, 167, 69, 0.15); /* Verde claro */
+    color: #28a745; /* Verde oscuro */
+}
+/* --- FIN CLASES DE COLOR --- */
+
+
+/* Texto secundario */
+.card-subtext {
+    font-size: 0.9rem;
+    color: #6c757d;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Ajuste de colores para "nuevos" y "no continúan" según la nueva lógica */
+.new-count.positive-alert {
+    color: #dc3545; /* Rojo, ya que son "nuevos" (incremento) */
+    font-weight: 600;
+}
+
+.removed-count.negative-favorable {
+    color: #28a745; /* Verde, ya que son "no continúan" (disminución) */
+    font-weight: 600;
+}
+
+.previous-count {
+    opacity: 0.8;
+}
+
+/* Contenedor de gráficos */
+.graficos-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.grafico-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.grafico-card canvas {
+    width: 100% !important;
+    height: 300px !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
     .card {
-        flex: 1;
-        min-width: 250px;
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: var(--card-shadow);
-        position: relative; /* Necesario para posicionar el porcentaje */
-        overflow: hidden; /* Asegura que el contenido no desborde la tarjeta */
+        min-width: 100%;
     }
-
-    /* Estilo específico para la tarjeta de total */
-    .card.total-card {
-        background-color: var(--total-card-bg);
-        border: 1px solid var(--total-card-border);
-    }
-
-    .card.total-card .card-title,
-    .card.total-card .card-main-value,
-    .card.total-card .card-subtext {
-        color: var(--text-dark); /* Asegura que el texto sea legible sobre el fondo azul */
-    }
-
-
-    /* Porcentaje en la esquina superior derecha */
-    .card-percentage {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        padding: 4px 8px;
-        border-radius: 5px;
-        z-index: 1;
-    }
-
-    .card-title {
-        color: #333;
-        margin-top: 0;
-        margin-bottom: 15px;
-        font-size: 1.1rem;
-        padding-right: 60px; /* Deja espacio para el porcentaje */
-    }
-
-    /* Valor principal */
-    .card-main-value {
-        font-size: 2.2rem;
-        font-weight: bold;
-        color: var(--text-dark);
-        margin-bottom: 10px;
-        display: flex; /* Permite alinear la variación */
-        align-items: baseline; /* Alinea el texto base del número y la variación */
-        flex-wrap: wrap; /* Permite que la variación salte de línea en pantallas pequeñas */
-    }
-
-    /* Variación (al lado del valor principal) */
-    .card-variation {
-        font-size: 1rem;
-        font-weight: 600;
-        padding: 4px 8px;
-        border-radius: 4px;
-        margin-left: 8px;
-        vertical-align: middle;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        white-space: nowrap; /* Evita que el texto de la variación se rompa */
-    }
-
-    /* --- CLASES DE COLOR --- */
-    /* Para porcentajes y variaciones positivas (aumento) */
-    .positive-alert {
-        background-color: var(--negative-bg); /* Rojo claro */
-        color: var(--negative-text); /* Rojo oscuro */
-    }
-
-    /* Para porcentajes y variaciones negativas (disminución, favorable) */
-    .negative-favorable {
-        background-color: var(--positive-bg); /* Verde claro */
-        color: var(--positive-text); /* Verde oscuro */
-    }
-    /* --- FIN CLASES DE COLOR --- */
-
-    /* Texto secundario */
-    .card-subtext {
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    /* Ajuste de colores para "nuevos" y "no continúan" según la nueva lógica */
-    .new-count.positive-alert {
-        color: var(--negative-text); /* Rojo, ya que son "nuevos" (incremento) */
-        font-weight: 600;
-    }
-
-    .removed-count.negative-favorable {
-        color: var(--positive-text); /* Verde, ya que son "no continúan" (disminución) */
-        font-weight: 600;
-    }
-
-    .previous-count {
-        opacity: 0.8;
-    }
-
-    /* Contenedor de gráficos */
+    
     .graficos-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 30px;
+        grid-template-columns: 1fr;
     }
-
-    .grafico-card {
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: var(--card-shadow);
-    }
-
-    .grafico-card canvas {
-        width: 100% !important;
-        height: 300px !important;
-    }
-
-    /* Responsive */
-    @media (max-width: 992px) { /* Ajustado para 3 columnas en pantallas más grandes y 1 en pequeñas */
-        .card-container {
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Hace que las tarjetas se ajusten */
-            justify-content: center; /* Centra las tarjetas si no llenan la fila */
-        }
-    }
-
-    @media (max-width: 768px) {
-        .card {
-            min-width: 100%;
-        }
-
-        .graficos-container {
-            grid-template-columns: 1fr;
-        }
-    }
+}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Variables PHP para las etiquetas de período (¡Asegúrate de que estas variables estén disponibles en el scope PHP!)
-        const periodoActual = '<?= $anio_semestre ?>';
-        const periodoAnterior = '<?= $periodo_anterior ?>';
-
-        // Configuración común para ambos gráficos
-        const commonChartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false // Oculta la leyenda por defecto
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) label += ': ';
-                            if (context.parsed.y !== null) {
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuración común para ambos gráficos
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) label += ': ';
+                        if (context.parsed.y !== null) {
+                            if (context.chart.data.labels[context.dataIndex].includes('Actual')) {
+                                label += context.parsed.y.toLocaleString('es-CO');
+                            } else {
                                 label += context.parsed.y.toLocaleString('es-CO');
                             }
-                            return label;
                         }
-                    }
-                },
-                datalabels: {
-                    display: true,
-                    color: '#333',
-                    anchor: 'end',
-                    align: 'top',
-                    formatter: function(value) {
-                        return value.toLocaleString('es-CO');
+                        return label;
                     }
                 }
             },
-            layout: {
-                padding: {
-                    top: 20,
-                    right: 20,
-                    bottom: 20,
-                    left: 20
+            datalabels: {
+                display: true,
+                color: '#333',
+                anchor: 'end',
+                align: 'top',
+                formatter: function(value) {
+                    return value.toLocaleString('es-CO');
                 }
+            }
+        },
+        layout: {
+            padding: {
+                top: 20,
+                right: 20,
+                bottom: 20,
+                left: 20
+            }
+        }
+    };
+
+    // Gráfico de Cantidad de Profesores
+    new Chart(
+        document.getElementById('profesorCantidadChart').getContext('2d'),
+        {
+            type: 'bar',
+            data: {
+                labels: ['Ocasional Actual', 'Ocasional Anterior', 'Cátedra Actual', 'Cátedra Anterior'],
+                datasets: [{
+                    label: 'Cantidad de Profesores',
+                    data: [
+                        <?= $totalProfesoresOcasional ?>,
+                        <?= $totalProfesoresOcasionalAnterior ?>,
+                        <?= $totalProfesoresCatedra ?>,
+                        <?= $totalProfesoresCatedraAnterior ?>
+                    ],
+                    backgroundColor: [
+                        'rgba(220, 53, 69, 0.7)',    // Rojo actual
+                        'rgba(220, 53, 69, 0.3)',    // Rojo claro anterior
+                        'rgba(40, 167, 69, 0.7)',    // Verde actual
+                        'rgba(40, 167, 69, 0.3)'     // Verde claro anterior
+                    ],
+                    borderColor: [
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(40, 167, 69, 1)'
+                    ],
+                    borderWidth: 1
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0,
-                        callback: function(value) {
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: {
+                        display: true,
+                        text: 'Comparación de Cantidad de Profesores',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 20
+                        }
+                    },
+                    datalabels: {
+                        ...commonOptions.plugins.datalabels,
+                        formatter: function(value) {
                             return value.toLocaleString('es-CO');
                         }
-                    },
-                    grid: {
-                        display: false // Oculta las líneas de la cuadrícula en el eje Y
                     }
                 },
-                x: {
-                    grid: {
-                        display: false
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0,
+                            callback: function(value) {
+                                return value.toLocaleString('es-CO');
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
                     },
-                    // Ajustes para agrupar más las barras
-                    categoryPercentage: 0.8, // Porcentaje del espacio de la categoría que ocupan las barras
-                    barPercentage: 0.9 // Porcentaje de la categoría que ocupa la barra
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
                 }
-            }
-        };
+            },
+            plugins: [ChartDataLabels]
+        }
+    );
 
-        // --- Gráfico de Cantidad de Profesores ---
-        new Chart(
-            document.getElementById('profesorCantidadChart').getContext('2d'),
-            {
-                type: 'bar',
-                data: {
-                    labels: [
-                        'Ocasional (' + periodoAnterior + ')', 'Ocasional (' + periodoActual + ')',
-                        'Cátedra (' + periodoAnterior + ')', 'Cátedra (' + periodoActual + ')',
-                        'Total (' + periodoAnterior + ')', 'Total (' + periodoActual + ')'
+    // Gráfico de Valores Proyectados
+    new Chart(
+        document.getElementById('valoresProyectadosChart').getContext('2d'),
+        {
+            type: 'bar',
+            data: {
+                labels: ['Ocasional Actual', 'Ocasional Anterior', 'Cátedra Actual', 'Cátedra Anterior'],
+                datasets: [{
+                    label: 'Valor Proyectado',
+                    data: [
+                        <?= $totalProyectadoOcasional / 1000000 ?>,
+                        <?= $totalProyectadoOcasionalAnterior / 1000000 ?>,
+                        <?= $totalProyectadoCatedra / 1000000 ?>,
+                        <?= $totalProyectadoCatedraAnterior / 1000000 ?>
                     ],
-                    datasets: [{
-                        label: 'Cantidad de Profesores',
-                        data: [
-                            <?= $totalProfesoresOcasionalAnterior ?>,
-                            <?= $totalProfesoresOcasional ?>,
-                            <?= $totalProfesoresCatedraAnterior ?>,
-                            <?= $totalProfesoresCatedra ?>,
-                            <?= $totalProfesoresTotalAnterior ?>,
-                            <?= $totalProfesoresTotal ?>
-                        ],
-                        backgroundColor: [
-                            'rgba(220, 53, 69, 0.3)',    // Rojo claro anterior (Ocasional)
-                            'rgba(220, 53, 69, 0.7)',    // Rojo actual (Ocasional)
-                            'rgba(40, 167, 69, 0.3)',    // Verde claro anterior (Cátedra)
-                            'rgba(40, 167, 69, 0.7)',    // Verde actual (Cátedra)
-                            'rgba(105, 111, 199, 0.4)',  // Azul claro anterior (Total)
-                            'rgba(105, 111, 199, 0.8)'   // Azul oscuro actual (Total)
-                        ],
-                        borderColor: [
-                            'rgba(220, 53, 69, 1)',
-                            'rgba(220, 53, 69, 1)',
-                            'rgba(40, 167, 69, 1)',
-                            'rgba(40, 167, 69, 1)',
-                            'rgba(105, 111, 199, 1)',
-                            'rgba(105, 111, 199, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    ...commonChartOptions,
-                    plugins: {
-                        ...commonChartOptions.plugins,
-                        title: {
-                            display: true,
-                            text: 'Comparación de Cantidad de Profesores',
-                            font: {
-                                size: 16,
-                                weight: 'bold'
-                            },
-                            padding: {
-                                bottom: 20
-                            }
+                    backgroundColor: [
+                        'rgba(220, 53, 69, 0.7)',    // Rojo actual
+                        'rgba(220, 53, 69, 0.3)',    // Rojo claro anterior
+                        'rgba(40, 167, 69, 0.7)',    // Verde actual
+                        'rgba(40, 167, 69, 0.3)'     // Verde claro anterior
+                    ],
+                    borderColor: [
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(40, 167, 69, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: {
+                        display: true,
+                        text: 'Comparación de Valores Proyectados (en millones)',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 20
                         }
                     },
-                    scales: {
-                        ...commonChartOptions.scales,
-                        y: {
-                            ...commonChartOptions.scales.y,
-                            ticks: {
-                                precision: 0,
-                                callback: function(value) {
-                                    return value.toLocaleString('es-CO');
-                                }
+                    datalabels: {
+                        ...commonOptions.plugins.datalabels,
+                        formatter: function(value) {
+                            return '$' + value.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'M';
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.parsed.y.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' millones';
                             }
                         }
                     }
                 },
-                plugins: [ChartDataLabels]
-            }
-        );
-
-        // --- Gráfico de Valores Proyectados ---
-        new Chart(
-            document.getElementById('valoresProyectadosChart').getContext('2d'),
-            {
-                type: 'bar',
-                data: {
-                    labels: [
-                        'Ocasional (' + periodoAnterior + ')', 'Ocasional (' + periodoActual + ')',
-                        'Cátedra (' + periodoAnterior + ')', 'Cátedra (' + periodoActual + ')',
-                        'Total (' + periodoAnterior + ')', 'Total (' + periodoActual + ')'
-                    ],
-                    datasets: [{
-                        label: 'Valor Proyectado',
-                        data: [
-                            <?= $totalProyectadoOcasionalAnterior / 1000000 ?>,
-                            <?= $totalProyectadoOcasional / 1000000 ?>,
-                            <?= $totalProyectadoCatedraAnterior / 1000000 ?>,
-                            <?= $totalProyectadoCatedra / 1000000 ?>,
-                            <?= $totalProyectadoTotalAnterior / 1000000 ?>,
-                            <?= $totalProyectadoTotal / 1000000 ?>
-                        ],
-                        backgroundColor: [
-                            'rgba(220, 53, 69, 0.3)',    // Rojo claro anterior (Ocasional)
-                            'rgba(220, 53, 69, 0.7)',    // Rojo actual (Ocasional)
-                            'rgba(40, 167, 69, 0.3)',    // Verde claro anterior (Cátedra)
-                            'rgba(40, 167, 69, 0.7)',    // Verde actual (Cátedra)
-                            'rgba(105, 111, 199, 0.4)',  // Azul claro anterior (Total)
-                            'rgba(105, 111, 199, 0.8)'   // Azul oscuro actual (Total)
-                        ],
-                        borderColor: [
-                            'rgba(220, 53, 69, 1)',
-                            'rgba(220, 53, 69, 1)',
-                            'rgba(40, 167, 69, 1)',
-                            'rgba(40, 167, 69, 1)',
-                            'rgba(105, 111, 199, 1)',
-                            'rgba(105, 111, 199, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    ...commonChartOptions,
-                    plugins: {
-                        ...commonChartOptions.plugins,
-                        title: {
-                            display: true,
-                            text: 'Comparación de Valores Proyectados (en millones)',
-                            font: {
-                                size: 16,
-                                weight: 'bold'
-                            },
-                            padding: {
-                                bottom: 20
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString('es-CO', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'M';
                             }
                         },
-                        datalabels: {
-                            ...commonChartOptions.plugins.datalabels,
-                            formatter: function(value) {
-                                return '$' + value.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'M';
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return '$' + context.parsed.y.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' millones';
-                                }
-                            }
+                        grid: {
+                            display: false
                         }
                     },
-                    scales: {
-                        ...commonChartOptions.scales,
-                        y: {
-                            ...commonChartOptions.scales.y,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + value.toLocaleString('es-CO', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'M';
-                                }
-                            }
+                    x: {
+                        grid: {
+                            display: false
                         }
                     }
-                },
-                plugins: [ChartDataLabels]
-            }
-        );
-    });
+                }
+            },
+            plugins: [ChartDataLabels]
+        }
+    );
+});
 </script>
+
+<!-- Añade esta librería para las etiquetas de datos -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    </div>
+    
     </body>
 </html>
 <?php
