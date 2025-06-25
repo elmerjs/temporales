@@ -118,18 +118,18 @@ $semanas_ocasant = ceil($dias_ocasant / 7);
     <style>
       
 .cedula-nueva {
-    color: #28a745; /* Verde */
+    color: red;
     font-weight: bold;
 }
 
 /* Para mantener visibilidad en fondos amarillos */
 .fondo-amarillo .cedula-nueva {
-    color: #1a4d2b !important; /* Verde más oscuro */
+    color: mediumvioletred!important; /* Verde más oscuro */
         background-color: yellow; /* Amarillo claro */
 
 }
          .cedula-eliminada {
-        color: red !important;
+        color:#28a745; /* Verde */!important;
         font-weight: bold;
     }
      
@@ -455,6 +455,68 @@ function obtenerTRDDepartamento($departamento_id) {
         .navigation-header .text-muted-white {
             color: rgba(255, 255, 255, 0.7) !important; /* Gris claro para el slash y nombre facultad */
         }
+         .puntos-no-actualizados {
+    background-color: #FFF3CD; /* Un tono amarillo/naranja suave para indicar alerta */
+    color: #856404; /* Color de texto más oscuro para contraste */
+    font-weight: bold; /* Opcional: para que el texto resalte */
+}
+         /* Estilos para el botón "Agregar Profesor" - Naranja Unicaucano */
+.btn-agregar-profesor {
+    background-color: #FF6600; /* Un naranja vibrante y fuerte */
+    border-color: #E65C00;     /* Un borde ligeramente más oscuro */
+    color: #FFFFFF;            /* Texto blanco para un excelente contraste */
+    
+    /* Para asegurar el "alto super mínimo": */
+    /* Bootstrap's btn-sm ya aplica un padding reducido. Si necesitas que sea
+       aún más compacto, puedes descomentar y ajustar la siguiente línea: */
+    /* padding: .15rem .4rem; /* Ejemplo de padding aún más pequeño */
+}
+
+.btn-agregar-profesor:hover {
+    background-color: #E65C00; /* Naranja ligeramente más oscuro al pasar el ratón */
+    border-color: #CC5200;
+    color: #FFFFFF;
+}
+
+.btn-agregar-profesor:active {
+    background-color: #CC5200; /* Naranja más oscuro al hacer clic */
+    border-color: #B34700;
+    color: #FFFFFF;
+}
+
+/* Ajuste para el ícono para asegurar "alto super mínimo" */
+.btn-agregar-profesor .fas {
+    /* Asegura que la altura de línea del ícono no genere espacio vertical extra. */
+    /* '1' hace que la altura de línea sea igual al font-size del ícono. */
+    line-height: 1; 
+    
+    /* Si el ícono aún se ve que agranda el botón, podrías intentar: */
+    /* font-size: 0.9em; /* Para reducir ligeramente el tamaño del ícono relativo al texto */
+}
+         /* Mantener altura mínima consistente */
+.estado-container {
+    min-height: 38px; /* Altura de un input estándar */
+    padding: 5px 0; /* Espaciado vertical mínimo */
+}
+
+/* Ajustes específicos para el botón */
+.btn-agregar-profesor {
+    padding-top: 0.15rem !important;
+    padding-bottom: 0.15rem !important;
+    line-height: 1.2;
+}
+
+.btn-agregar-profesor .fas {
+    font-size: 0.8em;
+    vertical-align: middle;
+    margin-top: -2px;
+}
+
+/* Alinear verticalmente el texto del botón */
+.btn-agregar-profesor span {
+    display: inline-block;
+    vertical-align: middle;
+}
     </style>
 <div class="card card-plazo mb-4" >
     <div class="navigation-header">
@@ -598,45 +660,81 @@ function obtenerTRDDepartamento($departamento_id) {
                     $cedulasPeriodoAnteriorPorTipoActual[] = $rowCedula['cedula'];
                 }
             }
-            
-            // --- MAIN QUERY TO GET PROFESSORS FOR THE CURRENT TABLE ---
-            $sql = "SELECT solicitudes.*, facultad.nombre_fac_minb AS nombre_facultad, deparmanentos.depto_nom_propio AS nombre_departamento
-                    FROM solicitudes
-                    JOIN deparmanentos ON (deparmanentos.PK_DEPTO = solicitudes.departamento_id)
-                    JOIN facultad ON (facultad.PK_FAC = solicitudes.facultad_id)
-                    WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)
-                    ORDER BY solicitudes.nombre ASC";
+         $periodo_ant_real= obtenerPeriodoAnterior($anio_semestre);   
+           // --- MAIN QUERY TO GET PROFESSORS FOR THE CURRENT TABLE ---
+$sql = "SELECT
+    s_actual.*,
+    facultad.nombre_fac_minb AS nombre_facultad,
+    deparmanentos.depto_nom_propio AS nombre_departamento,
+    s_actual.puntos AS puntos_periodo_actual,
+    COALESCE(
+        s_anterior.puntos,
+        CASE s_actual.tipo_docente
+            WHEN 'Ocasional' THEN 380
+            WHEN 'Catedra' THEN 3.5
+            ELSE NULL -- O un valor por defecto si existen otros tipos de docente
+        END
+    ) AS puntos_periodo_anterior, -- Puntos del periodo anterior con valor por defecto
+    s_anterior.tipo_docente AS tipo_docente_periodo_anterior
+FROM
+    solicitudes AS s_actual
+JOIN
+    deparmanentos ON (deparmanentos.PK_DEPTO = s_actual.departamento_id)
+JOIN
+    facultad ON (facultad.PK_FAC = s_actual.facultad_id)
+LEFT JOIN
+    solicitudes AS s_anterior ON (
+        s_anterior.cedula = s_actual.cedula
+        AND s_anterior.departamento_id = s_actual.departamento_id
+        AND s_anterior.facultad_id = s_actual.facultad_id
+        AND s_anterior.anio_semestre = '$periodo_ant_real'
+                AND s_anterior.tipo_docente = s_actual.tipo_docente -- ¡NUEVA CONDICIÓN!
+
+        AND (s_anterior.estado <> 'an' OR s_anterior.estado IS NULL)
+    )
+WHERE
+    s_actual.facultad_id = '$facultad_id'
+    AND s_actual.departamento_id = '$departamento_id'
+    AND s_actual.anio_semestre = '$anio_semestre'
+    AND s_actual.tipo_docente = '$tipo_docente' -- ¡CORREGIDO: Usando la variable PHP $tipo_docente!
+    AND (s_actual.estado <> 'an' OR s_actual.estado IS NULL)
+ORDER BY
+    s_actual.nombre ASC;";
             
             $result = $conn->query($sql);
-            
-            // --- HTML OUTPUT FOR THE SECTION HEADER AND BUTTON ---
-            echo "<div class='box-gray'>";
-            echo "<div class='estado-container'>
-                <h5 class='mb-0'>Vinculación: $tipo_docente (";
-            
-            if ($tipo_docente == 'Catedra') {
-                $estadoDepto = obtenerCierreDeptoCatedra($departamento_id, $aniose);
-                echo "<strong>" . ucfirst(strtolower($estadoDepto)) . ")</strong> - " . $semanas_cat . " semanas ";
-            } else {
-                $estadoDepto = obtenerCierreDeptoOcasional($departamento_id, $aniose);
-                echo "<strong>" . ucfirst(strtolower($estadoDepto)) . ")</strong> - " . $semanas_ocas . " semanas ";
-            }
-            echo "</h5>";
-            
-            if ($tipo_usuario == 1) {
-                echo "
-                <form action='nuevo_registro_admin.php' method='GET' class='mb-0'>
-                    <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
-                    <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
-                    <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
-                    <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
-                    <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
-                    <button type='submit' class='btn btn-outline-success btn-sm d-flex align-items-center gap-1' title='Agregar Profesor'>
-                        <i class='fas fa-user-plus'></i> Agregar Profesor
-                    </button>
-                </form>";
-            }
-            echo "</div>";
+          // --- HTML OUTPUT FOR THE SECTION HEADER AND BUTTON ---
+echo "<div class='box-gray'>";
+echo "<div class='estado-container d-flex align-items-center justify-content-between'>"; // Flex container
+echo "<div class='d-flex align-items-center'>"; // Contenedor para el título
+echo "<h5 class='mb-0'>Vinculación: $tipo_docente (";
+
+if ($tipo_docente == 'Catedra') {
+    $estadoDepto = obtenerCierreDeptoCatedra($departamento_id, $aniose);
+    echo "<strong>" . ucfirst(strtolower($estadoDepto)) . ")</strong> - " . $semanas_cat . " semanas ";
+} else {
+    $estadoDepto = obtenerCierreDeptoCatedra($departamento_id, $aniose);
+    echo "<strong>" . ucfirst(strtolower($estadoDepto)) . ")</strong> - " . $semanas_ocas . " semanas ";
+}
+echo "</h5>";
+echo "</div>"; // Cierre contenedor título
+
+if ($tipo_usuario == 1) {
+    echo "
+    <div class='d-flex align-items-center'>"; // Contenedor para botón
+    echo "
+        <form action='nuevo_registro_admin.php' method='GET' class='mb-0'>
+            <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
+            <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
+            <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
+            <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
+            <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
+            <button type='submit' class='btn btn-agregar-profesor btn-sm py-1' title='Agregar Profesor'>
+                <i class='fas fa-user-plus'></i> <span>Agregar Profesor</span>
+            </button>
+        </form>";
+    echo "</div>"; // Cierre contenedor botón
+}
+echo "</div>"; // Cierre estado-container
             
             // Obtener el conteo de profesores para este tipo_docente
             $sqlCount = "SELECT COUNT(*) as count FROM solicitudes WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
@@ -782,14 +880,40 @@ function obtenerTRDDepartamento($departamento_id) {
                                 <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
                                 <button type='submit' class='update-btn'><i class='fas fa-edit'></i></button>
                             </form></td>";
-                    }
-                    echo "<td>" . $row["puntos"] . "</td>";
+                    }   
+                        // --- Lógica para mostrar Puntos con indicadores de actualización ---
+    $valorPuntos = 0; // Inicializar para evitar posibles advertencias
+    $puntosCellClass = ''; // Clase CSS para la celda de puntos
+    $puntosTooltip = ''; // Tooltip específico para la celda de puntos
+
+                    // Si $row["puntos"] (que corresponde a puntos_periodo_actual) está vacío o es cero,
+                    // se usa $row["puntos_periodo_anterior"]. De lo contrario, se usa $row["puntos"].
+if (empty($row["puntos_periodo_actual"]) || $row["puntos_periodo_actual"] == 0) {
+        $valorPuntos = $row["puntos_periodo_anterior"];
+        $puntosCellClass = " puntos-no-actualizados"; // Clase para el color de alerta
+        $puntosTooltip = "Puntos tomados del periodo anterior (" . htmlspecialchars($periodo_ant_real) . "). Pendientes de actualización.";
+        
+        // Incrementar el contador global si se usa el valor anterior
+        // Asegúrate de que $contadorPuntosPendientes se inicializa a 0 antes del bucle
+        if (isset($contadorPuntosPendientes)) { // Verificar si la variable existe
+            $contadorPuntosPendientes++;
+        }
+        
+    } else {
+        $valorPuntos = $row["puntos_periodo_actual"];
+        // Si quieres un tooltip incluso cuando está actualizado:
+        $puntosTooltip = "Puntos actualizados para el periodo actual.";
+        // $puntosCellClass permanece vacío, sin color especial
+    }
+    
+    // Imprimir la celda de Puntos con su clase y tooltip
+    echo "<td class='" . $puntosCellClass . "' title='" . htmlspecialchars($puntosTooltip) . "'>" . $valorPuntos . "</td>";
                     
                     // Cálculos de proyección
                     if ($tipo_docente == "Catedra")  {
 
-                  $asignacion_total= $row["puntos"]*$valor_punto *($row["horas"]+$row["horas_r"])*$semanas_cat;
-                $asignacion_mes=$row["puntos"]*$valor_punto*($row["horas"] +$row["horas_r"])*4;
+                  $asignacion_total= $valorPuntos*$valor_punto *($row["horas"]+$row["horas_r"])*$semanas_cat;
+                $asignacion_mes=$valorPuntos*$valor_punto*($row["horas"] +$row["horas_r"])*4;
                 $prima_navidad = $asignacion_mes*3/12;
                 $indem_vacaciones = $asignacion_mes*$dias/360;
                 $indem_prima_vacaciones = $indem_vacaciones*2/3;
@@ -873,7 +997,7 @@ function obtenerTRDDepartamento($departamento_id) {
                 }
 
                 // Calculo de la asignación mensual y total
-$asignacion_mes = round($row["puntos"] * $valor_punto * ($horas / 40), 0);
+$asignacion_mes = round($valorPuntos * $valor_punto * ($horas / 40), 0);
                 $asignacion_total = $asignacion_mes * $dias_ocas / 30;
 
 
@@ -1402,8 +1526,8 @@ document.querySelectorAll('.delete-form').forEach(function(form) {
     
 echo "<div style='margin-bottom: 10px; font-size: 0.9em;'>
   <strong>Nota:</strong> 
-  <span style='color: green; font-weight: bold;'>En verde:</span> Profesores nuevos; (Ocasionales: {$contadorVerdesOc}; Cátedra: {$contadorVerdesCa}) - Total: {$contadorVerdes} &nbsp;|&nbsp;
-  <span style='color: red; font-weight: bold;'>En rojo:</span> Profesores que ya no continúan. (Ocasionales: {$contadorRojosOc}, Cátedra: {$contadorRojosCa}) - Total: {$contadorRojos} &nbsp;|&nbsp;
+  <span style='color: red; font-weight: bold;'>En rojo:</span> Profesores nuevos; (Ocasionales: {$contadorVerdesOc}; Cátedra: {$contadorVerdesCa}) - Total: {$contadorVerdes} &nbsp;|&nbsp;
+  <span style='color: green; font-weight: bold;'>En verde:</span> Profesores que ya no continúan. (Ocasionales: {$contadorRojosOc}, Cátedra: {$contadorRojosCa}) - Total: {$contadorRojos} &nbsp;|&nbsp;
   <span style='background-color: yellow; color: red; font-weight: bold;'>&nbsp;Cambio de vinculación&nbsp;</span>:  Profesores que cambian de tipo de vinculación en el periodo actual.
 </div>  ";
 // Calcular el porcentaje de cambio (manteniendo tus variables exactas)
@@ -1768,12 +1892,12 @@ echo "<div>
 
     /* Ajuste de colores para "nuevos" y "no continúan" según la nueva lógica */
     .new-count.positive-alert {
-        color: var(--negative-text); /* Rojo, ya que son "nuevos" (incremento) */
+        color: var(--negative-text)!important; /* Rojo, ya que son "nuevos" (incremento) */
         font-weight: 600;
     }
 
     .removed-count.negative-favorable {
-        color: var(--positive-text); /* Verde, ya que son "no continúan" (disminución) */
+        color: var(--positive-text)!important; /* Verde, ya que son "no continúan" (disminución) */
         font-weight: 600;
     }
 
