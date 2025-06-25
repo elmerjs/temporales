@@ -1099,6 +1099,7 @@ echo ")</h4>";
             }
         }
     }
+
     echo "</div>"; // Close the section-id div
     ?>
     <div class="d-flex justify-content-between mt-3">
