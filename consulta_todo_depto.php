@@ -12,8 +12,8 @@ require 'funciones.php';
 
     // Obtener los parámetros de la URL
 $facultad_id = isset($_POST['facultad_id']) ? $_POST['facultad_id'] : null;
-    $departamento_id = $_POST['departamento_id'];
-    $anio_semestre = $_POST['anio_semestre'];
+$anio_semestre = $_POST['anio_semestre'] ?? $_GET['anio_semestre'] ?? null;
+$departamento_id = $_POST['departamento_id'] ?? $_GET['departamento_id'] ?? null;
  $aniose= $anio_semestre;
         $cierreperiodo = obtenerperiodo($anio_semestre);
 
@@ -2064,16 +2064,59 @@ th[title]:hover::after {
             } ?>
         </div>
    
-<?php } ?>
-
+<?php } 
+    
+    function obtenerPeriodoAnterior($anio_semestre) {
+    list($anio, $semestre) = explode('-', $anio_semestre);
+    if ($semestre == '1') {
+        $anio--;
+        $semestre = '2';
+    } else {
+        $semestre = '1';
+    }
+    return $anio . '-' . $semestre;
+}
+$anio_semestre_anterior= obtenerPeriodoAnterior($anio_semestre);
+    ?>
 
 
 <div class="col-md-12 text-center mb-3 d-grid">
     <a href="excel_temporales_fac.php?tipo_usuario=<?php echo htmlspecialchars($tipo_usuario); ?>&departamento_id=<?php echo htmlspecialchars($departamento_id); ?>&facultad_id=<?php echo htmlspecialchars($facultad_id); ?>&anio_semestre=<?php echo htmlspecialchars($anio_semestre); ?>" 
        class="btn btn-unicauca-success"
-       style="border-radius: 30px; padding: 0.6rem 1.2rem;"> <!-- Padding vertical reducido -->
+       style="border-radius: 30px; padding: 0.6rem 1.2rem;">
         <i class="fas fa-file-excel me-2"></i> Descargar Reporte XLS
     </a>
+    
+    <!-- Botón "Ver Comparativo" (estilo similar al TD de departamento_comparativo.php) -->
+<form action="depto_comparativo.php" method="POST" class="d-inline mt-2">
+    <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($departamento_id); ?>">
+    <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($anio_semestre); ?>">
+    <input type="hidden" name="anio_semestre_anterior" value="<?php echo htmlspecialchars($anio_semestre_anterior); ?>">
+    <!-- Bandera oculta para identificar el origen -->
+    <input type="hidden" name="envia" value="consulta_todo_depto">  <!-- ¡Nuevo campo! -->
+    
+    <button type="submit" 
+            class="btn btn-outline-primary" 
+            style="border-radius: 30px; 
+                   padding: 0.5rem 1.5rem;
+                   position: relative;
+                   transition: all 0.2s;
+                   border: 1px solid #0d6efd;
+                   background: none;
+                   width: 100%;">
+        <i class="fas fa-chart-bar me-2"></i>  Comparativo periodo anterior
+        <span class="badge bg-primary bg-opacity-10 text-primary ms-2" 
+              style="font-size: 0.7em; 
+                     position: absolute;
+                     right: 15px;
+                     top: 50%;
+                     transform: translateY(-50%);
+                     opacity: 0;
+                     transition: opacity 0.3s;">
+            →
+        </span>
+    </button>
+</form>
 </div>
     <?php if ($tipo_usuario == 3) {
         $aceptacion_fac = obteneraceptacionfac($departamento_id, $anio_semestre);

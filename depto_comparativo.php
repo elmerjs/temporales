@@ -22,6 +22,7 @@ $facultad_id = isset($_POST['facultad_id']) ? $_POST['facultad_id'] : null;
     $departamento_id = $_POST['departamento_id'];
     $anio_semestre = $_POST['anio_semestre'];
     $periodo_anterior = $_POST['anio_semestre_anterior'];
+$origen = $_POST['origen'] ?? null;
 
  $aniose= $anio_semestre;
 function obtenerPeriodoAnterior($anio_semestre) {
@@ -342,14 +343,21 @@ $semanas_ocasant = ceil($dias_ocasant / 7);
    <?php if ($tipo_usuario != 4): ?>
    <?php
 if (isset($_POST['envia'])) {
-    if ($_POST['envia'] === 'rcc') {
-        $archivo_regreso = 'report_depto_comparativo_costos.php';
-    } elseif ($_POST['envia'] === 'ce') {
-        $archivo_regreso = 'comparativo_espejo.php';
-    } elseif ($_POST['envia'] === 'rcec') {
-        $archivo_regreso = 'report_depto_comparativo_costos_espejo.php';
-    } else {
-        $archivo_regreso = 'report_depto_comparativo.php';
+    switch ($_POST['envia']) {
+        case 'rcc':
+            $archivo_regreso = 'report_depto_comparativo_costos.php';
+            break;
+        case 'ce':
+            $archivo_regreso = 'comparativo_espejo.php';
+            break;
+        case 'rcec':
+            $archivo_regreso = 'report_depto_comparativo_costos_espejo.php';
+            break;
+        case 'consulta_todo_depto':  // ¡Nuevo caso!
+            $archivo_regreso = 'consulta_todo_depto.php';
+            break;
+        default:
+            $archivo_regreso = 'report_depto_comparativo.php';
     }
 } else {
     $archivo_regreso = 'report_depto_comparativo.php';
@@ -520,13 +528,20 @@ function obtenerTRDDepartamento($departamento_id) {
     </style>
 <div class="card card-plazo mb-4" >
     <div class="navigation-header">
-        <div >
-            <a href="<?= $archivo_regreso ?>?anio_semestre=<?= urlencode($anio_semestre) ?>"
-                class="btn-back"
-                title="Regresar a 'Gestión facultad'">
-                <i class="fas fa-arrow-left me-2"></i> Regresar
-            </a>
-        </div>
+       <div>
+    <?php if (isset($_POST['envia']) && $_POST['envia'] === 'consulta_todo_depto'): ?>
+        <form action="<?= $archivo_regreso ?>" method="post" style="display:inline;">
+            <input type="hidden" name="anio_semestre" value="<?= htmlspecialchars($anio_semestre) ?>">
+            <input type="hidden" name="departamento_id" value="<?= htmlspecialchars($departamento_id) ?>">
+            <button type="submit">Volver</button>
+        </form>
+    <?php else: ?>
+        <a href="<?= $archivo_regreso ?>?anio_semestre=<?= urlencode($anio_semestre) ?>&departamento_id=<?= urlencode($departamento_id) ?>" class="btn-back">
+            <i class="fas fa-arrow-left me-2"></i> Regresar
+        </a>
+    <?php endif; ?>
+</div>
+
         <div class="d-flex align-items-baseline gap-2">
             <h2 class="mb-0" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 Fac. <?= mb_strimwidth(obtenerNombreFacultad($departamento_id), 0, 65, '...') ?>
