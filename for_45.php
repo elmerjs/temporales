@@ -69,6 +69,42 @@ $horas_r = null;
 $anexa_hv_nuevo = null;
 $actualiza_hv_antiguo = null;
 $error_consulta = null;
+// Nuevos campos recibidos del modal
+$pregrado = $_GET['pregrado'] ?? null;
+$especializacion = $_GET['especializacion'] ?? null;
+$maestria = $_GET['maestria'] ?? null;
+$doctorado = $_GET['doctorado'] ?? null;
+$otro_estudio = $_GET['otro_estudio'] ?? null;
+$experiencia_docente = $_GET['experiencia_docente'] ?? null;
+$experiencia_profesional = $_GET['experiencia_profesional'] ?? null;
+$otra_experiencia = $_GET['otra_experiencia'] ?? null;
+// Actualizar los nuevos campos en la tabla solicitudes
+$sql_update_solicitud = "UPDATE solicitudes SET 
+    pregrado = ?,
+    especializacion = ?,
+    maestria = ?,
+    doctorado = ?,
+    otro_estudio = ?,
+    experiencia_docente = ?,
+    experiencia_profesional = ?,
+    otra_experiencia = ?
+    WHERE id_solicitud = ?";
+
+$stmt_update = $con->prepare($sql_update_solicitud);
+if ($stmt_update) {
+    $stmt_update->bind_param("ssssssssi", 
+        $pregrado, 
+        $especializacion, 
+        $maestria, 
+        $doctorado, 
+        $otro_estudio, 
+        $experiencia_docente, 
+        $experiencia_profesional, 
+        $otra_experiencia, 
+        $id_solicitud);
+    $stmt_update->execute();
+    $stmt_update->close();
+}
 
 // Verificar si las variables están definidas antes de usarlas
 if (isset($anio_semestre) && isset($departamento_id) && isset($id_solicitud)) {
@@ -88,7 +124,15 @@ if (isset($anio_semestre) && isset($departamento_id) && isset($id_solicitud)) {
                 solicitudes.horas,
                 solicitudes.horas_r,
                 solicitudes.anexa_hv_docente_nuevo,
-                solicitudes.actualiza_hv_antiguo
+                solicitudes.actualiza_hv_antiguo,
+                 solicitudes.pregrado,
+            solicitudes.especializacion,
+            solicitudes.maestria,
+            solicitudes.doctorado,
+            solicitudes.otro_estudio,
+            solicitudes.experiencia_docente,
+            solicitudes.experiencia_profesional,
+            solicitudes.otra_experiencia
             FROM depto_periodo
             JOIN deparmanentos ON deparmanentos.PK_DEPTO = depto_periodo.fk_depto_dp
             JOIN facultad ON facultad.PK_FAC = deparmanentos.FK_FAC
@@ -433,34 +477,38 @@ $cell1 = $row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::P
 $cell1->addText("Título(s)", ['bold' => true], ['alignment' => Jc::CENTER], $paragraphStyle);
 $row->addCell(null, ['gridSpan' => 2, 'vMerge' => 'continue']); // Continuar combinación vertical
 
+// ... [código anterior]
+
 // Fila 3 (Pregrado + Tipo + Años)
 $row = $table2->addRow($rowHeight, ['exactHeight' => true]);
-$row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::PERCENT])->addText("Pregrado(s):", [], ['alignment' => Jc::LEFT], $paragraphStyle);
+$row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::PERCENT])->addText("Pregrado(s): " . ($pregrado ?? ''), [], ['alignment' => Jc::LEFT], $paragraphStyle);
 $row->addCell($col2Width, ['width' => $col2Width, 'unit' => TblWidth::PERCENT])->addText("Tipo", ['bold' => true], ['alignment' => Jc::CENTER], $paragraphStyle);
 $row->addCell($col3Width, ['width' => $col3Width, 'unit' => TblWidth::PERCENT])->addText("Años", ['bold' => true], ['alignment' => Jc::CENTER], $paragraphStyle);
 
-// Fila 4 (Especialización + Docente + Vacío)
+// Fila 4 (Especialización + Experiencia Docente)
 $row = $table2->addRow($rowHeight, ['exactHeight' => true]);
-$row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::PERCENT])->addText("Especialización(s):", [], ['alignment' => Jc::LEFT], $paragraphStyle);
-$row->addCell($col2Width, ['width' => $col2Width, 'unit' => TblWidth::PERCENT])->addText("Docente", [], ['alignment' => Jc::LEFT], $paragraphStyle);
-$row->addCell($col3Width, ['width' => $col3Width, 'unit' => TblWidth::PERCENT]);
+$row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::PERCENT])->addText("Especialización(s): " . ($especializacion ?? ''), [], ['alignment' => Jc::LEFT], $paragraphStyle);
+$row->addCell($col2Width, ['width' => $col2Width, 'unit' => TblWidth::PERCENT])->addText("Docente: ", [], ['alignment' => Jc::LEFT], $paragraphStyle);
+$row->addCell($col3Width, ['width' => $col3Width, 'unit' => TblWidth::PERCENT])->addText( ($experiencia_docente ?? ''), [], ['alignment' => Jc::LEFT], $paragraphStyle);
 
-// Fila 5 (Maestría + Profesional + Vacío)
+// Fila 5 (Maestría + Experiencia Profesional)
 $row = $table2->addRow($rowHeight, ['exactHeight' => true]);
-$row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::PERCENT])->addText("Maestría(s):", [], ['alignment' => Jc::LEFT], $paragraphStyle);
-$row->addCell($col2Width, ['width' => $col2Width, 'unit' => TblWidth::PERCENT])->addText("Profesional", [], ['alignment' => Jc::LEFT], $paragraphStyle);
-$row->addCell($col3Width, ['width' => $col3Width, 'unit' => TblWidth::PERCENT]);
+$row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::PERCENT])->addText("Maestría(s): " . ($maestria ?? ''), [], ['alignment' => Jc::LEFT], $paragraphStyle);
+$row->addCell($col2Width, ['width' => $col2Width, 'unit' => TblWidth::PERCENT])->addText("Profesional: ", [], ['alignment' => Jc::LEFT], $paragraphStyle);
+$row->addCell($col3Width, ['width' => $col3Width, 'unit' => TblWidth::PERCENT])->addText(($experiencia_profesional ?? ''), [], ['alignment' => Jc::LEFT], $paragraphStyle);
 
-// Fila 6 y 7 combinadas (Doctorado + Otra: ¿Cuál? + Vacío)
+// Fila 6 y 7 combinadas (Doctorado + Otra Experiencia)
 $row = $table2->addRow($rowHeight, ['exactHeight' => true]);
-$row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::PERCENT])->addText("Doctorado(s):", [], ['alignment' => Jc::LEFT], $paragraphStyle);
-$row->addCell($col2Width, ['width' => $col2Width, 'unit' => TblWidth::PERCENT, 'vMerge' => 'restart'])->addText("Otra: ¿Cuál?", [], ['alignment' => Jc::LEFT], $paragraphStyle);
-$row->addCell($col3Width, ['width' => $col3Width, 'unit' => TblWidth::PERCENT, 'vMerge' => 'restart']);
+$row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::PERCENT])->addText("Doctorado(s): " . ($doctorado ?? ''), [], ['alignment' => Jc::LEFT], $paragraphStyle);
+$row->addCell($col2Width, ['width' => $col2Width, 'unit' => TblWidth::PERCENT, 'vMerge' => 'restart'])->addText("Otra: ", [], ['alignment' => Jc::LEFT], $paragraphStyle);
+$row->addCell($col3Width, ['width' => $col3Width, 'unit' => TblWidth::PERCENT, 'vMerge' => 'restart'])->addText(($otra_experiencia ?? ''), [], ['alignment' => Jc::LEFT], $paragraphStyle);
 
 $row = $table2->addRow($rowHeight, ['exactHeight' => true]);
-$row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::PERCENT])->addText("Otro: ¿Cuál?", [], ['alignment' => Jc::LEFT], $paragraphStyle);
+$row->addCell($col1Width, ['width' => $col1Width, 'unit' => TblWidth::PERCENT])->addText("Otro: " . ($otro_estudio ?? ''), [], ['alignment' => Jc::LEFT], $paragraphStyle);
 $row->addCell($col2Width, ['width' => $col2Width, 'unit' => TblWidth::PERCENT, 'vMerge' => 'continue']);
 $row->addCell($col3Width, ['width' => $col3Width, 'unit' => TblWidth::PERCENT, 'vMerge' => 'continue']);
+
+// ... [código posterior]
 //tabla   final.::
 $section->addText('.', ['size' => 5, 'color' => 'FFFFFF'], ['spaceAfter' => 50]);
 // Estilos de la tabla justificada a la ventana (100% del ancho)

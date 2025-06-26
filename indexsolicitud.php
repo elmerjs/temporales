@@ -1,6 +1,6 @@
 <?php
 require('include/headerz.php');
-$tipo_docente = isset($_GET['tipo_docente']) ? $_GET['tipo_docente'] : ''; 
+$tipo_docente = isset($_GET['tipo_docente']) ? $_GET['tipo_docente'] : '';
 $anio_semestre = isset($_GET['anio_semestre']) ? $_GET['anio_semestre'] : '';
 
 
@@ -17,15 +17,38 @@ $anio_semestre = isset($_GET['anio_semestre']) ? $_GET['anio_semestre'] : '';
     <html lang="es">
     <head>
         <meta charset="UTF-8">
-        <title>Solicitudes de Contratación Temporales</title>
-        
+        <title>Solicitudes de Vinculación Temporales</title>
+
          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js" integrity="sha384-w1Q4orYjBQndcko6MimVbzY0tgp4pWB4lZ7lr30WKz0vr/aWKhXdBNmNb5D92v7s" crossorigin="anonymous"></script>
- 
+
         <style>
+            /* Puedes ajustar estos valores según el estilo que ya manejes */
+.alto-field {
+    height: 38px; /* Altura estándar de campos de formulario */
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.alto-field:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.alto-field[readonly] {
+    background-color: #e9ecef;
+    opacity: 1;
+}
      .readonly-input {
         background-color: #f0f0f0;
         color: #666;
@@ -203,11 +226,11 @@ input[type="number"]::-moz-number-spin-down {
 
     }
              .alto-field {
-     
+
                           height: 37px; /* Ajusta la altura del campo */
 
     }
-            
+
             @keyframes inflateButton {
     0% {
         transform: scale(1);
@@ -243,11 +266,75 @@ input[type="number"]::-moz-number-spin-down {
     box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.3);
 }
 
+/* New styles for the link container */
+
+.link-anexos-container input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+/* Add this to your <style> block */
+
+/* Ensure consistent vertical alignment for table cell content */
+td {
+    vertical-align: top; /* Align content to the top within the cell */
+    padding-top: 0; /* Remove default padding from the top if any */
+    padding-bottom: 0; /* Remove default padding from the bottom if any */
+}
+
+td > * {
+    display: flex; /* Use flexbox for direct children of table cells */
+    align-items: center; /* Vertically align items in the middle */
+    height: 100%; /* Make child elements take full height of the cell */
+    margin: 0; /* Remove any default margins */
+}
+
+.link-anexos-container {
+    display: none; /* Hidden by default - JavaScript will change this to 'flex' when needed */
+    margin-top: 0; /* Removed the problematic margin-top */
+    height: 100%;
+    align-items: center; /* This applies when display is set to flex by JS */
+}
+
+/* Adjust input height if needed, ensuring it's consistent */
+.alto-field {
+    height: 38px; /* Standard height for inputs */
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1rem;
+    line-height: 1.5; /* Important for vertical alignment of text within input */
+    color: #495057;
+    background-color: #fff;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+/* Ensure select elements also adhere to the same height */
+td select {
+    height: 38px; /* Match the height of .alto-field */
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1rem;
+    line-height: 1.5;
+    box-sizing: border-box;
+}
+
+/* For the delete button to align better */
+.eliminar-fila {
+    height: 38px; /* Match other field heights */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
         </style>
-        
+
         <script>
-                
+
 </script>
           <script>
         function validarFormulario(event) {
@@ -276,17 +363,17 @@ input[type="number"]::-moz-number-spin-down {
     </script>
     </head>
     <body>
-        
+
     <div class="container">
-    
-    
-    
+
+
+
     <?php
-    
+
 require 'cn.php';
 $nombre_sesion= $_SESSION['name'];
 //echo $nombre_sesion;
-$consultaf = "SELECT *  FROM users where users.Name= '$nombre_sesion'";
+$consultaf = "SELECT * FROM users where users.Name= '$nombre_sesion'";
 $resultadof = $con->query($consultaf);
 while ($row = $resultadof -> fetch_assoc()){
     $nombre_usuario= $row['Name'];
@@ -316,18 +403,16 @@ if ($tipo_usuario!= 1) {
         }
     }
 ?>
-        <!-- Botón de retorno a consulta_todo_depto.php -->
-<span style="display: inline-block; padding: 4px 8px; border: 1px solid #ccc; background-color: #f8f9fa; border-radius: 3px;">
+        <span style="display: inline-block; padding: 4px 8px; border: 1px solid #ccc; background-color: #f8f9fa; border-radius: 3px;">
     <button id="btnReturn" class="btn btn-light" onclick="redirectToConsulta()" style="text-decoration: none; color: inherit; padding: 2px 5px; border: none; background: none;">
         Regresar <i class="fas fa-arrow-left"></i>
     </button>
 </span>
 
-    
+
         <form action="guardar.php" method="POST">
-       
+
             <div id="facultad-group" class="button-group">
-                <!-- Las opciones de facultad se cargarán desde la base de datos -->
                 <?php
                 // Conectar a la base de datos
                 $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
@@ -340,7 +425,7 @@ if ($tipo_usuario!= 1) {
                     echo '<button type="button" class="facultad-btn" id="selected-facultad"  data-value="' . $row['PK_FAC'] . '">' . $row['nombre_fac_minb'] . '</button>';
                 }
                 $conn->close();
-                ?>     
+                ?>
             </div>
                 <script>
     // Simular clic en el botón de la facultad al cargar la página
@@ -357,26 +442,24 @@ if ($tipo_usuario!= 1) {
  <input type="hidden" id="tipo_usuario" name="tipo_usuario" value ="<?php echo $tipo_usuario;?>" required>
              <input type="hidden" id="email_user" name="email_user" value ="<?php echo $email_user;?>" required>
              <input type="hidden" id="email_depto" name="email_depto" value ="<?php echo $email_depto;?>" required>
-            
+
             <input type="hidden" id="facultad" name="facultad" required><br>
 
             <label for="departamento">Departamento:</label>
             <div id="departamento-group" class="button-group">
-                <!-- Aquí se generarán las opciones de departamento dinámicamente con JavaScript -->
-            </div>
+                </div>
             <input type="hidden" id="departamento" name="departamento" required><br>
 
              <div class="row">
     <label for="anio_semestre">Periodo:</label>
-    <select id="anio_semestre" name="anio_semestre" required 
+    <select id="anio_semestre" name="anio_semestre" required
             onfocus="this.blur()" style="pointer-events: none; background-color: #f5f5f5;">
-        <!-- Las opciones se generan dinámicamente -->
-    </select>
+        </select>
 </div>
 
        <div class="row">
     <label for="tipo_docente">Tipo de Profesor:</label>
-    <select id="tipo_docente" name="tipo_docente" required 
+    <select id="tipo_docente" name="tipo_docente" required
             onfocus="this.blur()" style="pointer-events: none; background-color: #f5f5f5;">
         <option value="Ocasional" <?php echo ($tipo_docente == 'Ocasional') ? 'selected' : ''; ?>>Ocasional</option>
         <option value="Catedra" <?php echo ($tipo_docente == 'Catedra') ? 'selected' : ''; ?>>Cátedra</option>
@@ -385,28 +468,20 @@ if ($tipo_usuario!= 1) {
             <div class="row">
     <label for="num_docentes">Cantidad de Profesores a Ingresar:</label>
     <input type="number" id="num_docentes" name="num_docentes" min="1" readonly class="readonly-input">
-    
-</div><!--<div class="add-container">
-        <span class="toggle-icon"style="margin-right: 5px; margin-top: 25px;">◄</span> <!-- Ícono de flecha hacia la izquierda 
-        <span style="margin-right: 5px; margin-top: 25px;">adicione aquí</span>
-    </div>-->
-            <br>
+
+</div><br>
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <button type="button" class="custom-button" onclick="cargarDatosPeriodoAnterior()">Importar del periodo anterior</button>
-            
-            
+
+
 <button type="button"  class="custom-buttonv" id="insertar_registro"> <i class="fas fa-plus" style="margin-right: 5px;"></i>Añadir Aspirante</button>
 
-            <!-- Aquí agregamos los campos para los docentes -->
             <div id="docentes">
-                <!-- Los campos de los docentes se generarán dinámicamente con JavaScript -->
-            </div>
+                </div>
 
             <button type="submit" id="btnGuardar">Cargar profesores</button>
         </form>
-        
-        
 
 
 
@@ -416,8 +491,8 @@ if ($tipo_usuario!= 1) {
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <script>
-    
-    
+
+
     document.getElementById('btnGuardar').addEventListener('click', function(event) {
     var filas = document.querySelectorAll('#docentes tbody tr');
     var mensajeError = '';
@@ -473,7 +548,7 @@ function redirectToConsulta() {
 }
 </script>
         <script>
-            
+
              function validarHoras(i) {
                     var horas = parseFloat(document.getElementById(`horas_${i}`).value) || 0;
                     var horas_r = parseFloat(document.getElementById(`horas_r_${i}`).value) || 0;
@@ -509,7 +584,7 @@ function redirectToConsulta() {
                 return true; // Permite guardar si todo está correcto
             }
 
-            
+
 document.getElementById('insertar_registro').addEventListener('click', function() {
     var numDocentesInput = document.getElementById('num_docentes');
     var numDocentes = parseInt(numDocentesInput.value) || 0;
@@ -539,6 +614,7 @@ document.getElementById('insertar_registro').addEventListener('click', function(
                 <th class="horas_r">Horas Reg.</th>
                 <th>Anexa HV Nuevo</th>
                 <th>Actualiza HV Antiguo</th>
+                <th class="link-anexos-header">Link Anexos</th>
                 <th>Eliminar</th>
             </tr>
         `;
@@ -549,55 +625,61 @@ document.getElementById('insertar_registro').addEventListener('click', function(
         var tbody = table.querySelector('tbody');
     }
 
-    // Crear una nueva fila
-    var tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td>${numDocentes}</td>
-        <td><input type="text" id="cedula_${numDocentes - 1}" name="cedula[]" required onchange="buscarTercero(this); validarCedulaUnica(this)" class="alto-field"></td>
-        <td><input type="text" id="nombre_${numDocentes - 1}" name="nombre[]" readonly class="readonly-field"></td>
-        <td class="tipo_dedicacion">
-            <select id="tipo_dedicacion_${numDocentes - 1}" name="tipo_dedicacion[]" onchange="limpiarDedicacionReg(${numDocentes - 1})">
-                <option value=""></option>
-                <option value="TC">TC</option>
-                <option value="MT">MT</option>
-            </select>
-        </td>
-        <td class="tipo_dedicacion_r">
-            <select id="tipo_dedicacion_r_${numDocentes - 1}" name="tipo_dedicacion_r[]" onchange="limpiarDedicacionPop(${numDocentes - 1})">
-                <option value=""></option>
-                <option value="TC">TC</option>
-                <option value="MT">MT</option>
-            </select>
-        </td>
-      <td class="horas">
-    <input id="horas_${numDocentes - 1}" name="horas[]" type="number" min="0" max="12" step="0.1" onchange="validarHoras(${numDocentes - 1})">
-</td>
-
-       <td class="horas_r">
-    <input id="horas_r_${numDocentes - 1}" name="horas_r[]" type="number" min="0" max="12" step="0.1" onchange="validarHoras(${numDocentes - 1})">
-</td>
-        <td>
-            <select id="anexa_hv_docente_nuevo_${numDocentes - 1}" name="anexa_hv_docente_nuevo[]" required>
-                <option value="si">Sí</option>
-                <option value="no" selected>No</option>
-                <option value="no aplica">No Aplica</option>
-            </select>
-        </td>
-        <td>
-            <select id="actualiza_hv_antiguo_${numDocentes - 1}" name="actualiza_hv_antiguo[]" required>
-                <option value="si">Sí</option>
-                <option value="no" selected>No</option>
-                <option value="no aplica">No Aplica</option>
-            </select>
-        </td>
-        <td>
-            <button type="button" class="eliminar-fila" onclick="eliminarFila(this)">&#128465;</button>
-        </td>
-    `;
+   // Crear una nueva fila
+var tr = document.createElement('tr');
+tr.innerHTML = `
+    <td>${numDocentes}</td>
+    <td><input type="text" id="cedula_${numDocentes - 1}" name="cedula[]" required onchange="buscarTercero(this); validarCedulaUnica(this)" class="alto-field"></td>
+    <td><input type="text" id="nombre_${numDocentes - 1}" name="nombre[]" readonly class="readonly-field"></td>
+    <td class="tipo_dedicacion">
+        <select id="tipo_dedicacion_${numDocentes - 1}" name="tipo_dedicacion[]" onchange="limpiarDedicacionReg(${numDocentes - 1})">
+            <option value=""></option>
+            <option value="TC">TC</option>
+            <option value="MT">MT</option>
+        </select>
+    </td>
+    <td class="tipo_dedicacion_r">
+        <select id="tipo_dedicacion_r_${numDocentes - 1}" name="tipo_dedicacion_r[]" onchange="limpiarDedicacionPop(${numDocentes - 1})">
+            <option value=""></option>
+            <option value="TC">TC</option>
+            <option value="MT">MT</option>
+        </select>
+    </td>
+    <td class="horas">
+        <input id="horas_${numDocentes - 1}" name="horas[]" type="number" min="0" max="12" step="0.1" onchange="validarHoras(${numDocentes - 1})">
+    </td>
+    <td class="horas_r">
+        <input id="horas_r_${numDocentes - 1}" name="horas_r[]" type="number" min="0" max="12" step="0.1" onchange="validarHoras(${numDocentes - 1})">
+    </td>
+    <td>
+        <select id="anexa_hv_docente_nuevo_${numDocentes - 1}" name="anexa_hv_docente_nuevo[]" required onchange="toggleLinkAnexos(${numDocentes - 1})">
+            <option value="si">Sí</option>
+            <option value="no" selected>No</option>
+            <option value="no aplica">No Aplica</option>
+        </select>
+    </td>
+    <td>
+        <select id="actualiza_hv_antiguo_${numDocentes - 1}" name="actualiza_hv_antiguo[]" required onchange="toggleLinkAnexos(${numDocentes - 1})">
+            <option value="si">Sí</option>
+            <option value="no" selected>No</option>
+            <option value="no aplica">No Aplica</option>
+        </select>
+    </td>
+    <td class="link-anexos-cell">
+        <div id="link_anexos_container_${numDocentes - 1}" class="link-anexos-container">
+            <input type="url" id="link_anexos_${numDocentes - 1}" name="link_anexos[]" placeholder="Opcional Link Drive/Nube" class="alto-field">
+        </div>
+    </td>
+    <td>
+        <button type="button" class="eliminar-fila" onclick="eliminarFila(this)">&#128465;</button>
+    </td>
+`;
     tbody.appendChild(tr);
 tr.scrollIntoView({ behavior: "smooth", block: "end" });
 
     actualizarCamposDocente();
+        actualizarVisibilidadEncabezadoLink(); // Añadir al final
+
 });
 
             function cargarDatosPeriodoAnterior() {
@@ -614,7 +696,7 @@ tr.scrollIntoView({ behavior: "smooth", block: "end" });
             alert('Por favor seleccione un periodo, facultad y departamento.');
             return;
         }
-                  else if (departamentoId !== depto_user && tipo_usuario == 3) { 
+                  else if (departamentoId !== depto_user && tipo_usuario == 3) {
                 alert('Por favor seleccione su departamento. Usuario actual: ' + nombre_usuario  + depto_user+departamentoId);
             return;
        }
@@ -641,9 +723,9 @@ tr.scrollIntoView({ behavior: "smooth", block: "end" });
         };
         xhr.send();
     }
-            
-            
-            
+
+
+
     function generarCamposDocenteConDatos(datos) {
     var container = document.getElementById('docentes');
     container.innerHTML = '';
@@ -666,64 +748,70 @@ tr.scrollIntoView({ behavior: "smooth", block: "end" });
 <th class="horas_r" title="Horas en Sede Regionalización">Horas Reg.</th>
 <th title="Anexa Hoja de Vida para nuevos aspirantes">Anexa HV Nuevo</th>
 <th title="Actualiza Hoja de Vida para aspirantes antiguos">Actualiza HV Antiguo</th>
+            <th class="link-anexos-header">Link Anexos</th>
             <th>Eliminar</th>
         </tr>
     `;
     table.appendChild(thead);
     table.appendChild(tbody);
 
-    datos.forEach((dato, i) => {
-        var tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${i + 1}</td>
-            <td><input type="text" id="cedula_${i}" name="cedula[]" value="${dato.cedula}" required onchange="buscarTercero(this)"  class="alto-field"></td>
-            <td><input type="text" id="nombre_${i}" name="nombre[]" value="${dato.nombre}" readonly class="readonly-field"></td>
-            <td class="tipo_dedicacion">
-                <select id="tipo_dedicacion_${i}" name="tipo_dedicacion[]" onchange="limpiarDedicacionReg(${i})">
-                    <option value=""></option>
-                    <option value="TC" ${dato.tipo_dedicacion === 'TC' ? 'selected' : ''}>TC</option>
-                    <option value="MT" ${dato.tipo_dedicacion === 'MT' ? 'selected' : ''}>MT</option>
-                </select>
-            </td>
-            <td class="tipo_dedicacion_r">
-                <select id="tipo_dedicacion_r_${i}" name="tipo_dedicacion_r[]" onchange="limpiarDedicacionPop(${i})">
-                    <option value=""></option>
-                    <option value="TC" ${dato.tipo_dedicacion_r === 'TC' ? 'selected' : ''}>TC</option>
-                    <option value="MT" ${dato.tipo_dedicacion_r === 'MT' ? 'selected' : ''}>MT</option>
-                </select>
-            </td>
-                <td class="horas">
-                <input id="horas_${i}" name="horas[]" type="number" value="${dato.horas}" min="0" max="12" step="0.1" onchange="validarHoras(${i})">
-            </td>
-            <td class="horas_r">
-                <input id="horas_r_${i}" name="horas_r[]" type="number" value="${dato.horas_r}" min="0" max="12" step="0.1" onchange="validarHoras(${i})">
-            </td>
-
-            <td>
-                <select id="anexa_hv_docente_nuevo_${i}" name="anexa_hv_docente_nuevo[]" required>
-                    <option value="si" ${dato.anexa_hv_docente_nuevo === 'si' ? 'selected' : ''}>Sí</option>
-                    <option value="no" ${dato.anexa_hv_docente_nuevo === 'no' ? 'selected' : ''}>No</option>
-                    <option value="no aplica" ${dato.anexa_hv_docente_nuevo === 'no aplica' ? 'selected' : ''}>No Aplica</option>
-                </select>
-            </td>
-            <td>
-                <select id="actualiza_hv_antiguo_${i}" name="actualiza_hv_antiguo[]" required>
-                    <option value="si" ${dato.actualiza_hv_antiguo === 'si' ? 'selected' : ''}>Sí</option>
-                    <option value="no" ${dato.actualiza_hv_antiguo === 'no' ? 'selected' : ''}>No</option>
-                    <option value="no aplica" ${dato.actualiza_hv_antiguo === 'no aplica' ? 'selected' : ''}>No Aplica</option>
-                </select>
-            </td>
-            <td>
-                <button type="button" class="eliminar-fila" onclick="eliminarFila(this)">&#128465;</button>
-
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-
+   datos.forEach((dato, i) => {
+    var tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td><input type="text" id="cedula_${i}" name="cedula[]" value="${dato.cedula}" required onchange="buscarTercero(this)" class="alto-field"></td>
+        <td><input type="text" id="nombre_${i}" name="nombre[]" value="${dato.nombre}" readonly class="readonly-field"></td>
+        <td class="tipo_dedicacion">
+            <select id="tipo_dedicacion_${i}" name="tipo_dedicacion[]" onchange="limpiarDedicacionReg(${i})">
+                <option value=""></option>
+                <option value="TC" ${dato.tipo_dedicacion === 'TC' ? 'selected' : ''}>TC</option>
+                <option value="MT" ${dato.tipo_dedicacion === 'MT' ? 'selected' : ''}>MT</option>
+            </select>
+        </td>
+        <td class="tipo_dedicacion_r">
+            <select id="tipo_dedicacion_r_${i}" name="tipo_dedicacion_r[]" onchange="limpiarDedicacionPop(${i})">
+                <option value=""></option>
+                <option value="TC" ${dato.tipo_dedicacion_r === 'TC' ? 'selected' : ''}>TC</option>
+                <option value="MT" ${dato.tipo_dedicacion_r === 'MT' ? 'selected' : ''}>MT</option>
+            </select>
+        </td>
+        <td class="horas">
+            <input id="horas_${i}" name="horas[]" type="number" value="${dato.horas}" min="0" max="12" step="0.1" onchange="validarHoras(${i})">
+        </td>
+        <td class="horas_r">
+            <input id="horas_r_${i}" name="horas_r[]" type="number" value="${dato.horas_r}" min="0" max="12" step="0.1" onchange="validarHoras(${i})">
+        </td>
+        <td>
+            <select id="anexa_hv_docente_nuevo_${i}" name="anexa_hv_docente_nuevo[]" required onchange="toggleLinkAnexos(${i})">
+                <option value="si" ${dato.anexa_hv_docente_nuevo === 'si' ? 'selected' : ''}>Sí</option>
+                <option value="no" ${dato.anexa_hv_docente_nuevo === 'no' ? 'selected' : ''}>No</option>
+                <option value="no aplica" ${dato.anexa_hv_docente_nuevo === 'no aplica' ? 'selected' : ''}>No Aplica</option>
+            </select>
+        </td>
+        <td>
+            <select id="actualiza_hv_antiguo_${i}" name="actualiza_hv_antiguo[]" required onchange="toggleLinkAnexos(${i})">
+                <option value="si" ${dato.actualiza_hv_antiguo === 'si' ? 'selected' : ''}>Sí</option>
+                <option value="no" ${dato.actualiza_hv_antiguo === 'no' ? 'selected' : ''}>No</option>
+                <option value="no aplica" ${dato.actualiza_hv_antiguo === 'no aplica' ? 'selected' : ''}>No Aplica</option>
+            </select>
+        </td>
+        <td class="link-anexos-cell">
+            <div id="link_anexos_container_${i}" class="link-anexos-container">
+                <input type="url" id="link_anexos_${i}" name="link_anexos[]" value="${dato.link_anexos || ''}" placeholder="Opcional Link Drive/Nube" class="alto-field">
+            </div>
+        </td>
+        <td>
+            <button type="button" class="eliminar-fila" onclick="eliminarFila(this)">&#128465;</button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+    // Call toggleLinkAnexos for each row after it's added to set initial visibility
+    toggleLinkAnexos(i);
+});
     container.appendChild(table);
     actualizarCamposDocente();
-    document.getElementById('num_docentes').value = datos.length;
+    document.getElementById('num_docentes').value = datos.length;               actualizarVisibilidadEncabezadoLink(); // Añadir esto
+
 }
 
     // Función para eliminar la fila
@@ -737,11 +825,39 @@ tr.scrollIntoView({ behavior: "smooth", block: "end" });
     } else {
         console.log("🚫 Eliminación cancelada.");
     }
+       
+               actualizarVisibilidadEncabezadoLink(); // Añadir esto
+
 }   function actualizarNumerosFila() {
         var table = document.querySelector('#docentes table tbody');
         var rows = table.querySelectorAll('tr');
         rows.forEach((row, index) => {
             row.querySelector('td:first-child').innerText = index + 1;
+             // Update IDs and names based on new row index
+            const oldIndex = parseInt(row.querySelector('input[name="cedula[]"]').id.split('_')[1]);
+            if (oldIndex !== index) {
+                row.querySelector(`[id^="cedula_"]`).id = `cedula_${index}`;
+                row.querySelector(`[id^="nombre_"]`).id = `nombre_${index}`;
+                row.querySelector(`[id^="tipo_dedicacion_"]`).id = `tipo_dedicacion_${index}`;
+                row.querySelector(`[id^="tipo_dedicacion_r_"]`).id = `tipo_dedicacion_r_${index}`;
+                row.querySelector(`[id^="horas_"]`).id = `horas_${index}`;
+                row.querySelector(`[id^="horas_r_"]`).id = `horas_r_${index}`;
+                row.querySelector(`[id^="anexa_hv_docente_nuevo_"]`).id = `anexa_hv_docente_nuevo_${index}`;
+                row.querySelector(`[id^="actualiza_hv_antiguo_"]`).id = `actualiza_hv_antiguo_${index}`;
+                row.querySelector(`[id^="link_anexos_container_"]`).id = `link_anexos_container_${index}`;
+                row.querySelector(`[id^="link_anexos_"]`).id = `link_anexos_${index}`;
+
+                // Update onchange attributes with new index
+                row.querySelector(`[id^="tipo_dedicacion_"]`).setAttribute('onchange', `limpiarDedicacionReg(${index})`);
+                row.querySelector(`[id^="tipo_dedicacion_r_"]`).setAttribute('onchange', `limpiarDedicacionPop(${index})`);
+                row.querySelector(`[id^="horas_"]`).setAttribute('onchange', `validarHoras(${index})`);
+                row.querySelector(`[id^="horas_r_"]`).setAttribute('onchange', `validarHoras(${index})`);
+                row.querySelector(`[id^="anexa_hv_docente_nuevo_"]`).setAttribute('onchange', `toggleLinkAnexos(${index})`);
+                row.querySelector(`[id^="actualiza_hv_antiguo_"]`).setAttribute('onchange', `toggleLinkAnexos(${index})`);
+
+                // Ensure initial visibility of the link field is correct for the updated row
+                toggleLinkAnexos(index);
+            }
         });
         document.getElementById('num_docentes').value = rows.length;
     }
@@ -866,7 +982,7 @@ document.querySelectorAll('.facultad-btn').forEach(function(button) {
 
             departamento_div.appendChild(button);
         });
-                
+
                 // Seleccionar el departamento por defecto si el tipo de usuario es 3
                                    var tipoUsuario = '<?php echo $tipo_usuario; ?>';
 
@@ -875,12 +991,12 @@ document.querySelectorAll('.facultad-btn').forEach(function(button) {
                            var departamento_id = '<?php echo $depto_user; ?>';
 
                             var defaultButton = document.querySelector(`.departamento-btn[data-value='${departamento_id}']`);
-                            
+
                             if (defaultButton) {
                                 defaultButton.click();
                             }
                         }
-                            
+
             }
         };
         xhr.send();
@@ -920,6 +1036,7 @@ function generarCamposDocente() {
                 <th class="horas_r">Horas Reg.</th>
                 <th>Anexa HV Nuevo</th>
                 <th>Actualiza HV Antiguo</th>
+                <th class="link-anexos-header">Link Anexos</th>
                 <th>Eliminar</th>
             </tr>
         `;
@@ -932,53 +1049,58 @@ function generarCamposDocente() {
 
     var currentRows = tbody.children.length;
 
-    for (var i = currentRows; i < num; i++) {
-        var tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${i + 1}</td>
-            <td><input type="text" id="cedula_${i}" name="cedula[]" required onchange="buscarTercero(this); validarCedulaUnica(this)"  class="alto-field"></td>
-            <td><input type="text" id="nombre_${i}" name="nombre[]" readonly class="readonly-field"></td>
-            <td class="tipo_dedicacion">
-                <select id="tipo_dedicacion_${i}" name="tipo_dedicacion[]" onchange="limpiarDedicacionReg(${i})">
-                    <option value=""></option>
-                    <option value="TC">TC</option>
-                    <option value="MT">MT</option>
-                </select>
-            </td>
-            <td class="tipo_dedicacion_r">
-                <select id="tipo_dedicacion_r_${i}" name="tipo_dedicacion_r[]" onchange="limpiarDedicacionPop(${i})">
-                    <option value=""></option>
-                    <option value="TC">TC</option>
-                    <option value="MT">MT</option>
-                </select>
-            </td>
-               <td class="horas">
-                    <input id="horas_${i}" name="horas[]" type="number" min="0" max="12" step="0.1" onchange="validarHoras(${i})">
-                </td>
-                <td class="horas_r">
-                    <input id="horas_r_${i}" name="horas_r[]" type="number" min="0" max="12" step="0.1" onchange="validarHoras(${i})">
-                </td>
-                 <td>
-                <select id="anexa_hv_docente_nuevo_${i}" name="anexa_hv_docente_nuevo[]" required>
-                    <option value="si">Sí</option>
-                    <option value="no" selected>No</option>
-                    <option value="no aplica">No Aplica</option>
-                </select>
-            </td>
-            <td>
-                <select id="actualiza_hv_antiguo_${i}" name="actualiza_hv_antiguo[]" required>
-                    <option value="si">Sí</option>
-                    <option value="no" selected>No</option>
-                    <option value="no aplica">No Aplica</option>
-                </select>
-            </td>
-            <td>
-                <button type="button" class="eliminar-fila" onclick="eliminarFila(this)">&#128465;</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    }
-
+ for (var i = currentRows; i < num; i++) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td><input type="text" id="cedula_${i}" name="cedula[]" required onchange="buscarTercero(this); validarCedulaUnica(this)" class="alto-field"></td>
+        <td><input type="text" id="nombre_${i}" name="nombre[]" readonly class="readonly-field"></td>
+        <td class="tipo_dedicacion">
+            <select id="tipo_dedicacion_${i}" name="tipo_dedicacion[]" onchange="limpiarDedicacionReg(${i})">
+                <option value=""></option>
+                <option value="TC">TC</option>
+                <option value="MT">MT</option>
+            </select>
+        </td>
+        <td class="tipo_dedicacion_r">
+            <select id="tipo_dedicacion_r_${i}" name="tipo_dedicacion_r[]" onchange="limpiarDedicacionPop(${i})">
+                <option value=""></option>
+                <option value="TC">TC</option>
+                <option value="MT">MT</option>
+            </select>
+        </td>
+        <td class="horas">
+            <input id="horas_${i}" name="horas[]" type="number" min="0" max="12" step="0.1" onchange="validarHoras(${i})">
+        </td>
+        <td class="horas_r">
+            <input id="horas_r_${i}" name="horas_r[]" type="number" min="0" max="12" step="0.1" onchange="validarHoras(${i})">
+        </td>
+        <td>
+            <select id="anexa_hv_docente_nuevo_${i}" name="anexa_hv_docente_nuevo[]" required onchange="toggleLinkAnexos(${i})">
+                <option value="si">Sí</option>
+                <option value="no" selected>No</option>
+                <option value="no aplica">No Aplica</option>
+            </select>
+        </td>
+        <td>
+            <select id="actualiza_hv_antiguo_${i}" name="actualiza_hv_antiguo[]" required onchange="toggleLinkAnexos(${i})">
+                <option value="si">Sí</option>
+                <option value="no" selected>No</option>
+                <option value="no aplica">No Aplica</option>
+            </select>
+        </td>
+        <td class="link-anexos-cell">
+            <div id="link_anexos_container_${i}" class="link-anexos-container">
+                <input type="url" id="link_anexos_${i}" name="link_anexos[]" placeholder="Opcional Link Drive/Nube" class="alto-field">
+            </div>
+        </td>
+        <td>
+            <button type="button" class="eliminar-fila" onclick="eliminarFila(this)">&#128465;</button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+    toggleLinkAnexos(i); // Set initial visibility for the new row
+}
     actualizarCamposDocente();
 }
 
@@ -1029,59 +1151,73 @@ function limpiarDedicacionPop(index) {
                 var tipoDedicacionCols = document.querySelectorAll('.tipo_dedicacion');
                 var tipoDedicacion_rCols = document.querySelectorAll('.tipo_dedicacion_r');
 
-                var sedeCols = document.querySelectorAll('.sede');
+                var sedeCols = document.querySelectorAll('.sede'); // This seems to be a typo, 'sede' is not used in the HTML structure
                 var horasCols = document.querySelectorAll('.horas');
                 var horasRCols = document.querySelectorAll('.horas_r');
 
                 tipoDedicacionCols.forEach(col => col.style.display = tipoDocente === 'Ocasional' ? '' : 'none');
                 tipoDedicacion_rCols.forEach(col => col.style.display = tipoDocente === 'Ocasional' ? '' : 'none');
 
-                sedeCols.forEach(col => col.style.display = tipoDocente === 'Ocasional' ? '' : 'none');
+                // Corrected: 'sedeCols' elements do not exist in your HTML, so this line might cause an error or simply do nothing.
+                // If you intend to have a 'sede' column, you need to add it to your table HTML.
+                // sedeCols.forEach(col => col.style.display = tipoDocente === 'Ocasional' ? '' : 'none');
+
                 horasCols.forEach(col => col.style.display = tipoDocente === 'Catedra' ? '' : 'none');
                 horasRCols.forEach(col => col.style.display = tipoDocente === 'Catedra' ? '' : 'none');
 
+                // Loop through existing rows to apply display logic
                 for (var i = 0; i < numDocentes; i++) {
                     var tipoDedicacionSelect = document.getElementById(`tipo_dedicacion_${i}`);
                     var tipoDedicacion_rSelect = document.getElementById(`tipo_dedicacion_r_${i}`);
 
-                    var sedeSelect = document.getElementById(`sede_${i}`);
+                    // var sedeSelect = document.getElementById(`sede_${i}`); // This ID doesn't exist in your HTML
                     var horasInput = document.getElementById(`horas_${i}`);
                     var horasRInput = document.getElementById(`horas_r_${i}`);
 
                     if (tipoDocente === 'Catedra') {
-                        tipoDedicacionSelect.disabled = true;
-                        tipoDedicacion_rSelect.disabled = true;
+                        if (tipoDedicacionSelect) tipoDedicacionSelect.disabled = true;
+                        if (tipoDedicacion_rSelect) tipoDedicacion_rSelect.disabled = true;
 
-                        sedeSelect.disabled = true;
-                        horasInput.disabled = false;
-                        horasRInput.disabled = false;
+                        // if (sedeSelect) sedeSelect.disabled = true; // No 'sede' select
+                        if (horasInput) horasInput.disabled = false;
+                        if (horasRInput) horasRInput.disabled = false;
                     } else if (tipoDocente === 'Ocasional') {
-                        tipoDedicacionSelect.disabled = false;
-                        tipoDedicacion_rSelect.disabled = false;
+                        if (tipoDedicacionSelect) tipoDedicacionSelect.disabled = false;
+                        if (tipoDedicacion_rSelect) tipoDedicacion_rSelect.disabled = false;
 
-                        sedeSelect.disabled = false;
-                        horasInput.disabled = true;
-                        horasRInput.disabled = true;
+                        // if (sedeSelect) sedeSelect.disabled = false; // No 'sede' select
+                        if (horasInput) horasInput.disabled = true;
+                        if (horasRInput) horasRInput.disabled = true;
                     }
+                     // Ensure the link anexos field is toggled based on the current state
+                    toggleLinkAnexos(i);
                 }
             }
 
       // Función para limpiar los campos de los docentes y el campo num_docentes
 function limpiarCamposDocente() {
     var container = document.getElementById('docentes');
-    var currentRows = container.querySelectorAll('tr').length - 1; // Excluimos el encabezado
-
-    for (var i = currentRows; i > 0; i--) {
-        container.removeChild(container.lastElementChild);
+    // Remove all rows except the header
+    var tbody = container.querySelector('tbody');
+    if (tbody) {
+        while (tbody.firstChild) {
+            tbody.removeChild(tbody.firstChild);
+        }
+    }
+    // Remove the whole table if it exists
+    var table = container.querySelector('table');
+    if (table) {
+        container.removeChild(table);
     }
 
     // Reiniciar el valor del campo num_docentes
-    document.getElementById('num_docentes').value = ''; // o puedes asignarle un valor predeterminado, por ejemplo 1
+    document.getElementById('num_docentes').value = '';
 }
 // Función para limpiar el listado de profesores
 function limpiarListadoProfesores() {
     var container = document.getElementById('docentes');
     container.innerHTML = ''; // Limpiar el contenido HTML del contenedor de docentes
+    document.getElementById('num_docentes').value = ''; // Also clear the count
 }
 // Event listener para cambios en el tipo de docente
 document.getElementById('tipo_docente').addEventListener('change', function() {
@@ -1127,7 +1263,74 @@ function buscarTercero(input) {
     };
     xhr.send();
 }
+
+// Function to toggle visibility of the 'Link Drive/Nube' field
+function toggleLinkAnexos(index) {
+    const anexaHvNuevoSelect = document.getElementById(`anexa_hv_docente_nuevo_${index}`);
+    const actualizaHvAntiguoSelect = document.getElementById(`actualiza_hv_antiguo_${index}`);
+    const linkAnexosContainer = document.getElementById(`link_anexos_container_${index}`);
+    const linkAnexosInput = document.getElementById(`link_anexos_${index}`);
+
+    if (!anexaHvNuevoSelect || !actualizaHvAntiguoSelect || !linkAnexosContainer || !linkAnexosInput) {
+        return; // Asegurarse que los elementos existan
+    }
+
+    // Verificar si ALGUNO de los campos está en "Sí"
+    const showLink = anexaHvNuevoSelect.value === 'si' || actualizaHvAntiguoSelect.value === 'si';
+
+    if (showLink) {
+        linkAnexosContainer.style.display = 'flex'; // Mostrar si hay un "Sí"
+        linkAnexosInput.required = true; // Hacerlo obligatorio
+    } else {
+        linkAnexosContainer.style.display = 'none'; // Ocultar si ambos son "No"
+        linkAnexosInput.required = false; // No obligatorio
+    }
+
+    // Actualizar visibilidad del encabezado de la tabla
+    actualizarVisibilidadEncabezadoLink();
+}
+
+// Nueva función para actualizar el encabezado de la tabla
+function actualizarVisibilidadEncabezadoLink() {
+    const linkAnexosHeaders = document.querySelectorAll('.link-anexos-header');
+    let anyLinkFieldVisible = false;
+
+    // Revisar todos los contenedores de link
+    document.querySelectorAll('.link-anexos-container').forEach(container => {
+        if (container.style.display === 'flex') {
+            anyLinkFieldVisible = true;
+        }
+    });
+
+    // Mostrar u ocultar encabezados
+    linkAnexosHeaders.forEach(header => {
+        header.style.display = anyLinkFieldVisible ? '' : 'none';
+    });
+}
+
+// Initial call to toggleLinkAnexos for existing rows on page load (if any are pre-filled)
+document.addEventListener('DOMContentLoaded', function() {
+    // This will handle the case when data is loaded from the previous period
+    var numDocentes = parseInt(document.getElementById('num_docentes').value) || 0;
+    for (let i = 0; i < numDocentes; i++) {
+        toggleLinkAnexos(i);
+    }
+
+    // Also ensure the header is initially hidden if no rows are present or none require the link
+    const linkAnexosHeaders = document.querySelectorAll('.link-anexos-header');
+    let anyLinkFieldVisible = false;
+    document.querySelectorAll('.link-anexos-container').forEach(container => {
+       if (container.style.display === 'flex') { // Updated to check for 'flex'
+    anyLinkFieldVisible = true;
+}
+    });
+    linkAnexosHeaders.forEach(header => {
+        header.style.display = anyLinkFieldVisible ? '' : 'none';
+    });
+});
+            
+            
  </script>
-      
+
     </body>
     </html>

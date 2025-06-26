@@ -25,6 +25,7 @@ $facultad_id = isset($_POST['facultad_id']) ? $_POST['facultad_id'] : null;
 <head>
     <meta charset="UTF-8">
     <title>Consulta de Solicitudes</title>
+    
          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <!-- jQuery y Bootstrap JS -->
@@ -33,11 +34,8 @@ $facultad_id = isset($_POST['facultad_id']) ? $_POST['facultad_id'] : null;
     
     
 <!-- Cargar Bootstrap 5 y Font Awesome -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
 <!-- jQuery (si es necesario) -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 <!-- Cargar solo Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -703,8 +701,70 @@ th {
         body, h1, h2, h3, h4, h5, h6, p, span, div, a, li, td, th {
             font-family: 'Open Sans', sans-serif !important;
         }
+          .link-hv {
+    color: #004080;
+    text-decoration: none;
+    font-weight: bold;
+    position: relative;
+}
+
+.link-hv:hover {
+    text-decoration: underline;
+}
+
+.link-hv::after {
+    content: "🔗";
+    margin-left: 4px;
+    font-size: 0.8em;
+}
     </style>
-    
+       <style>
+        .modal-content {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .modal-header {
+            background-color: #1A73E8;
+            color: white;
+            padding: 15px 20px;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            padding: 10px 15px;
+        }
+        .info-section {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            margin-bottom: 15px;
+        }
+        .form-label {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .form-control {
+            border-radius: 5px;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            border-color: #1A73E8;
+            box-shadow: 0 0 0 0.2rem rgba(26, 115, 232, 0.25);
+        }
+        .experience-col {
+            padding-left: 20px;
+        }
+        @media (max-width: 768px) {
+            .experience-col {
+                padding-left: 0;
+                margin-top: 20px;
+            }
+        }
+      
+    </style>
     <script>
         function confirmarEnvio(count, tipo) {
             return confirm(` Se confirman ${count} profesores de  ${tipo}. ¿Desea continuar?`);
@@ -972,31 +1032,48 @@ echo ")</h4>";
         $num_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['acta_periodo']) : "";
         $fecha_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['fecha_acta']) : "";
 
-        while ($row = $result->fetch_assoc()) {
-            if ($row["anexa_hv_docente_nuevo"] == 'si' || $row["actualiza_hv_antiguo"] == 'si') {
-                $contadorHV++;
-            }
-            echo "<tr>
-            <td class='td-simple'>" . $item . "</td> <td class='td-simple' style='text-align: left;'>" . htmlspecialchars($row["cedula"]) . "</td>
-            <td class='td-simple' style='text-align: left;'>" . htmlspecialchars($row["nombre"]) . "</td>
-          ";
+      while ($row = $result->fetch_assoc()) {
+    if ($row["anexa_hv_docente_nuevo"] == 'si' || $row["actualiza_hv_antiguo"] == 'si') {
+        $contadorHV++;
+    }
+    
+    echo "<tr>
+        <td class='td-simple'>" . $item . "</td> 
+        <td class='td-simple' style='text-align: left;'>" . htmlspecialchars($row["cedula"]) . "</td>
+        <td class='td-simple' style='text-align: left;'>" . htmlspecialchars($row["nombre"]) . "</td>
+    ";
 
-            if ($tipo_docente == "Ocasional") {
-                echo "<td class='td-simple'>" . htmlspecialchars($row["tipo_dedicacion"]) . "</td>
-                      <td class='td-simple'>" . htmlspecialchars($row["tipo_dedicacion_r"]) . "</td>";
-            }
-            if ($tipo_docente == "Catedra") {
-                $horas = ($row["horas"] == 0) ? "" : htmlspecialchars($row["horas"]);
-                $horas_r = ($row["horas_r"] == 0) ? "" : htmlspecialchars($row["horas_r"]);
+    if ($tipo_docente == "Ocasional") {
+        echo "<td class='td-simple'>" . htmlspecialchars($row["tipo_dedicacion"]) . "</td>
+              <td class='td-simple'>" . htmlspecialchars($row["tipo_dedicacion_r"]) . "</td>";
+    }
+    if ($tipo_docente == "Catedra") {
+        $horas = ($row["horas"] == 0) ? "" : htmlspecialchars($row["horas"]);
+        $horas_r = ($row["horas_r"] == 0) ? "" : htmlspecialchars($row["horas_r"]);
 
-                echo "<td class='td-simple'>" . $horas . "</td>
-                      <td class='td-simple'>" . $horas_r . "</td>";
-            }
+        echo "<td class='td-simple'>" . $horas . "</td>
+              <td class='td-simple'>" . $horas_r . "</td>";
+    }
 
-            echo "<td class='td-simple'>" . htmlspecialchars($row["anexa_hv_docente_nuevo"]) . "</td>
-                  <td class='td-simple'>" . htmlspecialchars($row["actualiza_hv_antiguo"]) . "</td>";
-
-            if ($estadoDepto != "CERRADO") {
+    // Verificar si hay un enlace válido en 'anexos'
+    $anexos = trim($row["anexos"]);
+    $hasValidLink = !empty($anexos) && preg_match('/^(https?:\/\/|www\.)/i', $anexos);
+    
+    // Mostrar anexa_hv_docente_nuevo como enlace si hay un enlace válido
+    if ($row["anexa_hv_docente_nuevo"] == 'si' && $hasValidLink) {
+        echo "<td class='td-simple'><a href='" . htmlspecialchars($anexos) . "' target='_blank' class='link-hv'>si</a></td>";
+    } else {
+        echo "<td class='td-simple'>" . htmlspecialchars($row["anexa_hv_docente_nuevo"]) . "</td>";
+    }
+    
+    // Mostrar actualiza_hv_antiguo como enlace si hay un enlace válido
+    if ($row["actualiza_hv_antiguo"] == 'si' && $hasValidLink) {
+        echo "<td class='td-simple'><a href='" . htmlspecialchars($anexos) . "' target='_blank' class='link-hv'>si</a></td>";
+    } else {
+        echo "<td class='td-simple'>" . htmlspecialchars($row["actualiza_hv_antiguo"]) . "</td>";
+    }
+    
+       if ($estadoDepto != "CERRADO") {
                 echo "<td class='td-simple'>";
                 if ($tipo_usuario == 3) {
                     echo "
@@ -1063,17 +1140,27 @@ echo ")</h4>";
                         </td>";
 
                 if ($tipo_usuario == 3) {
-                    echo "<td class='td-simple centered-column'>
-                            <button type='button' class='download-btn btn btn-sm'
-                                data-id-solicitud='" . htmlspecialchars($row["id_solicitud"]) . "'
-                                data-departamento-id='" . htmlspecialchars($departamento_id) . "'
-                                data-anio-semestre='" . htmlspecialchars($anio_semestre) . "'
-                                data-numero-acta='" . htmlspecialchars($num_acta) . "'
-                                data-fecha-acta='" . htmlspecialchars($fecha_acta) . "'
-                                data-bs-toggle='modal' data-bs-target='#actaModal'>
-                                <i class='fa-solid fa-file-arrow-down' style='font-size:16px; color:#1A73E8;'></i>
-                            </button>
-                        </td>";
+            echo "<td class='td-simple centered-column'>
+        <button type='button' class='download-btn btn btn-sm'
+            id='btn-solicitud-" . htmlspecialchars($row["id_solicitud"]) . "'
+            data-id-solicitud='" . htmlspecialchars($row["id_solicitud"]) . "'
+            data-departamento-id='" . htmlspecialchars($departamento_id) . "'
+            data-anio-semestre='" . htmlspecialchars($anio_semestre) . "'
+            data-numero-acta='" . htmlspecialchars($num_acta) . "'
+            data-fecha-acta='" . htmlspecialchars($fecha_acta) . "'
+            data-pregrado='" . htmlspecialchars($row["pregrado"] ?? '') . "'
+            data-especializacion='" . htmlspecialchars($row["especializacion"] ?? '') . "'
+            data-maestria='" . htmlspecialchars($row["maestria"] ?? '') . "'
+            data-doctorado='" . htmlspecialchars($row["doctorado"] ?? '') . "'
+            data-otro_estudio='" . htmlspecialchars($row["otro_estudio"] ?? '') . "'
+            data-experiencia_docente='" . htmlspecialchars($row["experiencia_docente"] ?? '') . "'
+            data-experiencia_profesional='" . htmlspecialchars($row["experiencia_profesional"] ?? '') . "'
+            data-otra_experiencia='" . htmlspecialchars($row["otra_experiencia"] ?? '') . "'
+            data-bs-toggle='modal' 
+            data-bs-target='#actaModal'>
+            <i class='fa-solid fa-file-arrow-down' style='font-size:16px; color:#1A73E8;'></i>
+        </button>
+    </td>";
                 }
 
             }
@@ -1188,40 +1275,103 @@ echo ")</h4>";
     </div></div><br>
 <?php
 } // End of while ($rowtipo = $resultadotipo->fetch_assoc())
-?>
+?> <!-- Modal Rediseñado -->
+    <div class='modal fade' id='actaModal' tabindex='-1' aria-labelledby='actaModalLabel' aria-hidden='true'>
+        <div class='modal-dialog modal-lg'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='actaModalLabel'>FOR-45. Información del Acta y Datos Adicionales</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <form id='actaForm' action='for_45.php' method='GET'>
+                        <input type='hidden' name='id_solicitud' id='modal_id_solicitud'>
+                        <input type='hidden' name='departamento_id' id='modal_departamento_id'>
+                        <input type='hidden' name='anio_semestre' id='modal_anio_semestre'>
 
-<div class='modal fade' id='actaModal' tabindex='-1' aria-labelledby='actaModalLabel' aria-hidden='true'>
-    <div class='modal-dialog'>
-        <div class='modal-content'>
-            <div class='modal-header'>
-                <h5 class='modal-title' id='actaModalLabel'>Información del Acta</h5>
-                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-            </div>
-            <div class='modal-body'>
-                <form id='actaForm' action='for_45.php' method='GET'>
-                    <input type='hidden' name='id_solicitud' id='modal_id_solicitud'>
-                    <input type='hidden' name='departamento_id' id='modal_departamento_id'>
-                    <input type='hidden' name='anio_semestre' id='modal_anio_semestre'>
-
-                    <div class='mb-3'>
-                        <label for='numero_acta' class='form-label'>No. de Acta</label>
-                        <input type='text' class='form-control' id='numero_acta' name='numero_acta' required>
-                    </div>
-
-                    <div class='mb-3'>
-                        <label for='fecha_actab' class='form-label'>Fecha Acta</label>
-                        <input type='date' class='form-control' id='fecha_actab' name='fecha_actab' required>
-                    </div>
-                </form>
-            </div>
-            <div class='modal-footer'>
-                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cerrar</button>
-                <button type='submit' form='actaForm' class='btn btn-primary'>Descargar</button>
+                        <div class='row mb-4'>
+                            <div class='col-md-6'>
+                                <div class="mb-3">
+                                    <label for='numero_acta' class='form-label'>No. de Acta</label>
+                                    <input type='text' class='form-control' id='numero_acta' name='numero_acta' required>
+                                </div>
+                            </div>
+                            <div class='col-md-6'>
+                                <div class="mb-3">
+                                    <label for='fecha_actab' class='form-label'>Fecha Acta</label>
+                                    <input type='date' class='form-control' id='fecha_actab' name='fecha_actab' required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Columna de Información Académica -->
+                            <div class="col-md-7">
+                                <div class="info-section">
+                                    <div class="card-header mb-3">Información Académica (Opcional)</div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='pregrado' class='form-label'>Pregrado</label>
+                                        <input type='text' class='form-control' id='pregrado' name='pregrado' placeholder="Título obtenido">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='especializacion' class='form-label'>Especialización</label>
+                                        <input type='text' class='form-control' id='especializacion' name='especializacion' placeholder="Título obtenido">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='maestria' class='form-label'>Maestría</label>
+                                        <input type='text' class='form-control' id='maestria' name='maestria' placeholder="Título obtenido">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='doctorado' class='form-label'>Doctorado</label>
+                                        <input type='text' class='form-control' id='doctorado' name='doctorado' placeholder="Título obtenido">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='otro_estudio' class='form-label'>Otro Estudio*</label>
+                                        <input type='text' class='form-control' id='otro_estudio' name='otro_estudio' placeholder="Especificar">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Columna de Experiencia -->
+                            <div class="col-md-5 experience-col">
+                                <div class="info-section">
+                                    <div class="card-header mb-3">Experiencia (Años)</div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='experiencia_docente' class='form-label'>Experiencia Docente</label>
+                                        <input type='text' class='form-control' id='experiencia_docente' name='experiencia_docente' placeholder="Años">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='experiencia_profesional' class='form-label'>Experiencia Profesional</label>
+                                        <input type='text' class='form-control' id='experiencia_profesional' name='experiencia_profesional' placeholder="Años ">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='otra_experiencia' class='form-label'>Otra Experiencia</label>
+                                        <input type='text' class='form-control' id='otra_experiencia' name='otra_experiencia' placeholder="Años">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 text-muted small">
+                            * Por favor especificar cualquier otro estudio relevante no incluido en las categorías anteriores.
+                        </div>
+                    </form>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cerrar</button>
+                    <button type='submit' form='actaForm' class='btn btn-primary'>Guardar y Descargar</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
 <script>
     // JavaScript function to toggle the visibility of the table and rotate the icon
     function toggleSection(sectionId) {
@@ -1239,43 +1389,96 @@ echo ")</h4>";
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // Acta Modal JavaScript
-        const actaModal = document.getElementById('actaModal');
-
-        if (actaModal) { // Ensure the modal exists before adding event listener
-            actaModal.addEventListener('show.bs.modal', function(event) {
-                const button = event.relatedTarget;
-                const id_solicitud = button.getAttribute('data-id-solicitud');
-                const departamento_id = button.getAttribute('data-departamento-id');
-                const anio_semestre = button.getAttribute('data-anio-semestre');
-                const numero_acta = button.getAttribute('data-numero-acta');
-                const fecha_acta = button.getAttribute('data-fecha-acta');
-
-                actaModal.querySelector('#modal_id_solicitud').value = id_solicitud;
-                actaModal.querySelector('#modal_departamento_id').value = departamento_id;
-                actaModal.querySelector('#modal_anio_semestre').value = anio_semestre;
-                actaModal.querySelector('#numero_acta').value = numero_acta || '';
-                actaModal.querySelector('#fecha_actab').value = fecha_acta || '';
-            });
-
-            document.getElementById('actaForm').addEventListener('submit', function(event) {
-                event.preventDefault();
-                const form = this;
-
-                setTimeout(() => {
-                    form.submit();
-                }, 500);
-
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            });
-        }
-    });
 </script>
         
-  
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const actaModal = document.getElementById('actaModal');
+    
+    if (actaModal) {
+        actaModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            // Guardar referencia al botón que abrió el modal
+            actaModal.currentButton = button;
+            
+            // Campos existentes
+            const id_solicitud = button.getAttribute('data-id-solicitud');
+            const departamento_id = button.getAttribute('data-departamento-id');
+            const anio_semestre = button.getAttribute('data-anio-semestre');
+            const numero_acta = button.getAttribute('data-numero-acta');
+            const fecha_acta = button.getAttribute('data-fecha-acta');
+            
+            // Nuevos campos
+            const pregrado = button.getAttribute('data-pregrado');
+            const especializacion = button.getAttribute('data-especializacion');
+            const maestria = button.getAttribute('data-maestria');
+            const doctorado = button.getAttribute('data-doctorado');
+            const otro_estudio = button.getAttribute('data-otro_estudio');
+            const exp_docente = button.getAttribute('data-experiencia_docente');
+            const exp_profesional = button.getAttribute('data-experiencia_profesional');
+            const otra_exp = button.getAttribute('data-otra_experiencia');
+            
+            // Setear valores en el formulario
+            document.getElementById('modal_id_solicitud').value = id_solicitud;
+            document.getElementById('modal_departamento_id').value = departamento_id;
+            document.getElementById('modal_anio_semestre').value = anio_semestre;
+            document.getElementById('numero_acta').value = numero_acta || '';
+            document.getElementById('fecha_actab').value = fecha_acta || '';
+            
+            // Setear nuevos campos
+            document.getElementById('pregrado').value = pregrado || '';
+            document.getElementById('especializacion').value = especializacion || '';
+            document.getElementById('maestria').value = maestria || '';
+            document.getElementById('doctorado').value = doctorado || '';
+            document.getElementById('otro_estudio').value = otro_estudio || '';
+            document.getElementById('experiencia_docente').value = exp_docente || '';
+            document.getElementById('experiencia_profesional').value = exp_profesional || '';
+            document.getElementById('otra_experiencia').value = otra_exp || '';
+        });
+        
+        // Actualizar datos del botón después de enviar el formulario
+        document.getElementById('actaForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = this;
+            
+            // Recoger los nuevos valores del formulario
+            const newData = {
+                numero_acta: document.getElementById('numero_acta').value,
+                fecha_actab: document.getElementById('fecha_actab').value,
+                pregrado: document.getElementById('pregrado').value,
+                especializacion: document.getElementById('especializacion').value,
+                maestria: document.getElementById('maestria').value,
+                doctorado: document.getElementById('doctorado').value,
+                otro_estudio: document.getElementById('otro_estudio').value,
+                experiencia_docente: document.getElementById('experiencia_docente').value,
+                experiencia_profesional: document.getElementById('experiencia_profesional').value,
+                otra_experiencia: document.getElementById('otra_experiencia').value
+            };
+            
+            // Actualizar los atributos del botón
+            if (actaModal.currentButton) {
+                const button = actaModal.currentButton;
+                
+                button.setAttribute('data-numero-acta', newData.numero_acta);
+                button.setAttribute('data-fecha-acta', newData.fecha_actab);
+                button.setAttribute('data-pregrado', newData.pregrado);
+                button.setAttribute('data-especializacion', newData.especializacion);
+                button.setAttribute('data-maestria', newData.maestria);
+                button.setAttribute('data-doctorado', newData.doctorado);
+                button.setAttribute('data-otro_estudio', newData.otro_estudio);
+                button.setAttribute('data-experiencia_docente', newData.experiencia_docente);
+                button.setAttribute('data-experiencia_profesional', newData.experiencia_profesional);
+                button.setAttribute('data-otra_experiencia', newData.otra_experiencia);
+            }
+            
+            // Enviar el formulario después de actualizar el botón
+            setTimeout(() => {
+                form.submit();
+            }, 500);
+        });
+    }
+});
+</script>
  
        
     </div>    </div>
@@ -1830,7 +2033,7 @@ th[title]:hover::after {
                     Reimprimir Oficio
                 </button>
             <?php } elseif ($acepta_vra != '2' && $tipo_usuario == 3) { ?>
-                <button class="btn btn-unicauca-primary btn-lg" data-toggle="modal" data-target="#myModal" style="border-radius: 30px;">
+                <button class="btn btn-unicauca-primary btn-lg" data-bs-toggle="modal" data-bs-target="#myModal" style="border-radius: 30px;">
                     <i class="fas fa-file-download me-2"></i> Enviar a Facultad (Descargar Oficio)
                 </button>
             <?php }
@@ -2161,8 +2364,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 </script>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
     $(document).ready(function() {

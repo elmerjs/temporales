@@ -1091,7 +1091,7 @@ $total_proyect += $gran_total;
             } else {
                 echo "<p style='text-align: center;'>No se encontraron resultados.</p>";
             }
-            $total_consolidado += $total_proyect;
+$total_consolidado += $total_proyect ?? 0;
             echo "</div>"; // Cierre de box-gray
             
             echo '</div>'; // Cierre de grid-col (periodo actual)
@@ -1335,23 +1335,24 @@ $title =
     //"días: " . $dias_ocas . "\n\n" .
 
     "Detalle salarial\n" .
-    "Asignación mensual: $" . number_format($asignacion_mes, 0, ',', '.') . "\n" .
-    "Asignación total: $" . number_format($asignacion_total, 0, ',', '.') . "\n" .
-    "Prima de Navidad: $" . number_format($prima_navidad, 0, ',', '.') . "\n" .
-    "Indem. Vacaciones: $" . number_format($indem_vacaciones, 0, ',', '.') . "\n" .
-    "Indem. Prima Vacaciones: $" . number_format($indem_prima_vacaciones, 0, ',', '.') . "\n" .
-    "Cesantías: $" . number_format($cesantias, 0, ',', '.') . "\n" .
-    ($tipo_docente == "Catedra" ? "Total devengos" : "Total empleado") . ": $" . number_format($total_empleado_mostrar, 0, ',', '.') . "\n\n" .
+    "Asignación mensual: $" . number_format($asignacion_mes ?? 0, 0, ',', '.') . "\n" .
+    "Asignación total: $" . number_format($asignacion_total ?? 0, 0, ',', '.') . "\n" .
+    "Prima de Navidad: $" . number_format($prima_navidad ?? 0, 0, ',', '.') . "\n" .
+    "Indem. Vacaciones: $" . number_format($indem_vacaciones ?? 0, 0, ',', '.') . "\n" .
+    "Indem. Prima Vacaciones: $" . number_format($indem_prima_vacaciones ?? 0, 0, ',', '.') . "\n" .
+    "Cesantías: $" . number_format($cesantias ?? 0, 0, ',', '.') . "\n" .
+    ($tipo_docente == "Catedra" ? "Total devengos" : "Total empleado") . ": $" . number_format($total_empleado_mostrar ?? 0, 0, ',', '.') . "\n\n" .
 
     "Aportes a entidades\n" .
-    "EPS: $" . number_format($eps, 0, ',', '.') . "\n" .
-    "Pensión: $" . number_format($afp, 0, ',', '.') . "\n" .
-    "ARL: $" . number_format($arl, 0, ',', '.') . "\n" .
-    "Caja Compensación: $" . number_format($cajacomp, 0, ',', '.') . "\n" .
-    "ICBF: $" . number_format($icbf, 0, ',', '.') . "\n" .
-    ($tipo_docente == "Catedra" ? "Total aportes" : "Total entidades") . ": $" . number_format($total_entidades_mostrar, 0, ',', '.') . "\n\n" .
+    "EPS: $" . number_format($eps ?? 0, 0, ',', '.') . "\n" .
+    "Pensión: $" . number_format($afp ?? 0, 0, ',', '.') . "\n" .
+    "ARL: $" . number_format($arl ?? 0, 0, ',', '.') . "\n" .
+    "Caja Compensación: $" . number_format($cajacomp ?? 0, 0, ',', '.') . "\n" .
+    "ICBF: $" . number_format($icbf ?? 0, 0, ',', '.') . "\n" .
+    ($tipo_docente == "Catedra" ? "Total aportes" : "Total entidades") . ": $" . number_format($total_entidades_mostrar ?? 0, 0, ',', '.') . "\n\n" .
 
-    "GRAN TOTAL: $" . number_format($gran_total, 0, ',', '.');
+    "GRAN TOTAL: $" . number_format($gran_total ?? 0, 0, ',', '.');
+
 
 echo "<td title=\"" . htmlspecialchars($title) . "\">$" . number_format($gran_total / 1000000, 2) . " M</td>";
     $total_proyectant += $gran_total;
