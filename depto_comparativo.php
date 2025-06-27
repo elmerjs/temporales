@@ -525,6 +525,360 @@ function obtenerTRDDepartamento($departamento_id) {
     display: inline-block;
     vertical-align: middle;
 }
+         /* --- ESTILOS PARA ENCABEZADOS DE TABLAS --- */
+
+/* Contenedor principal del título de vinculación */
+.estado-container {
+    background: linear-gradient(135deg, #005c97, #003366);
+    border-left: 5px solid #ffcc00;
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Texto del título */
+.estado-container h5 {
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin: 0;
+    color: white;
+}
+
+/* Texto resaltado (tipo de docente) */
+.estado-container h5 strong {
+    color: #ffcc00;
+}
+
+/* Badge de semanas */
+.estado-container .badge-semanas {
+    background-color: white;
+    color: #003366;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    margin-left: 0.5rem;
+    font-weight: 600;
+}
+
+/* Botón de agregar profesor */
+.btn-agregar-profesor {
+    background-color: #ff6600;
+    border: none;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 0.3rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.btn-agregar-profesor:hover {
+    background-color: #e65c00;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-agregar-profesor:active {
+    background-color: #cc5200;
+    transform: translateY(0);
+}
+
+/* Icono del botón */
+.btn-agregar-profesor .fas {
+    font-size: 0.8em;
+}
+
+/* --- ESTILOS PARA ENCABEZADO SUPERIOR (Facultad/Departamento) --- */
+.navigation-header {
+    background: linear-gradient(135deg, #005c97, #003366);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #ffcc00;
+}
+
+.navigation-header h2 {
+    font-weight: 600;
+    margin: 0;
+    color: white;
+}
+
+/* Botón de regresar */
+.btn-back {
+    background-color: #ffcc00;
+    color: #003366;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.3rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-back:hover {
+    background-color: #e6b800;
+    color: #002b4d;
+    text-decoration: none;
+}
+
+/* Texto secundario */
+.text-muted-white {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Botón de gráficos */
+.btn-graficos {
+    background-color: #696FC7;
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.3rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-graficos:hover {
+    background-color: #5a5fb3;
+    color: white;
+}
+
+/* --- ESTILOS PARA ENCABEZADOS DE PERIODO --- */
+.grid-header h4 {
+    font-weight: 600;
+    color: #003366;
+    padding: 0.75rem 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    border-left: 4px solid #005c97;
+    margin-bottom: 1rem;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+    .navigation-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .estado-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .btn-agregar-profesor {
+        width: 100%;
+        justify-content: center;
+    }
+}
+     /* --- Nuevas variables para colores de estado (si no las tienes) --- */
+:root {
+    --unicauca-azul: #0066cc;
+    --unicauca-azul-oscuro: #004080;
+    --unicauca-gris-medio: #6c757d; /* Usado para bordes y texto secundario */
+    --unicauca-gris-claro-bg: #f8f9fa; /* Fondo degradado 1 */
+    --unicauca-gris-mas-claro-bg: #e9ecef; /* Fondo degradado 2 */
+    --unicauca-verde-exito: #28a745; /* Color para estado "Abierto" */
+    --unicauca-rojo-peligro: #dc3545; /* Color para estado "Cerrado" */
+    --unicauca-azul-vinculacion: #005c97; /* Color específico para el tipo de vinculación */
+    --unicauca-amarillo-boton: #FF6600; /* Naranja del botón */
+    --unicauca-amarillo-boton-hover: #E65C00;
+    --unicauca-negro: #111827; /* Para texto principal */
+    --unicauca-blanco: #FFFFFF;
+}
+
+/* Contenedor general para el encabezado del período (revisión y anterior) */
+.periodo-info-container {
+    background: linear-gradient(135deg, var(--unicauca-gris-claro-bg), var(--unicauca-gris-mas-claro-bg));
+    border-radius: 8px; /* Redondeo general para el contenedor */
+    padding: 15px 20px; /* Más padding para contenido */
+    margin-bottom: 20px; /* Espacio debajo del contenedor */
+    display: flex;
+    justify-content: space-between; /* Para espaciar el título y el botón */
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* Sombra sutil */
+    flex-wrap: wrap; /* Para responsividad */
+    gap: 15px; /* Espacio entre elementos flexibles */
+}
+
+/* Borde izquierdo específico para cada período */
+.periodo-actual-box {
+    border-left: 4px solid var(--unicauca-azul); /* Borde azul para período actual */
+}
+
+.periodo-anterior-box {
+    border-left: 4px solid var(--unicauca-gris-medio); /* Borde gris para período anterior */
+}
+
+/* Estilo para el título H5 dentro del contenedor */
+.periodo-title-h5 {
+    font-size: 1.15rem; /* Tamaño de fuente ligeramente más grande */
+    margin: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan */
+    gap: 8px; /* Espacio entre los elementos del título */
+    color: var(--unicauca-negro); /* Color de texto general para el título */
+}
+
+/* Iconos dentro del título */
+.periodo-title-h5 .fas {
+    font-size: 1.3em; /* Tamaño del icono */
+    color: var(--unicauca-azul); /* Icono azul para el periodo actual */
+}
+
+.periodo-anterior-box .periodo-title-h5 .fas {
+    color: var(--unicauca-gris-medio); /* Icono gris para el periodo anterior */
+}
+
+/* Estilos para las partes del texto dentro del título */
+.periodo-label,
+.vinculacion-label {
+    font-weight: 600; /* Más negrita para las etiquetas */
+    color: #343a40; /* Color oscuro para las etiquetas */
+}
+
+.periodo-value {
+    font-weight: 700; /* Más negrita para el valor del período */
+    color: var(--unicauca-azul-oscuro); /* Azul oscuro para el valor del período */
+}
+
+.vinculacion-type {
+    font-weight: 700;
+    color: var(--unicauca-azul-vinculacion); /* Azul específico de vinculación */
+}
+
+/* Separador */
+.periodo-separator {
+    color: var(--unicauca-gris-medio);
+    margin: 0 0.5rem; /* Ajuste el margen si es necesario */
+}
+
+/* Badge para semanas (se aplica a .semanas-badge, no a .badge-secondary directamente) */
+.semanas-badge {
+    background-color: var(--unicauca-gris-medio); /* Fondo gris */
+    color: var(--unicauca-blanco);
+    padding: 0.25em 0.6em;
+    font-size: 0.85em;
+    font-weight: 600;
+    border-radius: 10rem; /* Muy redondeado */
+    white-space: nowrap; /* Evita que el badge se rompa en varias líneas */
+}
+
+/* Estilos para el estado "Abierto" y "Cerrado" */
+.estado {
+    font-weight: 700;
+    padding: 0.2em 0.5em; /* Un poco de padding para que se vea como un tag */
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.estado-abierto {
+    color: var(--unicauca-verde-exito);
+    background-color: rgba(40, 167, 69, 0.1); /* Fondo muy suave verde */
+}
+
+.estado-cerrado {
+    color: var(--unicauca-rojo-peligro);
+    background-color: rgba(220, 53, 69, 0.1); /* Fondo muy suave rojo */
+}
+
+/* Botón Agregar Profesor */
+.btn-agregar-profesor {
+    background-color: var(--unicauca-amarillo-boton);
+    border: none;
+    color: var(--unicauca-blanco);
+    padding: 8px 15px; /* Ajuste padding */
+    font-size: 0.9em;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    display: flex; /* Para alinear icono y texto */
+    align-items: center;
+    gap: 5px; /* Espacio entre icono y texto */
+}
+
+.btn-agregar-profesor:hover {
+    background-color: var(--unicauca-amarillo-boton-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    color: var(--unicauca-blanco); /* Asegurar color de texto blanco en hover */
+}
+
+.btn-agregar-profesor .fas {
+    font-size: 1em;
+    vertical-align: middle;
+    margin-top: -1px; /* Ajuste fino de alineación */
+}
+
+/* Responsividad para títulos largos */
+@media (max-width: 768px) {
+    .periodo-title-h5 {
+        font-size: 1rem; /* Reducir tamaño de fuente en móviles */
+        flex-direction: column; /* Apilar los elementos en pantallas pequeñas */
+        align-items: flex-start; /* Alinear a la izquierda */
+        gap: 5px;
+    }
+    .periodo-title-h5 .fas {
+        margin-right: 5px; /* Pequeño margen para el icono */
+    }
+    .periodo-separator {
+        display: none; /* Ocultar el separador vertical en móviles si se apilan */
+    }
+    .btn-agregar-profesor {
+        width: 100%; /* Botón a ancho completo */
+        justify-content: center; /* Centrar texto y icono */
+        margin-top: 10px;
+    }
+}
+
+/* --- ESTILOS ORIGINALES DE TU PROPORCIONADO, AHORA AJUSTADOS O ELIMINADOS SI SE SUPERPONEN --- */
+/* Estas reglas se vuelven redundantes o menos específicas si usas las nuevas clases más arriba */
+/*
+.periodo-anterior-container {
+    padding: 0.75rem 1rem; // Ya cubierto por .periodo-info-container
+    border-radius: 0.5rem; // Ya cubierto por .periodo-info-container
+    margin-bottom: 1rem; // Ya cubierto por .periodo-info-container
+    display: flex; // Ya cubierto por .periodo-info-container
+    align-items: center; // Ya cubierto por .periodo-info-container
+}
+
+.periodo-anterior-title {
+    color: #495057; // Ya cubierto por .periodo-title-h5
+    font-size: 1.05rem; // Ya cubierto por .periodo-title-h5
+    margin: 0; // Ya cubierto por .periodo-title-h5
+    display: flex; // Ya cubierto por .periodo-title-h5
+    align-items: center; // Ya cubierto por .periodo-title-h5
+    flex-wrap: wrap; // Ya cubierto por .periodo-title-h5
+    gap: 0.5rem; // Ya cubierto por .periodo-title-h5
+}
+
+.badge-secondary { // Esta clase sigue siendo válida si la usas en otros lugares, pero para el badge de semanas, usa .semanas-badge
+    background-color: #6c757d; // Cubierto por .semanas-badge
+    color: white; // Cubierto por .semanas-badge
+    padding: 0.25em 0.6em; // Cubierto por .semanas-badge
+    font-size: 0.85em; // Cubierto por .semanas-badge
+    font-weight: 600; // Cubierto por .semanas-badge
+    border-radius: 10rem; // Cubierto por .semanas-badge
+}
+*/
     </style>
 <div class="card card-plazo mb-4" >
     <div class="navigation-header">
@@ -556,24 +910,28 @@ function obtenerTRDDepartamento($departamento_id) {
    class="btn btn-sm d-flex align-items-center gap-1"
    style="background-color: #696FC7; border-color: #696FC7; color: white;"
    title="Ir a la sección de gráficos">
-    <i class="fas fa-chart-bar"></i> Dashboard
+    <i class="fas fa-chart-bar"></i> Ver Tablero  -  Gráficos
 </a>
             </div>
     </div>
 
    <!-- NUEVA ESTRUCTURA CON GRID PARA ALINEACIÓN -->
     <div class="grid-container" id="contentToToggle">
-        <!-- Encabezados en paralelo -->
-        <div class="grid-col">
+       <?php
+/*
+    echo '<div class="grid-col">
             <div class="grid-header">
-                <h4 class=""><strong>Periodo en revisión: <?php echo htmlspecialchars($_POST['anio_semestre']) . '.'; ?></strong></h4>
+                <h4 class=""><strong>Periodo en revisión: ' . htmlspecialchars($_POST['anio_semestre']) . '.</strong></h4>
             </div>
         </div>
         <div class="grid-col">
             <div class="grid-header">
-                <h4 class=""><strong>Periodo anterior: <?php echo htmlspecialchars($periodo_anterior); ?></strong></h4>
+                <h4 class=""><strong>Periodo anterior: ' . htmlspecialchars($periodo_anterior) . '</strong></h4>
             </div>
-        </div>
+        </div>';
+*/
+?>
+
         
         <?php
         $facultad_id = obtenerIdFacultad($departamento_id);
@@ -719,23 +1077,34 @@ ORDER BY
             $result = $conn->query($sql);
           // --- HTML OUTPUT FOR THE SECTION HEADER AND BUTTON ---
 echo "<div class='box-gray'>";
-echo "<div class='estado-container d-flex align-items-center justify-content-between'>"; // Flex container
-echo "<div class='d-flex align-items-center'>"; // Contenedor para el título
-echo "<h5 class='mb-0'>Vinculación: $tipo_docente (";
+// ================= COLUMNA PERIODO ACTUAL =================
+echo '<div class="grid-col">';
+echo "<div class='periodo-info-container periodo-actual-box'>"; // Usamos el contenedor unificado y el borde específico
+echo "<h5 class='periodo-title-h5'>"; // Nueva clase para el h5
+echo "<i class='fas fa-calendar-alt'></i>"; // Icono para el período actual (ajustado en CSS)
+echo "<span class='periodo-label'>Período en revisión:</span> ";
+echo "<span class='periodo-value'>" . htmlspecialchars($_POST['anio_semestre']) . "</span>";
+echo "<span class='periodo-separator'>|</span>"; // Separador
+echo "<span class='vinculacion-label'>Vinculación:</span> ";
+echo "<span class='vinculacion-type'>" . $tipo_docente . "</span> (";
 
 if ($tipo_docente == 'Catedra') {
     $estadoDepto = obtenerCierreDeptoCatedra($departamento_id, $aniose);
-    echo "<strong>" . ucfirst(strtolower($estadoDepto)) . ")</strong> - " . $semanas_cat . " semanas ";
+    $estadoClass = strtolower($estadoDepto) == 'abierto' ? 'estado-abierto' : 'estado-cerrado';
+    echo "<span class='estado " . $estadoClass . "'>" . ucfirst(strtolower($estadoDepto)) . "</span>) - ";
+    echo "<span class='semanas-badge'>" . $semanas_cat . " semanas</span>";
 } else {
-    $estadoDepto = obtenerCierreDeptoCatedra($departamento_id, $aniose);
-    echo "<strong>" . ucfirst(strtolower($estadoDepto)) . ")</strong> - " . $semanas_ocas . " semanas ";
+    $estadoDepto = obtenerCierreDeptoOcasional($departamento_id, $aniose); // Usar función correcta para Ocasional si existe
+    $estadoClass = strtolower($estadoDepto) == 'abierto' ? 'estado-abierto' : 'estado-cerrado';
+    echo "<span class='estado " . $estadoClass . "'>" . ucfirst(strtolower($estadoDepto)) . "</span>) - ";
+    echo "<span class='semanas-badge'>" . $semanas_ocas . " semanas</span>";
 }
+
 echo "</h5>";
-echo "</div>"; // Cierre contenedor título
 
 if ($tipo_usuario == 1) {
     echo "
-    <div class='d-flex align-items-center'>"; // Contenedor para botón
+    <div class='btn-container'>"; // Envuelve el botón en un div para mejor control flexbox
     echo "
         <form action='nuevo_registro_admin.php' method='GET' class='mb-0'>
             <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
@@ -743,13 +1112,14 @@ if ($tipo_usuario == 1) {
             <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
             <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
             <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
-            <button type='submit' class='btn btn-agregar-profesor btn-sm py-1' title='Agregar Profesor'>
+            <button type='submit' class='btn-agregar-profesor' title='Agregar Profesor'>
                 <i class='fas fa-user-plus'></i> <span>Agregar Profesor</span>
             </button>
         </form>";
-    echo "</div>"; // Cierre contenedor botón
+    echo "</div>"; // Cierre btn-container
 }
-echo "</div>"; // Cierre estado-container
+echo "</div>"; // Cierre periodo-info-container
+echo '</div>'; // Cierre grid-col
             
             // Obtener el conteo de profesores para este tipo_docente
             $sqlCount = "SELECT COUNT(*) as count FROM solicitudes WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
@@ -1135,11 +1505,21 @@ $total_consolidado += $total_proyect ?? 0;
             }
             
             echo "<div class='box-gray'>";
-            echo "<div class='estado-container'>
-                <h5 class='mb-0'>Vinculación: " . $tipo_docente . " - " . 
-                (($tipo_docente === "Ocasional") ? $semanas_ocasant : $semanas_catant) . " semanas" . 
-                "</h5>
-              </div>";
+// ================= COLUMNA PERIODO ANTERIOR =================
+echo '<div class="grid-col">';
+echo "<div class='periodo-info-container periodo-anterior-box'>"; // Use unified container and specific border class
+echo "<h5 class='periodo-title-h5'>"; // Use the new general title class
+echo "<i class='fas fa-history'></i>"; // Icon for previous period (style controlled by CSS)
+echo "<span class='periodo-label'>Período anterior:</span> "; // Consistent label
+echo "<span class='periodo-value'>" . htmlspecialchars($periodo_anterior) . "</span>"; // Period value
+echo "<span class='periodo-separator'>|</span>"; // Separator
+echo "<span class='vinculacion-label'>Vinculación:</span> "; // Consistent label
+echo "<span class='vinculacion-type'>" . $tipo_docente . "</span> - "; // Type of docente
+echo "<span class='semanas-badge'>" . (($tipo_docente === "Ocasional") ? $semanas_ocasant : $semanas_catant) . " semanas</span>"; // Weeks badge (using new class)
+echo "</h5>";
+// No button in this section
+echo "</div>"; // Close periodo-info-container
+echo '</div>'; // Close grid-col
             
             if ($result->num_rows > 0) {
                 echo "<table border='1'>
@@ -1730,13 +2110,13 @@ echo "<div>
                 $percentageTotalProyectado = ($totalProyectadoTotalAnterior != 0) ? ($diffTotalProyectado / $totalProyectadoTotalAnterior) * 100 : 0;
                 $classTotalProyectado = ($diffTotalProyectado >= 0) ? 'positive-alert' : 'negative-favorable';
                 ?>
-                <div class="card-percentage <?= $classProyectadoTotal ?>">
+                <div class="card-percentage <?= $classTotalProyectado ?>">
                     <?= ($percentageTotalProyectado >= 0 ? '+' : '') . number_format($percentageTotalProyectado, 1) . '%' ?>
                 </div>
                 <h3 class="card-title">Total Proyectado (<?= $anio_semestre ?>)</h3>
                 <div class="card-main-value">
                     $<?= number_format($totalProyectadoTotal, 0, ',', '.') ?>
-                    <span class="card-variation <?= $classProyectadoTotal ?>">
+                    <span class="card-variation <?= $classTotalProyectado ?>">
                         <?= ($diffTotalProyectado >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diffTotalProyectado, 0, ',', '.') ?>
                     </span>
                 </div>

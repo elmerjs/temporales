@@ -2095,6 +2095,10 @@ $anio_semestre_anterior= obtenerPeriodoAnterior($anio_semestre);
     <!-- Bandera oculta para identificar el origen -->
     <input type="hidden" name="envia" value="consulta_todo_depto">  <!-- ¡Nuevo campo! -->
     
+    <form action="<?= $archivo_regreso ?>" method="post">
+    <input type="hidden" name="anio_semestre" value="<?= htmlspecialchars($anio_semestre) ?>">
+    <input type="hidden" name="departamento_id" value="<?= htmlspecialchars($departamento_id) ?>">
+
     <button type="submit" 
             class="btn btn-outline-primary" 
             style="border-radius: 30px; 
@@ -2104,7 +2108,8 @@ $anio_semestre_anterior= obtenerPeriodoAnterior($anio_semestre);
                    border: 1px solid #0d6efd;
                    background: none;
                    width: 100%;">
-        <i class="fas fa-chart-bar me-2"></i>  Comparativo periodo anterior
+        <i class="fas fa-chart-bar me-2"></i>  
+        Comparativo (<?= htmlspecialchars($anio_semestre) ?> vs <?= htmlspecialchars($anio_semestre_anterior) ?>)
         <span class="badge bg-primary bg-opacity-10 text-primary ms-2" 
               style="font-size: 0.7em; 
                      position: absolute;
@@ -2116,6 +2121,8 @@ $anio_semestre_anterior= obtenerPeriodoAnterior($anio_semestre);
             →
         </span>
     </button>
+</form>
+
 </form>
 </div>
     <?php if ($tipo_usuario == 3) {
