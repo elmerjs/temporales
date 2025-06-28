@@ -541,7 +541,17 @@ $dias_ocas = $inicio_ocas->diff($fin_ocas)->days;
 $semanas_ocas = ceil($dias_ocas / 7);
     
      // Semanas catedra anterior
+try {
+    if (empty($fecha_ini_catant)) {
+        throw new Exception("No se puede comparar");
+    }
+
     $fecha_inicioant = new DateTime($fecha_ini_catant);
+
+} catch (Exception $e) {
+    echo "<strong>" . $e->getMessage() . "</strong>";
+    return; // o exit; para detener todo
+}
 $fecha_finant = new DateTime($fecha_fin_catant);
   $intervaloant = $fecha_inicioant->diff($fecha_finant);
 

@@ -78,7 +78,17 @@ $dias_ocas = $inicio_ocas->diff($fin_ocas)->days-2;
 $semanas_ocas = ceil($dias_ocas / 7);
     
      // Semanas catedra anterior
+try {
+    if (empty($fecha_ini_catant)) {
+        throw new Exception("No se puede comparar");
+    }
+
     $fecha_inicioant = new DateTime($fecha_ini_catant);
+
+} catch (Exception $e) {
+    echo "<strong>" . $e->getMessage() . "</strong>";
+    return; // o exit; si estás fuera de una función
+}
 $fecha_finant = new DateTime($fecha_fin_catant);
   $intervaloant = $fecha_inicioant->diff($fecha_finant);
 
@@ -2129,49 +2139,21 @@ echo "<div>
             </div>
         </div>
 
-          <div class="graficos-container">
-            <div class="grafico-card">
-                <canvas id="profesorCantidadChart"></canvas>
-            </div>
-            <div class="grafico-card">
-                <canvas id="valoresProyectadosChart"></canvas>
-            </div>
-
+         <div class="dashboard-visual-section" id="seccionGraficos">
+    <!-- Panel que contiene los dos gráficos -->
+    <div class="charts-panel">
+        <div class="grafico-card">
+            <canvas id="profesorCantidadChart"></canvas>
+        </div>
+        <div class="grafico-card">
+            <canvas id="valoresProyectadosChart"></canvas>
+        </div>
+    </div>
             <?php
             // MOSTRAR SECCIÓN DE INTERPRETACIONES
             // Asegúrate de que $interpretaciones esté definida y rellena ANTES de este punto en el código PHP.
             // (Asumo que tus cálculos de interpretaciones están ejecutándose antes de la salida HTML)
-            if (!empty($interpretaciones)) {
-                echo '<div class="interpretaciones-container">'; // ¡AHORA DENTRO DE graficos-container!
-                echo '<h3 class="interpretaciones-titulo-seccion"><i class="fas fa-brain"></i> Interpretación de Resultados</h3>';
-                
-                // Mostrar nota de cambio de vigencia si aplica
-                if ($vigencia_diferente) {
-                    echo '<div class="vigencia-nota">';
-                    echo '<i class="fas fa-info-circle"></i> ';
-                    echo "Periodo actual ($anio_semestre) y anterior ($periodo_anterior) son de vigencias diferentes ($anio_anterior → $anio_actual). ";
-                    echo "IPC estimado: " . number_format($ipc_estimado * 100, 2) . '%.';
-                    echo '</div>';
-                }
-                
-                foreach ($interpretaciones as $interpretacion) {
-                    $claseTipo = "interpretacion-{$interpretacion['tipo']}";
-                    
-                    echo <<<HTML
-                    <div class="interpretacion-card {$claseTipo}">
-                        <div class="interpretacion-header">
-                            <i class="{$interpretacion['icono']}"></i>
-                            <h4>{$interpretacion['titulo']}</h4>
-                        </div>
-                        <div class="interpretacion-body">
-                            <p>{$interpretacion['texto']}</p>
-                        </div>
-                    </div>
-                    HTML;
-                }
-                
-                echo '</div>'; // Cierre de interpretaciones-container
-            }
+         
             ?>
               
         
@@ -2276,12 +2258,12 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado < 0) {
     $interpretacion .= "(<strong>" . number_format(abs($porcentajeTotalProyectado), 1) . "%</strong> menos). ";
 
     $causas = [];
-    
+
     // Causa 1: Cambios hacia modalidades más económicas
     if ($huboCambioVinculacion) {
         $causas[] = "migración hacia tipos de vinculación con menor valor por hora (ej: de Ocasional a Cátedra)";
     }
-    
+
     // Causa 2: Reducción en semanas
     if ($cambioSemanasSignificativo) {
         $detalle_semanas = [];
@@ -2293,14 +2275,17 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado < 0) {
         }
         $causas[] = "reducción en semanas: " . implode(' y ', $detalle_semanas);
     }
-    
-    // Causa 3: Reducción general de puntos/hora
-    if (empty($causas)) {
+
+    // Causa 3: Profesores con menor dedicación o puntos/hora
+    $causas[] = "los nuevos profesores podrían tener menor dedicación o valor asignado en puntos/hora";
+
+    // Causa 4: Reducción general si no hay otra causa clara
+    if (empty($huboCambioVinculacion) && empty($cambioSemanasSignificativo)) {
         $causas[] = "una reducción general en los puntos/hora asignados";
     }
-    
+
     $interpretacion .= "Esto podría indicar:<br>- " . implode("<br>- ", $causas);
-    
+
     $interpretaciones[] = [
         'icono' => 'fas fa-exchange-alt',
         'titulo' => 'Reconfiguración de planta docente',
@@ -2308,33 +2293,51 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado < 0) {
         'tipo' => 'advertencia'
     ];
 }
+
 // Escenario 2: Profesores constantes, presupuesto sube
 elseif (abs($diffTotalProfesores) <= 2 && $diffTotalProyectado > 0) {
-    $interpretacion = "Manteniendo una planta estable de profesores, el presupuesto aumentó ";
-    $interpretacion .= "en $" . number_format($diffTotalProyectado / 1000000, 2) . " millones ";
-    
+    $interpretacion_base = "Para el período actual, manteniendo una planta estable de profesores, el presupuesto ";
+    $interpretacion_base .= "aumentó en $" . number_format($diffTotalProyectado / 1000000, 2) . " millones.";
+
+    $causas = [];
+
+    // Causa 1: Incremento en semanas (si es significativo)
     if ($cambioSemanasSignificativo) {
-        $interpretacion .= "principalmente por el incremento en las semanas: ";
-        
         $detalles = [];
         if ($diferenciaSemanasCat > 0) {
-            $detalles[] = "Cátedra (+{$diferenciaSemanasCat} semanas)";
+            $detalles[] = "Cátedra (+" . $diferenciaSemanasCat . " semanas)";
         }
         if ($diferenciaSemanasOc > 0) {
-            $detalles[] = "Ocasional (+{$diferenciaSemanasOc} semanas)";
+            $detalles[] = "Ocasional (+" . $diferenciaSemanasOc . " semanas)";
         }
-        
-        $interpretacion .= implode(" y ", $detalles) . ". ";
-        $interpretacion .= "Este aumento representa un " . abs($porcentaje) . "% adicional por profesor.";
+        $causas[] = "Incremento en las semanas de vinculación para " . implode(" y ", $detalles) . ".";
     } else {
-        $interpretacion .= "debido a ajustes en los puntos/horas asignados.";
+        // Causa 1b: Ajustes en puntos/horas si no hay cambio significativo en semanas
+        // Esta se incluye como una causa general si las semanas no son el factor principal
+        $causas[] = "Ajustes en los puntos y/o horas asignados a vinculaciones.";
     }
-    
+
+  
+    if ($huboCambioVinculacion) {
+        $causas[] = "Se identificaron cambios en el tipo de vinculación de algunos profesores, lo que avecata su valor.";
+    }
+
+    $interpretacion = $interpretacion_base;
+    if (!empty($causas)) {
+        $interpretacion .= " Las causas principales o factores relevantes incluyen:<ul>";
+        foreach ($causas as $causa) {
+            $interpretacion .= "<li>" . $causa . "</li>";
+        }
+        $interpretacion .= "</ul>";
+    }
+
+    $interpretacion .= "Este aumento global representa un " . abs($porcentaje) . "% adicional en el costo por profesor.";
+
     $interpretaciones[] = [
-        'icono' => 'fas fa-chart-line',
-        'titulo' => 'Optimización de recursos',
+        'icono' => 'fas fa-arrow-up', // Icono de flecha hacia arriba (rojo si el tipo es negativo)
+        'titulo' => 'Incremento de Costos', // Título cambiado
         'texto' => $interpretacion,
-        'tipo' => 'positivo'
+        'tipo' => 'negativo' // Interpretación cambiada a negativa
     ];
 }
 // Escenario 6: Presupuesto baja con profesores estables
@@ -2366,7 +2369,7 @@ elseif (abs($diffTotalProfesores) < 2 && $porcentajeTotalProyectado < 0) {
     $interpretacion .= "<li>Ajustes a la baja en los puntos/horas asignados por profesor.</li>";
     
     // Causa 4: Cambios en el valor del punto
-    $interpretacion .= "<li>Posibles cambios en el valor base del punto o de la hora.</li>";
+   // $interpretacion .= "<li>Posibles cambios en el valor base del punto o de la hora.</li>";
     $interpretacion .= "</ul>";
     
     $interpretaciones[] = [
@@ -2468,17 +2471,22 @@ elseif ($diffTotalProfesores > 0 && abs($porcentaje) < 5) {
 }
 
 // Escenario 5: Ambos suben proporcionalmente
-elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 && 
+elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
         abs($porcentajeTotalProfesores - $porcentajeTotalProyectado) < 10) {
-    
-    $interpretacion = "El crecimiento de la planta docente (" . $porcentajeTotalProfesores . "%) ";
-    $interpretacion .= "y el aumento presupuestal (" . $porcentajeTotalProyectado . "%) son proporcionales, ";
+
+    $interpretacion = "El crecimiento de la planta docente (" . number_format($porcentajeTotalProfesores, 1) . "%) ";
+    $interpretacion .= "y el aumento presupuestal (" . number_format($porcentajeTotalProyectado, 1) . "%) son proporcionales, ";
     $interpretacion .= "indicando una expansión equilibrada.";
-    
+
     if ($cambioSemanasSignificativo) {
         $interpretacion .= " El cambio en semanas de vinculación contribuyó al ajuste presupuestal.";
     }
-    
+
+    // Nueva condición: Cambios de vinculación afectando el valor proyectado
+    if ($huboCambioVinculacion) {
+        $interpretacion .= " De todas maneras, se evidencia un cambio en el tipo de vinculación de algunos profesores, lo que puede afectar el valor proyectado.";
+    }
+
     $interpretaciones[] = [
         'icono' => 'fas fa-expand',
         'titulo' => 'Crecimiento proporcional',
@@ -2530,11 +2538,70 @@ elseif (abs($diffTotalProfesores) < 2 &&
         'tipo' => 'neutro'
     ];
 }
+              // Escenario 11: Ambos indicadores suben significativamente (profesores y presupuesto)
+elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 && 
+        (abs($porcentajeTotalProfesores) >= 10 || abs($porcentajeTotalProyectado) >= 10)) {
+    
+    $interpretacion = "Se observa un <strong>incremento significativo</strong> tanto en la planta docente ";
+    $interpretacion .= "(<strong>+" . $diffTotalProfesores . " profesores</strong>, un <strong>" . number_format($porcentajeTotalProfesores, 1) . "%</strong> más) ";
+    $interpretacion .= "que incide en el presupuesto proyectado (<strong>$" . number_format($diffTotalProyectado, 0, ',', '.') . "</strong>, ";
+    $interpretacion .= "un <strong>" . number_format($porcentajeTotalProyectado, 1) . "%</strong> más). ";
+    $interpretacion .= "Otros factores:";
+    
+    $interpretacion .= "<ul class='interpretacion-lista'>";
+    
+    // Causa 1: Expansión académica general
+    $interpretacion .= "<li><strong>Expansión académica</strong>: Mayor demanda de clases o nuevos programas</li>";
+    
+    // Causa 2: Cambios en la composición de la planta
+    $causas = [];
+    if ($huboCambioVinculacion) {
+        $causas[] = "cambios en los tipos de vinculación hacia modalidades con mayor valor";
+    }
+    if ($cambioSemanasSignificativo) {
+        $semanas_info = [];
+        if ($diferenciaSemanasCat > 0) {
+            $semanas_info[] = "Cátedra (+" . $diferenciaSemanasCat . " semanas)";
+        }
+        if ($diferenciaSemanasOc > 0) {
+            $semanas_info[] = "Ocasional (+" . $diferenciaSemanasOc . " semanas)";
+        }
+        if (!empty($semanas_info)) {
+            $causas[] = "aumento en semanas de vinculación: " . implode(" y ", $semanas_info);
+        }
+    }
+    
+    if (!empty($causas)) {
+        $interpretacion .= "<li><strong>Cambios en la composición</strong>: " . implode("; ", $causas) . "</li>";
+    }
+    
+    // Causa 3: Aumento en puntos/horas
+   // $interpretacion .= "<li><strong>Incremento en puntos/horas</strong>: Asignación de mayor carga académica por profesor</li>";
+    
+    // Causa 4: Ajustes salariales
+//    $interpretacion .= "<li><strong>Posibles ajustes</strong> en el valor del punto o salarios base</li>";
+    
+    $interpretacion .= "</ul>";
+    
+    // Calcular costo adicional por profesor nuevo
+    $costoPorProfesorNuevo = $diffTotalProyectado / $diffTotalProfesores;
+    $interpretacion .= "<div class='nota-destacada'>Cada nuevo profesor representa un costo adicional promedio de <strong>$" . number_format($costoPorProfesorNuevo, 0, ',', '.') . "</strong>.</div>";
+    
+    $interpretaciones[] = [
+        'icono' => 'fas fa-chart-line', // Icono de gráfico creciente
+        'titulo' => 'Crecimiento significativo de planta y presupuesto',
+        'texto' => $interpretacion,
+        'tipo' => 'negativo' // O 'advertencia' si el crecimiento es muy alto
+    ];
+}
     // MOSTRAR SECCIÓN DE INTERPRETACIONES
+    // ESTE ES EL ÚNICO BLOQUE PHP QUE DEBE MOSTRAR LAS INTERPRETACIONES
+    // Asegúrate de que $interpretaciones esté definida y rellena ANTES de este punto en el código PHP.
+    // (Tus cálculos para llenar $interpretaciones deben estar antes de esta sección HTML)
     if (!empty($interpretaciones)) {
-        echo '<div class="card">';
+        echo '<div class="interpretaciones-panel">'; // Este div reemplaza el antiguo <div class="card"> para interpretaciones
         echo '<h3 class="interpretaciones-titulo-seccion"><i class="fas fa-brain"></i> Interpretación de Resultados</h3>';
-        
+
         // Mostrar nota de cambio de vigencia si aplica
         if ($vigencia_diferente) {
             echo '<div class="vigencia-nota">';
@@ -2543,24 +2610,22 @@ elseif (abs($diffTotalProfesores) < 2 &&
             echo "IPC estimado: " . number_format($ipc_estimado * 100, 2) . '%.';
             echo '</div>';
         }
-        
-        foreach ($interpretaciones as $interpretacion) {
-            $claseTipo = "interpretacion-{$interpretacion['tipo']}";
-            
+
+        foreach ($interpretaciones as $interpretacion_item) { // Renombrado a $interpretacion_item para evitar conflicto con el array principal
+            $claseTipo = "interpretacion-{$interpretacion_item['tipo']}";
+
             echo <<<HTML
             <div class="interpretacion-card {$claseTipo}">
                 <div class="interpretacion-header">
-                    <i class="{$interpretacion['icono']}"></i>
-                    <h4>{$interpretacion['titulo']}</h4>
+                    <i class="{$interpretacion_item['icono']}"></i>
+                    <h4>{$interpretacion_item['titulo']}</h4>
                 </div>
                 <div class="interpretacion-body">
-                    <p>{$interpretacion['texto']}</p>
+                    <p>{$interpretacion_item['texto']}</p>
                 </div>
             </div>
             HTML;
-        }
-        
-        echo '</div>';
+        }echo '</div>'; // Cierre de interpretaciones-panel
     }
 ?>
 
@@ -2577,52 +2642,446 @@ elseif (abs($diffTotalProfesores) < 2 &&
 </style>
 <!-- CSS adicional para la nota de vigencia -->
 <style>
-.vigencia-nota {
-    background-color: #e3f2fd;
-    border-left: 4px solid #2196F3;
-    padding: 10px;
-    margin-bottom: 20px;
-    border-radius: 0 8px 8px 0;
-    font-size: 0.9em;
+/* ============================================== */
+/* ===  VARIABLES DE COLOR Y FUENTES UNICAUCA === */
+/* ============================================== */
+:root {
+    /* Colores principales de la Unicauca */
+    --unicauca-azul: #0066cc;
+    --unicauca-azul-claro: #1A75FF;
+    --unicauca-azul-oscuro: #004080;
+    --unicauca-amarillo: #FDB12D; /* Amarillo/naranja fuerte de la Unicauca */
+    --unicauca-amarillo-oscuro: #E65C00;
+    --unicauca-blanco: #FFFFFF;
+    --unicauca-negro: #111827; /* Para texto principal */
+    --unicauca-rojo: #CC3333; /* Para eliminar/advertencia */
+    --unicauca-verde: #28a745; /* Para "nueva cédula" o éxito */
+
+    /* Grises y colores de fondo/borde */
+    --unicauca-gris-claro: #F3F4F6; /* Para fondos de secciones/tablas */
+    --unicauca-gris-medio: #E5E7EB; /* Para bordes */
+    --unicauca-gris-oscuro: #6c757d; /* Gris para elementos secundarios (como iconos, texto muted) */
+    --unicauca-gris-claro-bg: #f8f9fa; /* Fondo degradado 1 */
+    --unicauca-gris-mas-claro-bg: #e9ecef; /* Fondo degradado 2 */
+
+    /* Colores de estado y variación */
+    --unicauca-verde-exito: #28a745; /* Color para estado "Abierto" */
+    --unicauca-rojo-peligro: #dc3545; /* Color para estado "Cerrado" */
+    --unicauca-azul-vinculacion: #005c97; /* Color específico para el tipo de vinculación */
+
+    /* Colores para botones */
+    --unicauca-amarillo-boton: #FF6600; /* Naranja del botón "Agregar Profesor" */
+    --unicauca-amarillo-boton-hover: #E65C00;
+
+    /* Variables genéricas de tarjetas/dashboard (tus definiciones anteriores) */
+    --primary-color: #696FC7;
+    --text-dark: #2c3e50;
+    --text-muted: #6c757d;
+    --positive-bg: rgba(40, 167, 69, 0.15); /* Verde claro */
+    --positive-text: #28a745; /* Verde oscuro */
+    --negative-bg: rgba(220, 53, 69, 0.15); /* Rojo claro */
+    --negative-text: #dc3545; /* Rojo oscuro */
+    --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    --total-card-bg: rgba(105, 111, 199, 0.1); /* Fondo claro para tarjeta total */
+    --total-card-border: rgba(105, 111, 199, 0.8); /* Borde para tarjeta total */
 }
-</style>
 
-     
-    </div>
-           <div class="text-center mt-5 mb-4">
-            <a href="#seccionTablas"
-               class="btn btn-sm d-inline-flex align-items-center gap-1"
-               style="background-color: #696FC7; border-color: #696FC7; color: white;"
-               title="Volver a las tablas comparativas">
-                <i class="fas fa-arrow-up"></i> Volver a Tablas
-            </a>
-        </div>
-</div>
+/* ============================ */
+/* ===  ESTILOS GLOBALES    === */
+/* ============================ */
 
-<style>.interpretaciones-container {
-    margin: 30px 0;
+.dashboard-profesores {
+    max-width: 100%;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+/* ================================= */
+/* ===  ESTILOS DE ENCABEZADO    === */
+/* ================================= */
+.navigation-header {
+    background-color: var(--unicauca-azul);
+    color: var(--unicauca-blanco);
+    padding: 15px 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.navigation-header .header-info {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.navigation-header h2,
+.navigation-header h3 {
+    color: var(--unicauca-blanco);
+    margin: 0;
+    padding: 0;
+    font-weight: 600;
+    line-height: 1.2;
+}
+.navigation-header h2 {
+    font-size: 1.6em;
+}
+.navigation-header h3 {
+    font-size: 1.4em;
+}
+
+.navigation-header .text-muted-white {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 1.4em;
+    font-weight: bold;
+}
+
+
+
+/* =========================== */
+/* ===  ESTILOS DE GRID    === */
+/* =========================== */
+.grid-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.grid-col {
+    padding: 0;
+}
+
+.grid-row {
+    display: contents;
+}
+
+/* ======================================== */
+/* ===  ESTILOS DE CABECERAS DE PERIODO === */
+/* ======================================== */
+.periodo-info-container {
+    background: linear-gradient(135deg, var(--unicauca-gris-claro-bg), var(--unicauca-gris-mas-claro-bg));
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.periodo-actual-box {
+    border-left: 4px solid var(--unicauca-azul);
+}
+.periodo-anterior-box {
+    border-left: 4px solid var(--unicauca-gris-oscuro);
+}
+
+.periodo-title-h5 {
+    font-size: 1.15rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--unicauca-negro);
+}
+
+.periodo-title-h5 .fas {
+    font-size: 1.3em;
+    color: var(--unicauca-azul);
+}
+.periodo-anterior-box .periodo-title-h5 .fas {
+    color: var(--unicauca-gris-oscuro);
+}
+
+.periodo-label,
+.vinculacion-label {
+    font-weight: 600;
+    color: #343a40;
+}
+.periodo-value {
+    font-weight: 700;
+    color: var(--unicauca-azul-oscuro);
+}
+.vinculacion-type {
+    font-weight: 700;
+    color: var(--unicauca-azul-vinculacion);
+}
+
+.periodo-separator {
+    color: var(--unicauca-gris-oscuro);
+    margin: 0 0.5rem;
+}
+
+.semanas-badge {
+    background-color: var(--unicauca-gris-oscuro);
+    color: var(--unicauca-blanco);
+    padding: 0.25em 0.6em;
+    font-size: 0.85em;
+    font-weight: 600;
+    border-radius: 10rem;
+    white-space: nowrap;
+}
+
+.estado {
+    font-weight: 700;
+    padding: 0.2em 0.5em;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+.estado-abierto {
+    color: var(--unicauca-verde-exito);
+    background-color: rgba(40, 167, 69, 0.1);
+}
+.estado-cerrado {
+    color: var(--unicauca-rojo-peligro);
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* ========================================== */
+/* ===  ESTILOS DE CAJAS / GRIDS GENERALES === */
+/* ========================================== */
+.container {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 20px;
+    max-width: 95%;
+    margin: 0 auto;
+    padding: 10px;
+}
+.box {
+    flex: 0 0 49%;
+    max-width: 49%;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+.box-white {
+    background-color: var(--unicauca-blanco);
+    border-color: #ccc;
+}
+.estado-container {
+    min-height: 38px;
+    padding: 5px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* =================================== */
+/* ===  ESTILOS DE DASHBOARD/TARJETAS (NO INTERPRETACIONES) === */
+/* =================================== */
+.dashboard-title {
+    text-align: center;
+    color: var(--primary-color);
+    margin-bottom: 30px;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+.card-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+.card { /* Estilo base de tarjeta para otras secciones del dashboard */
+    flex: 1;
+    min-width: 250px;
+    background: var(--unicauca-blanco);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    position: relative;
+    overflow: hidden;
+}
+.card.total-card {
+    background-color: var(--total-card-bg);
+    border: 1px solid var(--total-card-border);
+}
+.card.total-card .card-title,
+.card.total-card .card-main-value,
+.card.total-card .card-subtext {
+    color: var(--text-dark);
+}
+.card-percentage {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 5px;
+    z-index: 1;
+}
+.card-title {
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    padding-right: 60px;
+}
+.card-main-value {
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+.card-variation {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+.positive-alert {
+    background-color: var(--negative-bg);
+    color: var(--negative-text);
+}
+.negative-favorable {
+    background-color: var(--positive-bg);
+    color: var(--positive-text);
+}
+.card-subtext {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    position: relative;
+    min-height: 40px;
+    padding-bottom: 20px;
+}
+.new-count.positive-alert {
+    color: var(--negative-text)!important;
+    font-weight: 600;
+}
+.removed-count.negative-favorable {
+    color: var(--positive-text)!important;
+    font-weight: 600;
+}
+.previous-count {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #333;
+    background-color: #e2e6ea;
+    padding: 5px 10px;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    white-space: nowrap;
+    transition: background-color 0.3s ease;
+    cursor: default;
+}
+.previous-count:hover {
+    background-color: #d6d8db;
+}
+
+/* ========================================= */
+/* ===  ESTILOS DE GRÁFICOS E INTERPRETACIONES === */
+/* ========================================= */
+
+/* Contenedor principal para ambos paneles (gráficos e interpretaciones) */
+.dashboard-visual-section {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    align-items: stretch; /* CRUCIAL: Estira los hijos a la altura del más alto */
+}
+
+/* Panel que contiene los dos gráficos (clase 'charts-panel') */
+.charts-panel {
+    flex: 2; /* Este panel tomará el doble de espacio horizontal */
+    min-width: 400px; /* Ancho mínimo para el panel de gráficos */
+    display: grid; /* Los gráficos individuales dentro de este panel se organizarán en un grid */
+    grid-template-columns: 1fr 1fr; /* Dos columnas para los gráficos */
+    gap: 20px; /* Espacio entre los gráficos */
+    align-items: stretch; /* Estira las tarjetas de gráficos internas */
+    background: white; /* Añadido fondo para el contenedor del gráfico */
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    padding: 20px;
+}
+
+/* Estilo para cada tarjeta individual de gráfico */
+.grafico-card {
+    background: white; /* Se mantiene, pero el fondo principal ya viene del .charts-panel */
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: none; /* Elimina la sombra duplicada ya que la tiene el contenedor padre */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 250px; /* Altura mínima prudente para que los gráficos sean legibles */
+}
+
+/* Estilo para el elemento canvas dentro de la tarjeta de gráfico */
+.grafico-card canvas {
+    width: 100% !important;
+    height: auto !important; /* MUY IMPORTANTE: Permite que la altura del canvas se ajuste dinámicamente */
+    max-height: 500px; /* Límite para evitar gráficos absurdamente altos */
+}
+
+/* Panel de Interpretaciones (clase 'interpretaciones-panel') */
+.interpretaciones-panel {
+    flex: 1; /* Este panel tomará una parte del espacio horizontal */
+    min-width: 300px; /* Ancho mínimo para el panel de interpretaciones */
     background: white;
     border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    box-shadow: var(--card-shadow);
     padding: 25px;
-    border-top: 4px solid #696FC7;
+    border-top: 4px solid var(--primary-color);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
+/* Título de la sección de Interpretaciones */
 .interpretaciones-titulo-seccion {
-    color: #2c3e50;
-    border-bottom: 2px solid #ecf0f1;
-    padding-bottom: 15px;
-    margin-bottom: 20px;
+    font-size: 1.5rem;
+    color: var(--text-dark);
+    margin-top: 0;
+    margin-bottom: 15px;
     display: flex;
     align-items: center;
     gap: 10px;
+    font-weight: 600;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 15px;
+}
+.interpretaciones-titulo-seccion .fas {
+    color: var(--unicauca-azul-oscuro);
 }
 
+/* Estilos para las tarjetas de interpretación individuales */
 .interpretacion-card {
     border-radius: 8px;
     padding: 20px;
-    margin-bottom: 20px;
-    background: #f8f9fa;
+    margin-bottom: 0; /* Controlado por 'gap' en el padre */
+    background: var(--unicauca-gris-claro-bg);
+    border: 1px solid var(--unicauca-gris-medio);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -2636,15 +3095,9 @@ elseif (abs($diffTotalProfesores) < 2 &&
     align-items: center;
     gap: 12px;
     margin-bottom: 15px;
+    color: var(--text-dark);
 }
-
-.interpretacion-header h4 {
-    margin: 0;
-    color: #2c3e50;
-    font-weight: 600;
-}
-
-.interpretacion-header i {
+.interpretacion-header .fas {
     font-size: 1.4rem;
     width: 40px;
     height: 40px;
@@ -2652,7 +3105,47 @@ elseif (abs($diffTotalProfesores) < 2 &&
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: #e9ecef;
+    background: var(--unicauca-gris-mas-claro-bg);
+    color: var(--unicauca-azul-oscuro);
+}
+
+/* Colores para iconos y fondos de tarjetas de interpretación según tipo */
+.interpretacion-card.interpretacion-positivo {
+    border-left: 4px solid var(--unicauca-verde-exito);
+    background-color: rgba(40, 167, 69, 0.1);
+}
+.interpretacion-card.interpretacion-positivo .interpretacion-header i {
+    color: var(--unicauca-verde-exito);
+    background: rgba(40, 167, 69, 0.15);
+}
+
+.interpretacion-card.interpretacion-negativo {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-left: 5px solid var(--unicauca-rojo-peligro);
+}
+.interpretacion-card.interpretacion-negativo .interpretacion-header i {
+    color: var(--unicauca-rojo-peligro);
+    background: rgba(220, 53, 69, 0.15);
+}
+
+.interpretacion-card.interpretacion-advertencia {
+    border-left: 4px solid #ffc107;
+    background-color: rgba(255, 193, 7, 0.1);
+}
+.interpretacion-card.interpretacion-advertencia .interpretacion-header i {
+    color: #ffc107;
+    background: rgba(255, 193, 7, 0.15);
+}
+
+.interpretacion-card.interpretacion-neutro,
+.interpretacion-card.interpretacion-info {
+    border-left: 4px solid #17a2b8;
+    background-color: rgba(23, 162, 184, 0.1);
+}
+.interpretacion-card.interpretacion-neutro .interpretacion-header i,
+.interpretacion-card.interpretacion-info .interpretacion-header i {
+    color: #17a2b8;
+    background: rgba(23, 162, 184, 0.15);
 }
 
 .interpretacion-body p {
@@ -2660,246 +3153,51 @@ elseif (abs($diffTotalProfesores) < 2 &&
     line-height: 1.7;
     margin-bottom: 0;
 }
-
 .interpretacion-lista {
     padding-left: 20px;
     margin-top: 10px;
+    list-style-type: disc;
 }
-
 .interpretacion-lista li {
     margin-bottom: 8px;
 }
 
-/* Tipos de interpretación */
-.interpretacion-positivo {
-    border-left: 4px solid #28a745;
+/* Nota de vigencia */
+.vigencia-nota {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196F3;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.9em;
+    color: #2196F3;
 }
 
-.interpretacion-advertencia {
-    border-left: 4px solid #ffc107;
-}
-
-.interpretacion-neutro {
-    border-left: 4px solid #17a2b8;
-}
-
-.interpretacion-positivo .interpretacion-header i {
-    color: #28a745;
-    background: rgba(40, 167, 69, 0.1);
-}
-
-.interpretacion-advertencia .interpretacion-header i {
-    color: #ffc107;
-    background: rgba(255, 193, 7, 0.1);
-}
-
-.interpretacion-neutro .interpretacion-header i {
-    color: #17a2b8;
-    background: rgba(23, 162, 184, 0.1);
-}
-    /* Variables CSS para colores */
-    :root {
-        --primary-color: #696FC7;
-        --text-dark: #2c3e50;
-        --text-muted: #6c757d;
-        --positive-bg: rgba(40, 167, 69, 0.15); /* Verde claro */
-        --positive-text: #28a745; /* Verde oscuro */
-        --negative-bg: rgba(220, 53, 69, 0.15); /* Rojo claro */
-        --negative-text: #dc3545; /* Rojo oscuro */
-        --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        --total-card-bg: rgba(105, 111, 199, 0.1); /* Fondo claro para tarjeta total */
-        --total-card-border: rgba(105, 111, 199, 0.8); /* Borde para tarjeta total */
-    }
-.change-vinculacion {
-    color: #333; /* Color de texto oscuro para buen contraste */
-    background-color: #FFFACD; /* Un amarillo muy suave (Lemon Chiffon) */
-    padding: 2px 6px; /* Pequeño relleno para que se vea como una etiqueta */
-    border-radius: 4px; /* Esquinas ligeramente redondeadas */
+/* Clase para texto destacado en interpretaciones */
+.nota-destacada {
+    background-color: rgba(253, 177, 45, 0.15);
+    border-left: 4px solid var(--unicauca-amarillo-oscuro);
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-top: 15px;
     font-weight: 600;
-    display: inline-block; /* Necesario para que el padding y el fondo funcionen bien */
-    margin-top: 4px; /* Un pequeño margen superior para separarlo si hay varias líneas */
-    font-size: 0.85em; /* Opcional: un poco más pequeño si ocupa mucho espacio */
+    font-size: 0.95em;
+    color: var(--unicauca-negro);
 }
-    .dashboard-profesores {
-        font-family: 'Open Sans', sans-serif !important;
-        max-width: 100%;
-        margin: 20px auto;
-        padding: 0 15px;
-    }
 
-    .dashboard-title {
-        text-align: center;
-        color: var(--primary-color);
-        margin-bottom: 30px;
-        font-size: 1.8rem;
-        font-weight: 700;
-    }
-
-    /* Contenedor de tarjetas */
-    .card-container {
-        display: flex;
-        gap: 20px;
-        margin-bottom: 30px;
-        flex-wrap: wrap;
-    }
-
-    /* Estilo base de tarjeta */
-    .card {
-        flex: 1;
-        min-width: 250px;
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: var(--card-shadow);
-        position: relative; /* Necesario para posicionar el porcentaje */
-        overflow: hidden; /* Asegura que el contenido no desborde la tarjeta */
-    }
-
-    /* Estilo específico para la tarjeta de total */
-    .card.total-card {
-        background-color: var(--total-card-bg);
-        border: 1px solid var(--total-card-border);
-    }
-
-    .card.total-card .card-title,
-    .card.total-card .card-main-value,
-    .card.total-card .card-subtext {
-        color: var(--text-dark); /* Asegura que el texto sea legible sobre el fondo azul */
-    }
-
-
-    /* Porcentaje en la esquina superior derecha */
-    .card-percentage {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        padding: 4px 8px;
-        border-radius: 5px;
-        z-index: 1;
-    }
-
-    .card-title {
-        color: #333;
-        margin-top: 0;
-        margin-bottom: 15px;
-        font-size: 1.1rem;
-        padding-right: 60px; /* Deja espacio para el porcentaje */
-    }
-
-    /* Valor principal */
-    .card-main-value {
-        font-size: 2.2rem;
-        font-weight: bold;
-        color: var(--text-dark);
-        margin-bottom: 10px;
-        display: flex; /* Permite alinear la variación */
-        align-items: baseline; /* Alinea el texto base del número y la variación */
-        flex-wrap: wrap; /* Permite que la variación salte de línea en pantallas pequeñas */
-    }
-
-    /* Variación (al lado del valor principal) */
-    .card-variation {
-        font-size: 1rem;
-        font-weight: 600;
-        padding: 4px 8px;
-        border-radius: 4px;
-        margin-left: 8px;
-        vertical-align: middle;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        white-space: nowrap; /* Evita que el texto de la variación se rompa */
-    }
-
-    /* --- CLASES DE COLOR --- */
-    /* Para porcentajes y variaciones positivas (aumento) */
-    .positive-alert {
-        background-color: var(--negative-bg); /* Rojo claro */
-        color: var(--negative-text); /* Rojo oscuro */
-    }
-
-    /* Para porcentajes y variaciones negativas (disminución, favorable) */
-    .negative-favorable {
-        background-color: var(--positive-bg); /* Verde claro */
-        color: var(--positive-text); /* Verde oscuro */
-    }
-    /* --- FIN CLASES DE COLOR --- */
-
-    /* Texto secundario */
-    .card-subtext {
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    /* Ajuste de colores para "nuevos" y "no continúan" según la nueva lógica */
-    .new-count.positive-alert {
-        color: var(--negative-text)!important; /* Rojo, ya que son "nuevos" (incremento) */
-        font-weight: 600;
-    }
-
-    .removed-count.negative-favorable {
-        color: var(--positive-text)!important; /* Verde, ya que son "no continúan" (disminución) */
-        font-weight: 600;
-    }
-
-    .previous-count {
-        opacity: 0.8;
-    }
-
-    /* Contenedor de gráficos */
-    .graficos-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-
-    .grafico-card {
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: var(--card-shadow);
-    }
-
-    .grafico-card canvas {
-        width: 100% !important;
-        height: 300px !important;
-    }
-
-    /* Responsive */
-    @media (max-width: 992px) { /* Ajustado para 3 columnas en pantallas más grandes y 1 en pequeñas */
-        .card-container {
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Hace que las tarjetas se ajusten */
-            justify-content: center; /* Centra las tarjetas si no llenan la fila */
-        }
-    }
-
-    @media (max-width: 768px) {
-        .card {
-            min-width: 100%;
-        }
-
-        .graficos-container {
-            grid-template-columns: 1fr;
-        }
-    }
-    .card-subtext {
+/* =================================== */
+/* ===  ESTILOS DE DASHBOARD GENERAL === */
+/* =================================== */
+.card-subtext {
     font-size: 0.9rem;
     color: var(--text-muted);
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     position: relative;
-    min-height: 40px; /* Ajusta si necesitas más espacio */
-    padding-bottom: 20px; /* Da espacio para el texto flotante */
+    min-height: 40px;
+    padding-bottom: 20px;
 }
-
-/* Estilo para posicionar el texto "Anterior" en la esquina inferior derecha */
 .previous-count {
     position: absolute;
     bottom: 10px;
@@ -2907,7 +3205,7 @@ elseif (abs($diffTotalProfesores) < 2 &&
     font-weight: 600;
     font-size: 0.85rem;
     color: #333;
-    background-color: #e2e6ea; /* Gris claro */
+    background-color: #e2e6ea;
     padding: 5px 10px;
     border-radius: 20px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
@@ -2916,80 +3214,97 @@ elseif (abs($diffTotalProfesores) < 2 &&
     cursor: default;
 }
 .previous-count:hover {
-    background-color: #d6d8db; /* Un poco más oscuro al pasar el mouse */
-}
-   /* Contenedor de gráficos e interpretaciones */
-.graficos-container {
-    display: grid;
-    /* Usa repeat(auto-fit, minmax(ancho-minimo, 1fr)) para que los elementos
-       se ajusten automáticamente en la cantidad de columnas que quepan. */
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Intenta 3 columnas, cada una de al menos 320px */
-    gap: 25px; /* Espacio entre las columnas y filas */
-    margin-bottom: 30px;
-    padding: 20px; /* Añade un poco de padding al contenedor general */
-    background-color: #fcfcfc; /* Un fondo muy claro para el contenedor general */
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.07); /* Sombra ligeramente más pronunciada */
+    background-color: #d6d8db;
 }
 
-/* Asegúrate de que tus graficos-card se adapten bien */
-.grafico-card {
-    background: white;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: var(--card-shadow);
-    /* No necesitas max-width aquí; el grid lo gestiona */
+/* ============================ */
+/* ===  ANIMACIONES & MISC  === */
+/* ============================ */
+@keyframes inflateButton {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+.label-italic {
+    font-style: italic;
+}
+#textoObservacion {
+    white-space: pre-line;
 }
 
-.grafico-card canvas {
-    width: 100% !important;
-    height: 300px !important; /* Mantén la altura para los gráficos */
+/* ============================ */
+/* ===  MEDIA QUERIES PARA RESPONSIVIDAD === */
+/* ============================ */
+@media (max-width: 992px) {
+    .card-container {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        justify-content: center;
+    }
 }
-
-/* Modifica los estilos para .interpretaciones-container para que actúe como un item de grid */
-.interpretaciones-container {
-    /* Los estilos de margen y sombra que tenías para este contenedor, ahora los maneja el grid */
-    background: white; /* Asegura un fondo blanco, o el que prefieras */
-    border-radius: 10px;
-    box-shadow: var(--card-shadow); /* Misma sombra que las tarjetas de gráfico */
-    padding: 25px;
-    border-top: 4px solid #696FC7; /* Mantén tu borde superior azul */
-    /* Elimina margin: 30px 0; y box-shadow si se duplican con los del .graficos-container */
-    /* Puedes ajustar su ancho mínimo si quieres que sea más grande que los gráficos o viceversa */
-    min-width: 320px; /* Asegura que no se haga demasiado pequeño */
-}
-
-/* **IMPORTANTE: Elimina los <style> duplicados para .vigencia-nota.**
-   Solo necesitas esta definición una vez, preferiblemente en tu archivo CSS externo. */
-.vigencia-nota {
-    background-color: #e3f2fd;
-    border-left: 4px solid #2196F3;
-    padding: 10px;
-    margin-bottom: 20px;
-    border-radius: 0 8px 8px 0;
-    font-size: 0.9em;
-}
-
-/* Para responsividad en pantallas pequeñas, si auto-fit no es suficiente */
 @media (max-width: 768px) {
-    .graficos-container {
-        grid-template-columns: 1fr; /* Una sola columna para todos los elementos en pantallas pequeñas */
+    /* Encabezado de navegación en móviles */
+    .navigation-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px 20px;
+    }
+    .navigation-header .header-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    .navigation-header h2,
+    .navigation-header h3 {
+        font-size: 1.4em;
+    }
+    .navigation-header .btn-back,
+    .navigation-header .btn-chart {
+        width: 100%;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    /* Tarjetas del dashboard en móviles */
+    .card {
+        min-width: 100%;
+    }
+
+    /* Sección de gráficos e interpretaciones en móviles */
+    .dashboard-visual-section {
+        flex-direction: column; /* Apila los paneles verticalmente */
+    }
+    .charts-panel { /* Panel de gráficos en móviles */
+        grid-template-columns: 1fr; /* Una sola columna para los gráficos */
+        min-width: 100%;
+        flex: none; /* Deshabilita el crecimiento flexible cuando están apilados */
+        padding: 15px; /* Ajusta el padding para móviles */
+    }
+    .interpretaciones-panel { /* Panel de interpretaciones en móviles */
+        min-width: 100%;
+        flex: none; /* Deshabilita el crecimiento flexible cuando están apilados */
+        padding: 15px; /* Ajusta el padding para móviles */
+    }
+
+    /* Cabeceras de período en móviles */
+    .periodo-title-h5 {
+        font-size: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    .periodo-title-h5 .fas {
+        margin-right: 5px;
+    }
+    .periodo-separator {
+        display: none;
+    }
+    .btn-agregar-profesor {
+        width: 100%;
+        justify-content: center;
+        margin-top: 10px;
     }
 }
 
-/* Asegúrate de que las variables CSS están definidas correctamente al principio de tu CSS */
-:root {
-    --primary-color: #696FC7;
-    --text-dark: #2c3e50;
-    --text-muted: #6c757d;
-    --positive-bg: rgba(40, 167, 69, 0.15); /* Verde claro */
-    --positive-text: #28a745; /* Verde oscuro */
-    --negative-bg: rgba(220, 53, 69, 0.15); /* Rojo claro */
-    --negative-text: #dc3545; /* Rojo oscuro */
-    --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    --total-card-bg: rgba(105, 111, 199, 0.1); /* Fondo claro para tarjeta total */
-    --total-card-border: rgba(105, 111, 199, 0.8); /* Borde para tarjeta total */
-} 
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
