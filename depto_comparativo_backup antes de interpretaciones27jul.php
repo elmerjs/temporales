@@ -366,8 +366,7 @@ if (isset($_POST['envia'])) {
 
 
 <?php endif; 
-                   $huboCambioVinculacion = false; // <-- DECLARA E INICIALIZA LA BANDERA AQUÍ
- 
+    
     
     // Función para obtener el nombre de la facultad
     function obtenerNombreFacultad($departamento_id) {
@@ -689,7 +688,35 @@ function obtenerTRDDepartamento($departamento_id) {
         justify-content: center;
     }
 }
-     /* --- Nuevas variables para colores de estado (si no las tienes) --- */
+         /* Contenedor periodo anterior */
+.periodo-anterior-container {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Título periodo anterior */
+.periodo-anterior-title {
+    color: #495057;
+    font-size: 1.05rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* Badge para semanas */
+.badge-secondary {
+    background-color: #6c757d;
+    color: white;
+    padding: 0.25em 0.6em;
+    font-size: 0.85em;
+    font-weight: 600;
+    border-radius: 10rem;
+}/* --- Nuevas variables para colores de estado (si no las tienes) --- */
 :root {
     --unicauca-azul: #0066cc;
     --unicauca-azul-oscuro: #004080;
@@ -701,8 +728,6 @@ function obtenerTRDDepartamento($departamento_id) {
     --unicauca-azul-vinculacion: #005c97; /* Color específico para el tipo de vinculación */
     --unicauca-amarillo-boton: #FF6600; /* Naranja del botón */
     --unicauca-amarillo-boton-hover: #E65C00;
-    --unicauca-negro: #111827; /* Para texto principal */
-    --unicauca-blanco: #FFFFFF;
 }
 
 /* Contenedor general para el encabezado del período (revisión y anterior) */
@@ -728,6 +753,7 @@ function obtenerTRDDepartamento($departamento_id) {
     border-left: 4px solid var(--unicauca-gris-medio); /* Borde gris para período anterior */
 }
 
+
 /* Estilo para el título H5 dentro del contenedor */
 .periodo-title-h5 {
     font-size: 1.15rem; /* Tamaño de fuente ligeramente más grande */
@@ -748,6 +774,7 @@ function obtenerTRDDepartamento($departamento_id) {
 .periodo-anterior-box .periodo-title-h5 .fas {
     color: var(--unicauca-gris-medio); /* Icono gris para el periodo anterior */
 }
+
 
 /* Estilos para las partes del texto dentro del título */
 .periodo-label,
@@ -772,7 +799,7 @@ function obtenerTRDDepartamento($departamento_id) {
     margin: 0 0.5rem; /* Ajuste el margen si es necesario */
 }
 
-/* Badge para semanas (se aplica a .semanas-badge, no a .badge-secondary directamente) */
+/* Badge para semanas */
 .semanas-badge {
     background-color: var(--unicauca-gris-medio); /* Fondo gris */
     color: var(--unicauca-blanco);
@@ -849,37 +876,6 @@ function obtenerTRDDepartamento($departamento_id) {
         margin-top: 10px;
     }
 }
-
-/* --- ESTILOS ORIGINALES DE TU PROPORCIONADO, AHORA AJUSTADOS O ELIMINADOS SI SE SUPERPONEN --- */
-/* Estas reglas se vuelven redundantes o menos específicas si usas las nuevas clases más arriba */
-/*
-.periodo-anterior-container {
-    padding: 0.75rem 1rem; // Ya cubierto por .periodo-info-container
-    border-radius: 0.5rem; // Ya cubierto por .periodo-info-container
-    margin-bottom: 1rem; // Ya cubierto por .periodo-info-container
-    display: flex; // Ya cubierto por .periodo-info-container
-    align-items: center; // Ya cubierto por .periodo-info-container
-}
-
-.periodo-anterior-title {
-    color: #495057; // Ya cubierto por .periodo-title-h5
-    font-size: 1.05rem; // Ya cubierto por .periodo-title-h5
-    margin: 0; // Ya cubierto por .periodo-title-h5
-    display: flex; // Ya cubierto por .periodo-title-h5
-    align-items: center; // Ya cubierto por .periodo-title-h5
-    flex-wrap: wrap; // Ya cubierto por .periodo-title-h5
-    gap: 0.5rem; // Ya cubierto por .periodo-title-h5
-}
-
-.badge-secondary { // Esta clase sigue siendo válida si la usas en otros lugares, pero para el badge de semanas, usa .semanas-badge
-    background-color: #6c757d; // Cubierto por .semanas-badge
-    color: white; // Cubierto por .semanas-badge
-    padding: 0.25em 0.6em; // Cubierto por .semanas-badge
-    font-size: 0.85em; // Cubierto por .semanas-badge
-    font-weight: 600; // Cubierto por .semanas-badge
-    border-radius: 10rem; // Cubierto por .semanas-badge
-}
-*/
     </style>
 <div class="card card-plazo mb-4" >
     <div class="navigation-header">
@@ -918,21 +914,17 @@ function obtenerTRDDepartamento($departamento_id) {
 
    <!-- NUEVA ESTRUCTURA CON GRID PARA ALINEACIÓN -->
     <div class="grid-container" id="contentToToggle">
-       <?php
-/*
-    echo '<div class="grid-col">
+        <!-- Encabezados en paralelo -->
+        <div class="grid-col">
             <div class="grid-header">
-                <h4 class=""><strong>Periodo en revisión: ' . htmlspecialchars($_POST['anio_semestre']) . '.</strong></h4>
+                <h4 class=""><strong>Periodo en revisión: <?php echo htmlspecialchars($_POST['anio_semestre']) . '.'; ?></strong></h4>
             </div>
         </div>
         <div class="grid-col">
             <div class="grid-header">
-                <h4 class=""><strong>Periodo anterior: ' . htmlspecialchars($periodo_anterior) . '</strong></h4>
+                <h4 class=""><strong>Periodo anterior: <?php echo htmlspecialchars($periodo_anterior); ?></strong></h4>
             </div>
-        </div>';
-*/
-?>
-
+        </div>
         
         <?php
         $facultad_id = obtenerIdFacultad($departamento_id);
@@ -1078,49 +1070,53 @@ ORDER BY
             $result = $conn->query($sql);
           // --- HTML OUTPUT FOR THE SECTION HEADER AND BUTTON ---
 echo "<div class='box-gray'>";
-// ================= COLUMNA PERIODO ACTUAL =================
-echo '<div class="grid-col">';
-echo "<div class='periodo-info-container periodo-actual-box'>"; // Usamos el contenedor unificado y el borde específico
-echo "<h5 class='periodo-title-h5'>"; // Nueva clase para el h5
-echo "<i class='fas fa-calendar-alt'></i>"; // Icono para el período actual (ajustado en CSS)
-echo "<span class='periodo-label'>Período en revisión:</span> ";
-echo "<span class='periodo-value'>" . htmlspecialchars($_POST['anio_semestre']) . "</span>";
-echo "<span class='periodo-separator'>|</span>"; // Separador
-echo "<span class='vinculacion-label'>Vinculación:</span> ";
-echo "<span class='vinculacion-type'>" . $tipo_docente . "</span> (";
+echo "<div class='periodo-actual-container' style='background: linear-gradient(135deg, #e6f0ff, #cce0ff); border-left: 4px solid #0066cc; padding: 10px; border-radius: 0 8px 8px 0; margin-bottom: 15px;'>";
+echo "<div class='d-flex justify-content-between align-items-center'>"; // Contenedor principal flex
 
+// Parte izquierda: información del periodo
+echo "<div class='d-flex align-items-center'>";
+echo "<i class='fas fa-calendar-alt mr-2' style='color: #0066cc; font-size: 1.2em;'></i>";
+echo "<h5 class='periodo-actual-title mb-0' style='font-size: 1.05rem;'>";
+echo "<span style='font-weight: 600; color: #004080;'>Período en revisión: " . htmlspecialchars($_POST['anio_semestre']) . "</span>";
+echo "<span class='mx-2' style='color: #adb5bd;'>|</span>";
+echo "Vinculación: <span style='color: #005c97; font-weight: 600;'>" . $tipo_docente . "</span>";
+echo "<span class='mx-2' style='color: #adb5bd;'>|</span>";
+echo "Estado: ";
+
+// Estado (abierto/cerrado) con color
 if ($tipo_docente == 'Catedra') {
     $estadoDepto = obtenerCierreDeptoCatedra($departamento_id, $aniose);
-    $estadoClass = strtolower($estadoDepto) == 'abierto' ? 'estado-abierto' : 'estado-cerrado';
-    echo "<span class='estado " . $estadoClass . "'>" . ucfirst(strtolower($estadoDepto)) . "</span>) - ";
-    echo "<span class='semanas-badge'>" . $semanas_cat . " semanas</span>";
+    $estadoClass = strtolower($estadoDepto) == 'abierto' ? 'text-success' : 'text-danger';
+    echo "<span class='" . $estadoClass . "' style='font-weight: 600;'>" . ucfirst(strtolower($estadoDepto)) . "</span>";
 } else {
-    $estadoDepto = obtenerCierreDeptoOcasional($departamento_id, $aniose); // Usar función correcta para Ocasional si existe
-    $estadoClass = strtolower($estadoDepto) == 'abierto' ? 'estado-abierto' : 'estado-cerrado';
-    echo "<span class='estado " . $estadoClass . "'>" . ucfirst(strtolower($estadoDepto)) . "</span>) - ";
-    echo "<span class='semanas-badge'>" . $semanas_ocas . " semanas</span>";
+    $estadoDepto = obtenerCierreDeptoCatedra($departamento_id, $aniose);
+    $estadoClass = strtolower($estadoDepto) == 'abierto' ? 'text-success' : 'text-danger';
+    echo "<span class='" . $estadoClass . "' style='font-weight: 600;'>" . ucfirst(strtolower($estadoDepto)) . "</span>";
 }
 
+echo "<span class='mx-2' style='color: #adb5bd;'>|</span>";
+echo "Semanas: <span class='badge badge-primary ml-2' style='background-color: #0066cc; font-weight: 500;'>" . ($tipo_docente == 'Catedra' ? $semanas_cat : $semanas_ocas) . "</span>";
 echo "</h5>";
+echo "</div>"; // Cierre de la parte izquierda
 
+// Parte derecha: botón (solo para admin)
 if ($tipo_usuario == 1) {
-    echo "
-    <div class='btn-container'>"; // Envuelve el botón en un div para mejor control flexbox
-    echo "
-        <form action='nuevo_registro_admin.php' method='GET' class='mb-0'>
-            <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
-            <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
-            <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
-            <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
-            <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
-            <button type='submit' class='btn-agregar-profesor' title='Agregar Profesor'>
-                <i class='fas fa-user-plus'></i> <span>Agregar Profesor</span>
-            </button>
-        </form>";
-    echo "</div>"; // Cierre btn-container
+    echo "<div class='d-flex align-items-center'>";
+    echo "<form action='nuevo_registro_admin.php' method='GET' class='mb-0'>";
+    echo "<input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>";
+    echo "<input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>";
+    echo "<input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>";
+    echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>";
+    echo "<input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>";
+    echo "<button type='submit' class='btn btn-sm py-1' title='Agregar Profesor' style='background-color: #FF6600; color: white; font-weight: 600; border: none;'>";
+    echo "<i class='fas fa-user-plus mr-1'></i> Agregar Profesor";
+    echo "</button>";
+    echo "</form>";
+    echo "</div>"; // Cierre contenedor botón
 }
-echo "</div>"; // Cierre periodo-info-container
-echo '</div>'; // Cierre grid-col
+
+echo "</div>"; // Cierre del contenedor principal flex
+echo "</div>"; // Cierre del periodo-actual-container
             
             // Obtener el conteo de profesores para este tipo_docente
             $sqlCount = "SELECT COUNT(*) as count FROM solicitudes WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
@@ -1506,21 +1502,15 @@ $total_consolidado += $total_proyect ?? 0;
             }
             
             echo "<div class='box-gray'>";
-// ================= COLUMNA PERIODO ANTERIOR =================
-echo '<div class="grid-col">';
-echo "<div class='periodo-info-container periodo-anterior-box'>"; // Use unified container and specific border class
-echo "<h5 class='periodo-title-h5'>"; // Use the new general title class
-echo "<i class='fas fa-history'></i>"; // Icon for previous period (style controlled by CSS)
-echo "<span class='periodo-label'>Período anterior:</span> "; // Consistent label
-echo "<span class='periodo-value'>" . htmlspecialchars($periodo_anterior) . "</span>"; // Period value
-echo "<span class='periodo-separator'>|</span>"; // Separator
-echo "<span class='vinculacion-label'>Vinculación:</span> "; // Consistent label
-echo "<span class='vinculacion-type'>" . $tipo_docente . "</span> - "; // Type of docente
-echo "<span class='semanas-badge'>" . (($tipo_docente === "Ocasional") ? $semanas_ocasant : $semanas_catant) . " semanas</span>"; // Weeks badge (using new class)
+echo "<div class='periodo-anterior-container' style='background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-left: 4px solid #6c757d; padding: 10px; border-radius: 0 8px 8px 0; margin-bottom: 15px;'>";
+echo "<h5 class='periodo-anterior-title mb-0 d-flex align-items-center' style='font-size: 1.05rem;'>";
+echo "<i class='fas fa-history mr-2' style='color: #6c757d; font-size: 1.2em;'></i>";
+echo "<span style='font-weight: 600; color: #495057;'>Periodo anterior: " . htmlspecialchars($periodo_anterior) . "</span>";
+echo "<span class='mx-2' style='color: #adb5bd;'>|</span>";
+echo "Vinculación: <span style='color: #005c97; font-weight: 600;'>" . $tipo_docente . "</span> - ";
+echo "<span class='badge badge-secondary ml-2' style='background-color: #6c757d; font-weight: 500;'>" . (($tipo_docente === "Ocasional") ? $semanas_ocasant : $semanas_catant) . " semanas</span>";
 echo "</h5>";
-// No button in this section
-echo "</div>"; // Close periodo-info-container
-echo '</div>'; // Close grid-col
+echo "</div>";
             
             if ($result->num_rows > 0) {
                 echo "<table border='1'>
@@ -1546,7 +1536,7 @@ echo '</div>'; // Close grid-col
                 
                 $item = 1;
                 $total_proyectant = 0;
-
+                
                 while ($row = $result->fetch_assoc()) {
                     $cedula = $row['cedula'];
                     $cedulaEliminada = !in_array($cedula, $cedulasPeriodoActualPorTipo);
@@ -1556,8 +1546,6 @@ echo '</div>'; // Close grid-col
                     if ($cedulaEstaEnOtroTipo) {
                         $claseRoja = 'cedula-en-otro-tipo';
                         $tooltipText = 'Cambio de vinculación para el periodo actual ('.$anio_semestre.')';
-                                $huboCambioVinculacion = true; // <-- ACTIVA LA BANDERA SI SE ENCUENTRA UN CAMBIO DE VINCULACIÓN
-
                     } elseif ($cedulaEliminada) {
                         $claseRoja = 'cedula-eliminada';
                         $tooltipText = 'Profesor no vinculado para el periodo actual ('.$anio_semestre.')';
@@ -2129,467 +2117,16 @@ echo "<div>
             </div>
         </div>
 
-          <div class="graficos-container">
+        <div class="graficos-container">
             <div class="grafico-card">
                 <canvas id="profesorCantidadChart"></canvas>
             </div>
             <div class="grafico-card">
                 <canvas id="valoresProyectadosChart"></canvas>
             </div>
+        </div>
 
-            <?php
-            // MOSTRAR SECCIÓN DE INTERPRETACIONES
-            // Asegúrate de que $interpretaciones esté definida y rellena ANTES de este punto en el código PHP.
-            // (Asumo que tus cálculos de interpretaciones están ejecutándose antes de la salida HTML)
-            if (!empty($interpretaciones)) {
-                echo '<div class="interpretaciones-container">'; // ¡AHORA DENTRO DE graficos-container!
-                echo '<h3 class="interpretaciones-titulo-seccion"><i class="fas fa-brain"></i> Interpretación de Resultados</h3>';
-                
-                // Mostrar nota de cambio de vigencia si aplica
-                if ($vigencia_diferente) {
-                    echo '<div class="vigencia-nota">';
-                    echo '<i class="fas fa-info-circle"></i> ';
-                    echo "Periodo actual ($anio_semestre) y anterior ($periodo_anterior) son de vigencias diferentes ($anio_anterior → $anio_actual). ";
-                    echo "IPC estimado: " . number_format($ipc_estimado * 100, 2) . '%.';
-                    echo '</div>';
-                }
-                
-                foreach ($interpretaciones as $interpretacion) {
-                    $claseTipo = "interpretacion-{$interpretacion['tipo']}";
-                    
-                    echo <<<HTML
-                    <div class="interpretacion-card {$claseTipo}">
-                        <div class="interpretacion-header">
-                            <i class="{$interpretacion['icono']}"></i>
-                            <h4>{$interpretacion['titulo']}</h4>
-                        </div>
-                        <div class="interpretacion-body">
-                            <p>{$interpretacion['texto']}</p>
-                        </div>
-                    </div>
-                    HTML;
-                }
-                
-                echo '</div>'; // Cierre de interpretaciones-container
-            }
-            ?>
-              
-        
-        <?php
-    // ... cálculos previos ...
-
-    $porcentajeTotalProfesores = ($totalProfesoresTotalAnterior != 0) 
-        ? ($diffTotalProfesores / $totalProfesoresTotalAnterior) * 100 
-        : 0;
-    $porcentajeTotalProyectado = ($totalProyectadoTotalAnterior != 0) 
-        ? ($diffTotalProyectado / $totalProyectadoTotalAnterior) * 100 
-        : 0;
-
-    // CÁLCULOS ADICIONALES PARA INTERPRETACIONES
-    $diferenciaSemanasCat = $semanas_cat - $semanas_catant;
-    $diferenciaSemanasOc = $semanas_ocas - $semanas_ocasant;
-
-    $porcentajeCambioSemanasCat = ($semanas_catant != 0) 
-        ? round(($diferenciaSemanasCat / $semanas_catant) * 100, 1) 
-        : 0;
-
-    $porcentajeCambioSemanasOc = ($semanas_ocasant != 0) 
-        ? round(($diferenciaSemanasOc / $semanas_ocasant) * 100, 1) 
-        : 0;
-
-    $cambioSemanasSignificativo = (abs($porcentajeCambioSemanasCat) > 5 || abs($porcentajeCambioSemanasOc) > 5);
-
-    // DETERMINAR SI ES VIGENCIA DIFERENTE (año diferente)
-    $anio_actual = explode('-', $anio_semestre)[0];
-    $anio_anterior = explode('-', $periodo_anterior)[0];
-    $vigencia_diferente = ($anio_actual != $anio_anterior);
-    $ipc_estimado = 0.08; // 8% de inflación estimada
-
-// CÁLCULOS ADICIONALES PARA INTERPRETACIONES
-$diferenciaSemanasCat = $semanas_cat - $semanas_catant;
-$diferenciaSemanasOc = $semanas_ocas - $semanas_ocasant;
-
-$porcentajeCambioSemanasCat = ($semanas_catant != 0) 
-    ? round(($diferenciaSemanasCat / $semanas_catant) * 100, 1) 
-    : 0;
-
-$porcentajeCambioSemanasOc = ($semanas_ocasant != 0) 
-    ? round(($diferenciaSemanasOc / $semanas_ocasant) * 100, 1) 
-    : 0;
-
-$cambioSemanasSignificativo = (abs($porcentajeCambioSemanasCat) > 5 || abs($porcentajeCambioSemanasOc) > 5);
-
-// GENERACIÓN DE INTERPRETACIONES
-$interpretaciones = [];
-// Escenario 1: Profesores bajan pero presupuesto sube
-if ($diffTotalProfesores < 0 && $diffTotalProyectado > 0) {
-    $interpretacion = "A pesar de la disminución de <strong>" . abs($diffTotalProfesores) . " profesores</strong> ";
-    $interpretacion .= "(un <strong>" . number_format(abs($porcentajeTotalProfesores), 1) . "%</strong> menos), el presupuesto proyectado aumentó ";
-    $interpretacion .= "en <strong>$" . number_format($diffTotalProyectado, 0, ',', '.') . "</strong>. "; // Formateo para millones si es grande, o el valor exacto
-
-    $causas = [];
-
-    // Causa 1: Cambio significativo en semanas
-    if ($cambioSemanasSignificativo) {
-        $semanas_info = [];
-        if ($diferenciaSemanasCat > 0) {
-            $semanas_info[] = "Cátedra (+" . number_format($diferenciaSemanasCat, 0) . " semanas, " . number_format($porcentajeCambioSemanasCat, 1) . "%)";
-        }
-        if ($diferenciaSemanasOc > 0) {
-            $semanas_info[] = "Ocasional (+" . number_format($diferenciaSemanasOc, 0) . " semanas, " . number_format($porcentajeCambioSemanasOc, 1) . "%)";
-        }
-        if (!empty($semanas_info)) {
-            $causas[] = "un incremento en las semanas de vinculación: " . implode(" y ", $semanas_info) . ", lo que indica una mayor intensidad horaria por profesor.";
-        }
-    }
-
-    // Causa 2: Cambio de vinculación de profesores
-    if ($huboCambioVinculacion) { // <-- USANDO LA BANDERA AQUÍ
-        $causas[] = "profesores que cambiaron su tipo de vinculación (ej. de Cátedra a Ocasional), lo que puede implicar un ajuste en el valor";
-    }
-    
-    // Causa 3: Aumento general en puntos/horas (si no hay otras causas específicas o como complemento)
-    // Solo agrega esta causa si las anteriores no son la única explicación, o como una general
-    if (empty($causas) || (count($causas) == 1 && strpos($causas[0], 'semanas de vinculación') === false)) {
-        $causas[] = "un aumento en los puntos/horas asignados a los profesores activos.";
-    }
-
-    // Construir la frase final con las causas
-    if (!empty($causas)) {
-        $interpretacion .= "Esto puede atribuirse a: " . implode(" Además, ", $causas) . ".";
-    } else {
-        $interpretacion .= "Este comportamiento sugiere una reasignación interna de recursos o ajustes en la valoración de horas/puntos.";
-    }
-    
-    $interpretaciones[] = [
-        'icono' => 'fas fa-balance-scale', // Icono de balanza o redistribución
-        'titulo' => 'Ajuste presupuestal con redistribución de planta',
-        'texto' => $interpretacion,
-        'tipo' => 'advertencia' // O 'info' si quieres un tono más neutral
-    ];
-}
-              // Escenario 8: Profesores suben pero presupuesto baja
-elseif ($diffTotalProfesores > 0 && $diffTotalProyectado < 0) {
-    $interpretacion = "A pesar del incremento de <strong>" . $diffTotalProfesores . " profesores</strong> ";
-    $interpretacion .= "(un <strong>" . number_format($porcentajeTotalProfesores, 1) . "%</strong> más), ";
-    $interpretacion .= "el presupuesto proyectado disminuyó en <strong>$" . number_format(abs($diffTotalProyectado), 0, ',', '.') . "</strong> ";
-    $interpretacion .= "(<strong>" . number_format(abs($porcentajeTotalProyectado), 1) . "%</strong> menos). ";
-
-    $causas = [];
-    
-    // Causa 1: Cambios hacia modalidades más económicas
-    if ($huboCambioVinculacion) {
-        $causas[] = "migración hacia tipos de vinculación con menor valor por hora (ej: de Ocasional a Cátedra)";
-    }
-    
-    // Causa 2: Reducción en semanas
-    if ($cambioSemanasSignificativo) {
-        $detalle_semanas = [];
-        if ($diferenciaSemanasCat < 0) {
-            $detalle_semanas[] = "Cátedra (" . $diferenciaSemanasCat . " semanas)";
-        }
-        if ($diferenciaSemanasOc < 0) {
-            $detalle_semanas[] = "Ocasional (" . $diferenciaSemanasOc . " semanas)";
-        }
-        $causas[] = "reducción en semanas: " . implode(' y ', $detalle_semanas);
-    }
-    
-    // Causa 3: Reducción general de puntos/hora
-    if (empty($causas)) {
-        $causas[] = "una reducción general en los puntos/hora asignados";
-    }
-    
-    $interpretacion .= "Esto podría indicar:<br>- " . implode("<br>- ", $causas);
-    
-    $interpretaciones[] = [
-        'icono' => 'fas fa-exchange-alt',
-        'titulo' => 'Reconfiguración de planta docente',
-        'texto' => $interpretacion,
-        'tipo' => 'advertencia'
-    ];
-}
-// Escenario 2: Profesores constantes, presupuesto sube
-elseif (abs($diffTotalProfesores) <= 2 && $diffTotalProyectado > 0) {
-    $interpretacion = "Manteniendo una planta estable de profesores, el presupuesto aumentó ";
-    $interpretacion .= "en $" . number_format($diffTotalProyectado / 1000000, 2) . " millones ";
-    
-    if ($cambioSemanasSignificativo) {
-        $interpretacion .= "principalmente por el incremento en las semanas: ";
-        
-        $detalles = [];
-        if ($diferenciaSemanasCat > 0) {
-            $detalles[] = "Cátedra (+{$diferenciaSemanasCat} semanas)";
-        }
-        if ($diferenciaSemanasOc > 0) {
-            $detalles[] = "Ocasional (+{$diferenciaSemanasOc} semanas)";
-        }
-        
-        $interpretacion .= implode(" y ", $detalles) . ". ";
-        $interpretacion .= "Este aumento representa un " . abs($porcentaje) . "% adicional por profesor.";
-    } else {
-        $interpretacion .= "debido a ajustes en los puntos/horas asignados.";
-    }
-    
-    $interpretaciones[] = [
-        'icono' => 'fas fa-chart-line',
-        'titulo' => 'Optimización de recursos',
-        'texto' => $interpretacion,
-        'tipo' => 'positivo'
-    ];
-}
-// Escenario 6: Presupuesto baja con profesores estables
-elseif (abs($diffTotalProfesores) < 2 && $porcentajeTotalProyectado < 0) {
-    $interpretacion = "Con una planta docente estable (variación de " . abs($diffTotalProfesores) . " profesor(es)), el presupuesto disminuyó en un <strong>" . number_format(abs($porcentajeTotalProyectado), 1) . "%</strong>. Posibles causas:";
-    
-    $interpretacion .= "<ul class='interpretacion-lista'>";
-    
-    // Causa 1: Reducción en semanas de vinculación
-    if ($cambioSemanasSignificativo) {
-        $interpretacion .= "<li>Reducción en semanas de vinculación: ";
-        
-        $semanas_detalles = [];
-        if ($diferenciaSemanasCat < 0) {
-            $semanas_detalles[] = "Cátedra (" . abs($diferenciaSemanasCat) . " semanas menos)";
-        }
-        if ($diferenciaSemanasOc < 0) {
-            $semanas_detalles[] = "Ocasional (" . abs($diferenciaSemanasOc) . " semanas menos)";
-        }
-        $interpretacion .= implode(" y ", $semanas_detalles) . ".</li>";
-    }
-    
-    // Causa 2 (NUEVA): Cambios de vinculación de profesores
-    if ($huboCambioVinculacion) {
-        $interpretacion .= "<li>Cambios en el tipo de vinculación de algunos profesores, lo que pudo resultar en contratos con menor valor.</li>";
-    }
-
-    // Causa 3: Ajustes en puntos/horas asignados
-    $interpretacion .= "<li>Ajustes a la baja en los puntos/horas asignados por profesor.</li>";
-    
-    // Causa 4: Cambios en el valor del punto
-    $interpretacion .= "<li>Posibles cambios en el valor base del punto o de la hora.</li>";
-    $interpretacion .= "</ul>";
-    
-    $interpretaciones[] = [
-        'icono' => 'fas fa-compress', // Icono de compresión o ajuste
-        'titulo' => 'Optimización o Ajuste Presupuestal',
-        'texto' => $interpretacion,
-        'tipo' => 'neutro' // O 'info'
-    ];
-}
-              
-// Escenario 7: Ambos indicadores bajan (profesores y presupuesto)
-elseif ($diffTotalProfesores < 0 && $diffTotalProyectado < 0) {
-    $interpretacion = "Reducción </strong> en la planta docente temporal ";
-    $interpretacion .= "(" . abs($diffTotalProfesores) . " profesores menos, " . number_format(abs($porcentajeTotalProfesores), 1) . "% menos) ";
-    $interpretacion .= "y en el presupuesto proyectado ($" . number_format(abs($diffTotalProyectado), 0, ',', '.') . " menos, ";
-    $interpretacion .= number_format(abs($porcentajeTotalProyectado), 1) . "% menos). ";
-    
-    $interpretacion .= " refleja:";
-    
-    $interpretacion .= "<ul class='interpretacion-lista'>";
-    $interpretacion .= "<li>Una <strong>reducción general de carga académica</strong></li>";
-    
-    if ($cambioSemanasSignificativo) {
-        $interpretacion .= "<li>Ajustes en las semanas de vinculación: ";
-        if ($diferenciaSemanasCat < 0) {
-            $interpretacion .= "Cátedra (" . $diferenciaSemanasCat . " semanas), ";
-        }
-        if ($diferenciaSemanasOc < 0) {
-            $interpretacion .= "Ocasional (" . $diferenciaSemanasOc . " semanas)";
-        }
-        $interpretacion .= "</li>";
-    }
-    
-    $interpretacion .= "<li>Posible <strong>optimización de recursos</strong> o disminución de necesidades académicas</li>";
-    $interpretacion .= "<li>Relación costo-eficiencia: ";
-    $costoPorProfesorAnterior = $totalProyectadoTotalAnterior / $totalProfesoresTotalAnterior;
-    $costoPorProfesorActual = $totalProyectadoTotal / $totalProfesoresTotal;
-    $variacionCosto = (($costoPorProfesorActual - $costoPorProfesorAnterior) / $costoPorProfesorAnterior) * 100;
-    
-    $interpretacion .= number_format($costoPorProfesorActual, 0, ',', '.') . " vs " . 
-                      number_format($costoPorProfesorAnterior, 0, ',', '.') . " por profesor ";
-    $interpretacion .= "(" . ($variacionCosto > 0 ? "+" : "") . number_format($variacionCosto, 1) . "%)</li>";
-    $interpretacion .= "</ul>";
-    
-    $interpretaciones[] = [
-        'icono' => 'fas fa-arrow-down',
-        'titulo' => 'Reducción de planta y presupuesto',
-        'texto' => $interpretacion,
-        'tipo' => 'neutro'
-    ];
-}
-// Escenario 3: Profesores bajan, presupuesto se mantiene
-elseif ($diffTotalProfesores < 0 && abs($porcentaje) < 5) {
-    $ahorroEstimado = $totalProyectadoTotalAnterior * (abs($diffTotalProfesores) / $totalProfesoresTotalAnterior);
-    
-    $interpretacion = "A pesar de la reducción de " . abs($diffTotalProfesores) . " profesores, ";
-    $interpretacion .= "el presupuesto se mantuvo estable. Esto podría indicar:";
-    
-    $interpretacion .= "<ul class='interpretacion-lista'>";
-    $interpretacion .= "<li>Reasignación de horas a profesores existentes</li>";
-    
-    if ($cambioSemanasSignificativo) {
-        $interpretacion .= "<li>Aumento compensatorio en semanas de vinculación</li>";
-    }
-    
-    $interpretacion .= "<li>Potencial ahorro estimado: $" . number_format($ahorroEstimado / 1000000, 2) . " millones</li>";
-    $interpretacion .= "</ul>";
-    
-    $interpretaciones[] = [
-        'icono' => 'fas fa-money-bill-wave',
-        'titulo' => 'Estabilidad presupuestal con menor planta',
-        'texto' => $interpretacion,
-        'tipo' => 'neutro'
-    ];
-}
-
-// Escenario 4: Profesores suben, presupuesto estable
-elseif ($diffTotalProfesores > 0 && abs($porcentaje) < 5) {
-    $interpretacion = "A pesar del incremento de " . $diffTotalProfesores . " profesores, ";
-    $interpretacion .= "el presupuesto se mantuvo estable. Esto sugiere:";
-    
-    $interpretacion .= "<ul class='interpretacion-lista'>";
-    $interpretacion .= "<li>Optimización en la asignación de horas/puntos</li>";
-    
-    if ($cambioSemanasSignificativo) {
-        $interpretacion .= "<li>Reducción compensatoria en semanas de vinculación</li>";
-    }
-    
-    $costoPromedio = $totalProyectadoTotal / $totalProfesoresTotal;
-    $interpretacion .= "<li>Costo promedio por profesor: $" . number_format($costoPromedio / 1000000, 2) . " millones</li>";
-    $interpretacion .= "</ul>";
-    
-    $interpretaciones[] = [
-        'icono' => 'fas fa-users',
-        'titulo' => 'Crecimiento eficiente de planta',
-        'texto' => $interpretacion,
-        'tipo' => 'positivo'
-    ];
-}
-
-// Escenario 5: Ambos suben proporcionalmente
-elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 && 
-        abs($porcentajeTotalProfesores - $porcentajeTotalProyectado) < 10) {
-    
-    $interpretacion = "El crecimiento de la planta docente (" . $porcentajeTotalProfesores . "%) ";
-    $interpretacion .= "y el aumento presupuestal (" . $porcentajeTotalProyectado . "%) son proporcionales, ";
-    $interpretacion .= "indicando una expansión equilibrada.";
-    
-    if ($cambioSemanasSignificativo) {
-        $interpretacion .= " El cambio en semanas de vinculación contribuyó al ajuste presupuestal.";
-    }
-    
-    $interpretaciones[] = [
-        'icono' => 'fas fa-expand',
-        'titulo' => 'Crecimiento proporcional',
-        'texto' => $interpretacion,
-        'tipo' => 'positivo'
-    ];
-}
-
-
-              // Escenario 9: Semanas cambian significativamente sin variación en otros indicadores
-elseif (abs($diffTotalProfesores) < 2 && abs($porcentajeTotalProyectado) < 1 && $cambioSemanasSignificativo) {
-    $interpretacion = "Aunque la planta docente y el presupuesto se mantuvieron estables, ";
-    $interpretacion .= "se observan cambios significativos en las semanas de vinculación: ";
-    
-    $cambios = [];
-    if (abs($porcentajeCambioSemanasCat) > 5) {
-        $tendencia = ($diferenciaSemanasCat > 0) ? "aumento" : "reducción";
-        $cambios[] = "Cátedra ({$tendencia} de " . abs($diferenciaSemanasCat) . " semanas, " . abs($porcentajeCambioSemanasCat) . "%)";
-    }
-    
-    if (abs($porcentajeCambioSemanasOc) > 5) {
-        $tendencia = ($diferenciaSemanasOc > 0) ? "aumento" : "reducción";
-        $cambios[] = "Ocasional ({$tendencia} de " . abs($diferenciaSemanasOc) . " semanas, " . abs($porcentajeCambioSemanasOc) . "%)";
-    }
-    
-    $interpretacion .= implode(' y ', $cambios) . ". ";
-    $interpretacion .= "Esto sugiere una redistribución de cargas horarias entre modalidades.";
-    
-    $interpretaciones[] = [
-        'icono' => 'fas fa-retweet',
-        'titulo' => 'Reasignación de cargas horarias',
-        'texto' => $interpretacion,
-        'tipo' => 'info'
-    ];
-}
-              // Escenario 10: Estabilidad general (cambios mínimos en todos los indicadores)
-elseif (abs($diffTotalProfesores) < 2 && 
-        abs($porcentajeTotalProyectado) < 1 && 
-        !$cambioSemanasSignificativo) {
-    
-    $interpretacion = "La planta docente, presupuesto proyectado y distribución de semanas ";
-    $interpretacion .= "se mantuvieron estables con variaciones mínimas (< 1%). ";
-    $interpretacion .= "Esto indica una operación consistente sin cambios significativos.";
-    
-    $interpretaciones[] = [
-        'icono' => 'fas fa-lock',
-        'titulo' => 'Estabilidad operativa',
-        'texto' => $interpretacion,
-        'tipo' => 'neutro'
-    ];
-}
-    // MOSTRAR SECCIÓN DE INTERPRETACIONES
-    if (!empty($interpretaciones)) {
-        echo '<div class="card">';
-        echo '<h3 class="interpretaciones-titulo-seccion"><i class="fas fa-brain"></i> Interpretación de Resultados</h3>';
-        
-        // Mostrar nota de cambio de vigencia si aplica
-        if ($vigencia_diferente) {
-            echo '<div class="vigencia-nota">';
-            echo '<i class="fas fa-info-circle"></i> ';
-            echo "Periodo actual ($anio_semestre) y anterior ($periodo_anterior) son de vigencias diferentes ($anio_anterior → $anio_actual). ";
-            echo "IPC estimado: " . number_format($ipc_estimado * 100, 2) . '%.';
-            echo '</div>';
-        }
-        
-        foreach ($interpretaciones as $interpretacion) {
-            $claseTipo = "interpretacion-{$interpretacion['tipo']}";
-            
-            echo <<<HTML
-            <div class="interpretacion-card {$claseTipo}">
-                <div class="interpretacion-header">
-                    <i class="{$interpretacion['icono']}"></i>
-                    <h4>{$interpretacion['titulo']}</h4>
-                </div>
-                <div class="interpretacion-body">
-                    <p>{$interpretacion['texto']}</p>
-                </div>
-            </div>
-            HTML;
-        }
-        
-        echo '</div>';
-    }
-?>
-
-<!-- CSS adicional para la nota de vigencia -->
-<style>
-.vigencia-nota {
-    background-color: #e3f2fd;
-    border-left: 4px solid #2196F3;
-    padding: 10px;
-    margin-bottom: 20px;
-    border-radius: 0 8px 8px 0;
-    font-size: 0.9em;
-}
-</style>
-<!-- CSS adicional para la nota de vigencia -->
-<style>
-.vigencia-nota {
-    background-color: #e3f2fd;
-    border-left: 4px solid #2196F3;
-    padding: 10px;
-    margin-bottom: 20px;
-    border-radius: 0 8px 8px 0;
-    font-size: 0.9em;
-}
-</style>
-
-     
-    </div>
-           <div class="text-center mt-5 mb-4">
+        <div class="text-center mt-5 mb-4">
             <a href="#seccionTablas"
                class="btn btn-sm d-inline-flex align-items-center gap-1"
                style="background-color: #696FC7; border-color: #696FC7; color: white;"
@@ -2597,106 +2134,10 @@ elseif (abs($diffTotalProfesores) < 2 &&
                 <i class="fas fa-arrow-up"></i> Volver a Tablas
             </a>
         </div>
+    </div>
 </div>
 
-<style>.interpretaciones-container {
-    margin: 30px 0;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    padding: 25px;
-    border-top: 4px solid #696FC7;
-}
-
-.interpretaciones-titulo-seccion {
-    color: #2c3e50;
-    border-bottom: 2px solid #ecf0f1;
-    padding-bottom: 15px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.interpretacion-card {
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    background: #f8f9fa;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.interpretacion-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-}
-
-.interpretacion-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 15px;
-}
-
-.interpretacion-header h4 {
-    margin: 0;
-    color: #2c3e50;
-    font-weight: 600;
-}
-
-.interpretacion-header i {
-    font-size: 1.4rem;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: #e9ecef;
-}
-
-.interpretacion-body p {
-    color: #495057;
-    line-height: 1.7;
-    margin-bottom: 0;
-}
-
-.interpretacion-lista {
-    padding-left: 20px;
-    margin-top: 10px;
-}
-
-.interpretacion-lista li {
-    margin-bottom: 8px;
-}
-
-/* Tipos de interpretación */
-.interpretacion-positivo {
-    border-left: 4px solid #28a745;
-}
-
-.interpretacion-advertencia {
-    border-left: 4px solid #ffc107;
-}
-
-.interpretacion-neutro {
-    border-left: 4px solid #17a2b8;
-}
-
-.interpretacion-positivo .interpretacion-header i {
-    color: #28a745;
-    background: rgba(40, 167, 69, 0.1);
-}
-
-.interpretacion-advertencia .interpretacion-header i {
-    color: #ffc107;
-    background: rgba(255, 193, 7, 0.1);
-}
-
-.interpretacion-neutro .interpretacion-header i {
-    color: #17a2b8;
-    background: rgba(23, 162, 184, 0.1);
-}
+<style>
     /* Variables CSS para colores */
     :root {
         --primary-color: #696FC7;
@@ -2918,78 +2359,7 @@ elseif (abs($diffTotalProfesores) < 2 &&
 .previous-count:hover {
     background-color: #d6d8db; /* Un poco más oscuro al pasar el mouse */
 }
-   /* Contenedor de gráficos e interpretaciones */
-.graficos-container {
-    display: grid;
-    /* Usa repeat(auto-fit, minmax(ancho-minimo, 1fr)) para que los elementos
-       se ajusten automáticamente en la cantidad de columnas que quepan. */
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Intenta 3 columnas, cada una de al menos 320px */
-    gap: 25px; /* Espacio entre las columnas y filas */
-    margin-bottom: 30px;
-    padding: 20px; /* Añade un poco de padding al contenedor general */
-    background-color: #fcfcfc; /* Un fondo muy claro para el contenedor general */
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.07); /* Sombra ligeramente más pronunciada */
-}
-
-/* Asegúrate de que tus graficos-card se adapten bien */
-.grafico-card {
-    background: white;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: var(--card-shadow);
-    /* No necesitas max-width aquí; el grid lo gestiona */
-}
-
-.grafico-card canvas {
-    width: 100% !important;
-    height: 300px !important; /* Mantén la altura para los gráficos */
-}
-
-/* Modifica los estilos para .interpretaciones-container para que actúe como un item de grid */
-.interpretaciones-container {
-    /* Los estilos de margen y sombra que tenías para este contenedor, ahora los maneja el grid */
-    background: white; /* Asegura un fondo blanco, o el que prefieras */
-    border-radius: 10px;
-    box-shadow: var(--card-shadow); /* Misma sombra que las tarjetas de gráfico */
-    padding: 25px;
-    border-top: 4px solid #696FC7; /* Mantén tu borde superior azul */
-    /* Elimina margin: 30px 0; y box-shadow si se duplican con los del .graficos-container */
-    /* Puedes ajustar su ancho mínimo si quieres que sea más grande que los gráficos o viceversa */
-    min-width: 320px; /* Asegura que no se haga demasiado pequeño */
-}
-
-/* **IMPORTANTE: Elimina los <style> duplicados para .vigencia-nota.**
-   Solo necesitas esta definición una vez, preferiblemente en tu archivo CSS externo. */
-.vigencia-nota {
-    background-color: #e3f2fd;
-    border-left: 4px solid #2196F3;
-    padding: 10px;
-    margin-bottom: 20px;
-    border-radius: 0 8px 8px 0;
-    font-size: 0.9em;
-}
-
-/* Para responsividad en pantallas pequeñas, si auto-fit no es suficiente */
-@media (max-width: 768px) {
-    .graficos-container {
-        grid-template-columns: 1fr; /* Una sola columna para todos los elementos en pantallas pequeñas */
-    }
-}
-
-/* Asegúrate de que las variables CSS están definidas correctamente al principio de tu CSS */
-:root {
-    --primary-color: #696FC7;
-    --text-dark: #2c3e50;
-    --text-muted: #6c757d;
-    --positive-bg: rgba(40, 167, 69, 0.15); /* Verde claro */
-    --positive-text: #28a745; /* Verde oscuro */
-    --negative-bg: rgba(220, 53, 69, 0.15); /* Rojo claro */
-    --negative-text: #dc3545; /* Rojo oscuro */
-    --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    --total-card-bg: rgba(105, 111, 199, 0.1); /* Fondo claro para tarjeta total */
-    --total-card-border: rgba(105, 111, 199, 0.8); /* Borde para tarjeta total */
-} 
+    
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
