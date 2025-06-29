@@ -1,0 +1,1420 @@
+<?php
+require('include/headerz.php');
+require 'funciones.php'; // Asegúrate de que este archivo contiene funciones como obtenerperiodo, etc.
+
+// Conexión a la base de datos
+$conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+if ($conn->connect_error) {
+    die("Conexión fallida: " . $conn->connect_error);
+}
+
+// Validación de sesión
+if (!isset($_SESSION['name']) || empty($_SESSION['name'])) {
+    echo "<span style='color: red; text-align: left; font-weight: bold;'>
+              <a href='index.html'>inicie sesión</a>
+          </span>";
+    exit();
+}
+
+$nombre_sesion = $_SESSION['name'];
+
+// Validar y capturar el anio_semestre actual
+if (isset($_POST['anio_semestre'])) {
+    $anio_semestre = $_POST['anio_semestre'];
+} elseif (isset($_GET['anio_semestre'])) {
+    $anio_semestre = $_GET['anio_semestre'];
+} else {
+    die("Error: El parámetro 'anio_semestre' es obligatorio.");
+}
+$anio_semestre_anterior_default = '0'; // Or whatever your actual default is
+
+    /// Validate and capture the anio_semestre_anterior
+if (isset($_GET['anio_semestre_anterior'])) { // Use GET directly as your form uses GET
+    $anio_semestre_anterior = $_GET['anio_semestre_anterior'];
+} else {
+    // If not provided in GET, use the default
+echo  "no sinistra  año anteiror";}
+
+
+// Capturar departamento_id si se envía (opcional)
+$departamento_id_param = isset($_POST['departamento_id'])
+    ? $_POST['departamento_id']
+    : (isset($_GET['departamento_id']) ? $_GET['departamento_id'] : null);
+
+
+
+
+$consultaf = "SELECT * FROM users WHERE users.Name= '$nombre_sesion'";
+$resultadof = $conn->query($consultaf);
+while ($row = $resultadof->fetch_assoc()) {
+    $nombre_usuario = $row['Name'];
+    $email_fac = $row['email_padre'];
+    $pk_fac = $row['fk_fac_user'];
+    $email_dp = $row['Email'];
+    $tipo_usuario = $row['tipo_usuario'];
+    $depto_user= $row['fk_depto_user'];
+    $where = "";
+
+
+}
+
+
+// Obtener lista de facultades (para el admin)
+$facultades = [];
+if ($tipo_usuario == 1) {
+    $query_facultades = "SELECT PK_FAC, nombre_fac_minb FROM facultad ORDER BY nombre_fac_minb";
+    $result_facultades = $conn->query($query_facultades);
+    while ($row = $result_facultades->fetch_assoc()) {
+        $facultades[$row['PK_FAC']] = $row['nombre_fac_minb'];
+    }
+}
+
+// Lógica para inicializar $anio_semestre actual
+$anio_semestre = isset($_POST['anio_semestre'])
+    ? $_POST['anio_semestre']
+    : (isset($_GET['anio_semestre']) ? $_GET['anio_semestre'] : $anio_semestre_default);
+
+// Si es admin y se ha seleccionado una facultad
+$facultad_seleccionada = null;
+if ($tipo_usuario == 1 && isset($_GET['facultad_id']) && $_GET['facultad_id'] != '') { // MODIFIED: Added check for empty string
+    $facultad_seleccionada = $_GET['facultad_id'];
+    $pk_fac = $facultad_seleccionada; // Sobreescribimos para las consultas
+} else if ($tipo_usuario == 1 && !isset($_GET['facultad_id'])) {
+    // Si es admin y no se ha seleccionado facultad (o se seleccionó "General"), no aplicar filtro
+    $pk_fac = null;
+}
+
+
+if ($tipo_usuario == '1') {
+    // No specific WHERE clause needed for tipo_usuario 1 (admin/full access)
+    // If a faculty is selected, the faculty_id parameter in the SQL query will handle it.
+    // If "General" is selected (facultad_id is null or empty), it will return all faculties.
+    $where = "";
+} elseif ($tipo_usuario == '2') {
+    // For tipo_usuario 2, filter by faculty
+    $where = " WHERE f.PK_FAC = '$pk_fac'";
+} elseif ($tipo_usuario == '3') {
+
+        // Fallback: if departamento_id wasn't passed, use the department linked to the user session
+        $where = " WHERE d.PK_DEPTO = '$depto_user'";
+    }
+
+
+// Obtener los parámetros de la URL/POST
+$facultad_id = $pk_fac ?? null; // MODIFIED: Use $pk_fac determined above
+$departamento_id = $depto_user;// Obtener el período anterior
+
+$anio_semestre = $_GET['anio_semestre'];
+$periodo_anterior = $anio_semestre_anterior?? null;
+$origen = $_POST['origen'] ?? null;
+
+// --- Verificación y obtención de datos del PERIODO ACTUAL ---
+if (empty($anio_semestre)) {
+    die("Error: El parámetro anio_semestre no fue proporcionado.");
+}
+
+$consultaper = "SELECT * FROM periodo WHERE nombre_periodo = ?";
+$stmt_per = $conn->prepare($consultaper);
+if (!$stmt_per) {
+    die("Error al preparar la consulta de periodo actual: " . $conn->error);
+}
+$stmt_per->bind_param("s", $anio_semestre);
+$stmt_per->execute();
+$resultadoper = $stmt_per->get_result();
+
+if ($resultadoper->num_rows === 0) {
+    die("Error: No se encontraron datos para el periodo actual: " . htmlspecialchars($anio_semestre));
+}
+
+$rowper = $resultadoper->fetch_assoc();
+$fecha_ini_cat = $rowper['inicio_sem'];
+$fecha_fin_cat = $rowper['fin_sem'];
+$fecha_ini_ocas = $rowper['inicio_sem_oc'];
+$fecha_fin_ocas = $rowper['fin_sem_oc'];
+$valor_punto = $rowper['valor_punto'];
+$smlv = $rowper['smlv'];
+$stmt_per->close();
+
+// Calculo de días y semanas para PERIODO ACTUAL
+$fecha_inicio_cat_dt = new DateTime($fecha_ini_cat);
+$fecha_fin_cat_dt = new DateTime($fecha_fin_cat);
+$dias_catedra = $fecha_inicio_cat_dt->diff($fecha_fin_cat_dt)->days - 1; // Tu lógica PHP
+$semanas_catedra = ceil($dias_catedra / 7);
+
+$inicio_ocas_dt = new DateTime($fecha_ini_ocas);
+$fin_ocas_dt = new DateTime($fecha_fin_ocas);
+$dias_ocasional = $inicio_ocas_dt->diff($fin_ocas_dt)->days - 2; // Tu lógica PHP
+$semanas_ocasional = ceil($dias_ocasional / 7);
+$meses_ocasional = intval($semanas_ocasional / 4.33) - 1; // Tu lógica PHP
+
+// Constantes de porcentajes (hardcodeadas en tu PHP y SQL)
+$porcentaje_arl = 0.522 / 100;
+$porcentaje_caja = 4.0 / 100;
+$porcentaje_icbf = 3.0 / 100;
+
+// Ajustes finales de porcentaje (para el PERIODO ACTUAL - se mantienen en 0)
+$ajuste_catedra = 0;
+$ajuste_ocasional = 0;
+
+// --- Verificación y obtención de datos del PERIODO ANTERIOR ---
+$dias_catedra_ant = 0;
+$semanas_catedra_ant = 0;
+$dias_ocasional_ant = 0;
+$semanas_ocasional_ant = 0;
+$meses_ocasional_ant = 0;
+$valor_punto_ant = 0;
+$smlv_ant = 0;
+
+if (!empty($periodo_anterior)) {
+    $consultaperant = "SELECT * FROM periodo WHERE nombre_periodo = ?";
+    $stmt_per_ant = $conn->prepare($consultaperant);
+    if (!$stmt_per_ant) {
+        die("Error al preparar la consulta de periodo anterior: " . $conn->error);
+    }
+    $stmt_per_ant->bind_param("s", $periodo_anterior);
+    $stmt_per_ant->execute();
+    $resultadoperant = $stmt_per_ant->get_result();
+
+    if ($resultadoperant->num_rows > 0) {
+        $rowperant = $resultadoperant->fetch_assoc();
+        $fecha_ini_catant = $rowperant['inicio_sem'];
+        $fecha_fin_catant = $rowperant['fin_sem'];
+        $fecha_ini_ocasant = $rowperant['inicio_sem_oc'];
+        $fecha_fin_ocasant = $rowperant['fin_sem_oc'];
+        $valor_punto_ant = $rowperant['valor_punto'];
+        $smlv_ant = $rowperant['smlv'];
+
+        // Calculo de días y semanas para PERIODO ANTERIOR
+        $fecha_inicio_cat_ant_dt = new DateTime($fecha_ini_catant);
+        $fecha_fin_cat_ant_dt = new DateTime($fecha_fin_catant);
+        $dias_catedra_ant = $fecha_inicio_cat_ant_dt->diff($fecha_fin_cat_ant_dt)->days - 1;
+        $semanas_catedra_ant = ceil($dias_catedra_ant / 7);
+
+        $inicio_ocas_ant_dt = new DateTime($fecha_ini_ocasant);
+        $fin_ocas_ant_dt = new DateTime($fecha_fin_ocasant);
+        $dias_ocasional_ant = $inicio_ocas_ant_dt->diff($fin_ocas_ant_dt)->days - 2;
+        $semanas_ocasional_ant = ceil($dias_ocasional_ant / 7);
+        $meses_ocasional_ant = intval($semanas_ocasional_ant / 4.33) - 1;
+    }
+    $stmt_per_ant->close();
+}
+
+
+// --- Consulta SQL Parametrizada ---
+$sql_query = "
+WITH ProfessorFinancials AS (
+    SELECT
+        s.cedula,
+        s.facultad_id,
+        s.departamento_id,
+        s.tipo_docente,
+        s.puntos,
+        s.horas,
+        s.horas_r,
+        s.tipo_dedicacion,
+        s.tipo_dedicacion_r,
+        -- Parámetros dinámicos desde PHP
+        ? AS valor_punto_dyn,
+        ? AS smlv_dyn,
+        ? AS dias_catedra_dyn,
+        ? AS semanas_catedra_dyn,
+        ? AS dias_ocasional_dyn,
+        ? AS semanas_ocasional_dyn,
+        ? AS meses_ocas_dyn,
+        ? AS porcentaje_arl_dyn,
+        ? AS porcentaje_caja_dyn,
+        ? AS porcentaje_icbf_dyn,
+        ? AS ajuste_catedra_dyn,
+        ? AS ajuste_ocasional_dyn,
+
+        -- Paso 1: Calcular Asignacion_Mensual y Asignacion_Total por profesor
+        CASE
+            WHEN s.tipo_docente = 'Catedra' THEN
+                (s.puntos * ? * (COALESCE(s.horas, 0) + COALESCE(s.horas_r, 0)) * 4)
+            WHEN s.tipo_docente = 'Ocasional' THEN
+                (s.puntos * ? * (
+                    CASE
+                        WHEN s.tipo_dedicacion = 'MT' OR s.tipo_dedicacion_r = 'MT' THEN 20
+                        WHEN s.tipo_dedicacion = 'TC' OR s.tipo_dedicacion_r = 'TC' THEN 40
+                        ELSE 0
+                    END
+                ) / 40)
+            ELSE 0
+        END AS asignacion_mes_calc,
+
+        CASE
+            WHEN s.tipo_docente = 'Catedra' THEN
+                s.puntos * ? * (COALESCE(s.horas, 0) + COALESCE(s.horas_r, 0)) * ?
+            WHEN s.tipo_docente = 'Ocasional' THEN
+                ROUND(s.puntos * ? * (
+                    CASE
+                        WHEN s.tipo_dedicacion = 'MT' OR s.tipo_dedicacion_r = 'MT' THEN 20
+                        WHEN s.tipo_dedicacion = 'TC' OR s.tipo_dedicacion_r = 'TC' THEN 40
+                        ELSE 0
+                    END
+                ) / 40.0, 0) * (? / 30.0) -- Asignacion_mes * dias_ocasional / 30
+            ELSE 0
+        END AS asignacion_total_calc
+    FROM
+        solicitudes AS s
+    WHERE
+        s.anio_semestre = ?
+        AND (s.estado <> 'an' OR s.estado IS NULL)
+),
+DetailedFinancials AS (
+    SELECT
+        pf.*,
+        -- Paso 2: Calcular todos los componentes financieros detallados
+        -- Prima Navidad
+        CASE
+            WHEN pf.tipo_docente = 'Catedra' THEN pf.asignacion_mes_calc * 3 / 12
+            ELSE pf.asignacion_mes_calc * pf.meses_ocas_dyn / 12
+        END AS prima_navidad_calc,
+
+        -- Indemnización Vacaciones
+        CASE
+            WHEN pf.tipo_docente = 'Catedra' THEN pf.asignacion_mes_calc * pf.dias_catedra_dyn / 360
+            ELSE pf.asignacion_mes_calc * pf.dias_ocasional_dyn / 360
+        END AS indem_vacaciones_calc,
+
+        -- Indemnización Prima Vacaciones
+        CASE
+            WHEN pf.tipo_docente = 'Catedra' THEN (pf.asignacion_mes_calc * pf.dias_catedra_dyn / 360) * 2 / 3
+            ELSE (pf.asignacion_mes_calc * pf.dias_ocasional_dyn / 360) * 2 / 3
+        END AS indem_prima_vacaciones_calc,
+
+        -- Cesantías
+        CASE
+            WHEN pf.tipo_docente = 'Catedra' THEN (pf.asignacion_total_calc + (pf.asignacion_mes_calc * 3 / 12)) / 12
+            ELSE ROUND((pf.asignacion_total_calc + (pf.asignacion_mes_calc * pf.meses_ocas_dyn / 12)) / 12)
+        END AS cesantias_calc,
+
+        -- EPS
+        CASE
+            WHEN pf.tipo_docente = 'Catedra' THEN
+                ROUND(
+                    CASE
+                        WHEN pf.asignacion_mes_calc < pf.smlv_dyn THEN (pf.smlv_dyn * pf.dias_catedra_dyn / 30) * 0.085
+                        ELSE ROUND(pf.asignacion_total_calc * 0.085, 0)
+                    END
+                , -2)
+            WHEN pf.tipo_docente = 'Ocasional' THEN
+                ROUND((pf.asignacion_total_calc * 8.5) / 100, 0)
+            ELSE 0
+        END AS eps_calc,
+
+        -- Pensión (AFP)
+        CASE
+            WHEN pf.tipo_docente = 'Catedra' THEN
+                ROUND(
+                    CASE
+                        WHEN pf.asignacion_mes_calc < pf.smlv_dyn THEN (pf.smlv_dyn * pf.dias_catedra_dyn / 30) * 0.12
+                        ELSE ROUND(pf.asignacion_total_calc * 0.12, 0)
+                    END
+                , -2)
+            WHEN pf.tipo_docente = 'Ocasional' THEN
+                ROUND((pf.asignacion_total_calc * 12) / 100, 0)
+            ELSE 0
+        END AS afp_calc,
+
+        -- ARL
+        CASE
+            WHEN pf.tipo_docente = 'Catedra' THEN
+                ROUND(
+                    CASE
+                        WHEN pf.asignacion_mes_calc < pf.smlv_dyn THEN (pf.smlv_dyn * pf.dias_catedra_dyn / 30) * pf.porcentaje_arl_dyn
+                        ELSE ROUND(pf.asignacion_total_calc * pf.porcentaje_arl_dyn, 0)
+                    END
+                , -2)
+            WHEN pf.tipo_docente = 'Ocasional' THEN
+                ROUND((pf.asignacion_total_calc * 0.522) / 100, -2)
+            ELSE 0
+        END AS arl_calc,
+
+        -- Caja de Compensación (Comfaucaua)
+        CASE
+            WHEN pf.tipo_docente = 'Catedra' THEN
+                ROUND(
+                    CASE
+                        WHEN pf.asignacion_mes_calc < pf.smlv_dyn THEN (pf.smlv_dyn * pf.dias_catedra_dyn / 30) * pf.porcentaje_caja_dyn
+                        ELSE ROUND(pf.asignacion_total_calc * pf.porcentaje_caja_dyn, 0)
+                    END
+                , -2)
+            WHEN pf.tipo_docente = 'Ocasional' THEN
+                ROUND((pf.asignacion_total_calc * 4) / 100, -2)
+            ELSE 0
+        END AS cajacomp_calc,
+
+        -- ICBF
+        CASE
+            WHEN pf.tipo_docente = 'Catedra' THEN
+                ROUND(
+                    CASE
+                        WHEN pf.asignacion_mes_calc < pf.smlv_dyn THEN (pf.smlv_dyn * pf.dias_catedra_dyn / 30) * pf.porcentaje_icbf_dyn
+                        ELSE ROUND(pf.asignacion_total_calc * pf.porcentaje_icbf_dyn, 0)
+                    END
+                , -2)
+            WHEN pf.tipo_docente = 'Ocasional' THEN
+                ROUND((pf.asignacion_total_calc * 3) / 100, -2)
+            ELSE 0
+        END AS icbf_calc
+    FROM
+        ProfessorFinancials pf
+),
+AggregatedTotals AS (
+    SELECT
+        f.nombre_fac_minb AS nombre_facultad,
+        d.depto_nom_propio AS nombre_departamento,
+        df.tipo_docente,
+        COUNT(DISTINCT df.cedula) AS total_profesores,
+        SUM(df.asignacion_mes_calc) AS total_asignacion_mensual_agregada,
+        SUM(df.asignacion_total_calc) AS total_asignacion_total_agregada,
+        SUM(
+            CASE
+                WHEN df.tipo_docente = 'Catedra' THEN
+                    df.asignacion_total_calc + df.prima_navidad_calc + df.indem_vacaciones_calc + df.indem_prima_vacaciones_calc + df.cesantias_calc + df.eps_calc + df.afp_calc + df.arl_calc + df.cajacomp_calc + df.icbf_calc
+                WHEN df.tipo_docente = 'Ocasional' THEN
+                    (df.asignacion_total_calc + df.prima_navidad_calc + df.indem_vacaciones_calc + df.indem_prima_vacaciones_calc) + -- Total Empleado
+                    (df.cesantias_calc + df.eps_calc + df.afp_calc + df.arl_calc + df.cajacomp_calc + df.icbf_calc) -- Total Entidades
+                ELSE 0
+            END
+        ) AS gran_total_sin_ajuste,
+        df.ajuste_catedra_dyn,
+        df.ajuste_ocasional_dyn
+    FROM
+        DetailedFinancials df
+    JOIN
+        deparmanentos AS d ON d.PK_DEPTO = df.departamento_id
+    JOIN
+        facultad AS f ON f.PK_FAC = df.facultad_id
+    WHERE
+        ( ? IS NULL OR df.facultad_id = ? )
+        AND ( ? IS NULL OR df.departamento_id = ? )
+    GROUP BY
+        f.nombre_fac_minb,
+        d.depto_nom_propio,
+        df.tipo_docente,
+        df.ajuste_catedra_dyn,
+        df.ajuste_ocasional_dyn
+)
+SELECT
+    ata.nombre_facultad,
+    ata.nombre_departamento,
+    ata.tipo_docente,
+    ata.total_profesores,
+    ata.total_asignacion_mensual_agregada,
+    ata.total_asignacion_total_agregada,
+    -- Aplicar el ajuste final al gran_total_sin_ajuste con los porcentajes corregidos
+    CASE
+        WHEN ata.tipo_docente = 'Catedra' THEN ata.gran_total_sin_ajuste * (1 + ata.ajuste_catedra_dyn)
+        WHEN ata.tipo_docente = 'Ocasional' THEN ata.gran_total_sin_ajuste * (1 + ata.ajuste_ocasional_dyn)
+        ELSE ata.gran_total_sin_ajuste
+    END AS gran_total_ajustado
+FROM
+    AggregatedTotals ata
+ORDER BY
+    ata.nombre_facultad,
+    ata.nombre_departamento,
+    ata.tipo_docente;
+";
+
+// --- Preparar y ejecutar la consulta para el PERIODO ACTUAL ---
+// MODIFIED: $facultad_id for the current query might be null if "General" is selected by admin.
+// The SQL query handles NULL gracefully.
+$stmt_current = $conn->prepare($sql_query);
+if (!$stmt_current) {
+    die("Error al preparar la consulta para el periodo actual: " . $conn->error);
+}
+
+$bind_params_current = [
+    // Parámetros para las constantes dinámicas del periodo actual
+    $valor_punto, $smlv, $dias_catedra, $semanas_catedra, $dias_ocasional,
+    $semanas_ocasional, $meses_ocasional, $porcentaje_arl, $porcentaje_caja, $porcentaje_icbf,
+    $ajuste_catedra, $ajuste_ocasional, // Estos son 0 para el periodo actual
+    // Parámetros para asignacion_mes_calc
+    $valor_punto, $valor_punto,
+    // Parámetros para asignacion_total_calc
+    $valor_punto, $semanas_catedra, $valor_punto, $dias_ocasional,
+    // Periodo anio_semestre
+    $anio_semestre,
+    // Filtros de WHERE para AggregatedTotals (facultad y departamento)
+    $facultad_id, $facultad_id, $departamento_id, $departamento_id
+];
+
+// String de tipos para bind_param (d = double/float, i = int, s = string)
+// 18 'd's + 1 's' + 4 'i's = 23 parámetros en total
+// MODIFIED: Corrected the type string length for dynamic parameters
+$types_current = str_repeat('d', 12) . str_repeat('d', 6) . 's'; // 12 for dynamic constants, 6 for assignation calcs, 1 for anio_semestre
+// Append 'si' or 'ii' for facultad_id and departamento_id. If $facultad_id or $departamento_id can be null, it might need 's' even for int in bind_param.
+// For NULL, bind_param typically expects 's' and the value to be NULL.
+// Let's assume for now they are always ints or strings, and the SQL handles NULL correctly with IS NULL check.
+// If $facultad_id or $departamento_id can truly be NULL and not an empty string, the type needs to be 's' for NULL, or 'i' for int.
+// Given your current setup, 'i' is likely the intended type for PK_FAC, but we are passing them as null in PHP, so 's' might be safer for null values.
+// Re-evaluating based on the original bind_param and the NULL handling in SQL.
+// The SQL uses `? IS NULL OR df.facultad_id = ?`, which means the first `?` should receive the parameter (which can be NULL) and the second `?` receives the parameter again.
+// To pass NULL in bind_param, the type for that parameter must be 's' (string), and the value must be actual PHP null.
+// Let's adjust the types string based on the total parameters (23 if all are filled).
+// 12 for dynamic params (all doubles), 6 for assignation (all doubles), 1 for anio_semestre (string)
+// 4 for facultad_id and departamento_id (each repeated twice, let's treat them as strings 's' because they can be null)
+$types_current = str_repeat('d', 12) . str_repeat('d', 6) . 's' . 'ssss'; // 12 doubles, 6 doubles, 1 string (anio_semestre), 4 strings (facultad_id, facultad_id, departamento_id, departamento_id)
+
+// Adjust bind_params_current for NULL values
+// For the filters, if $facultad_id is null, both parameters passed for `? IS NULL OR df.facultad_id = ?` should be null.
+$bind_params_current[19] = $facultad_id; // First facultad_id
+$bind_params_current[20] = $facultad_id; // Second facultad_id
+$bind_params_current[21] = $departamento_id; // First departamento_id
+$bind_params_current[22] = $departamento_id; // Second departamento_id
+
+$stmt_current->bind_param($types_current, ...$bind_params_current);
+$stmt_current->execute();
+$result_current_period = $stmt_current->get_result();
+
+$data_current_period = [];
+while ($row = $result_current_period->fetch_assoc()) {
+    $data_current_period[] = $row;
+}
+$stmt_current->close();
+
+
+// --- Preparar y ejecutar la consulta para el PERIODO ANTERIOR (si existe) ---
+$data_previous_period = [];
+if (!empty($periodo_anterior) && $valor_punto_ant > 0) { // Asegúrate de tener datos del periodo anterior
+    $stmt_previous = $conn->prepare($sql_query); // Reutilizamos la misma consulta SQL
+    if (!$stmt_previous) {
+        die("Error al preparar la consulta para el periodo anterior: " . $conn->error);
+    }
+
+    // Definir ajustes específicos para el periodo anterior
+    $ajuste_catedra_anterior = 0; // Mantener en 0 si no hay ajuste para Catedra en el periodo anterior
+    $ajuste_ocasional_anterior = 0.018; // Aplicar el 1.7% para Ocasional en el periodo anterior (was -0.01732 in original, updated to 0.017 as per your provided snippet)
+
+    $bind_params_previous = [
+        // Parámetros para las constantes dinámicas del periodo anterior
+        $valor_punto_ant, $smlv_ant, $dias_catedra_ant, $semanas_catedra_ant, $dias_ocasional_ant,
+        $semanas_ocasional_ant, $meses_ocasional_ant, $porcentaje_arl, $porcentaje_caja, $porcentaje_icbf,
+        $ajuste_catedra_anterior, $ajuste_ocasional_anterior, // <--- Aquí se pasan los ajustes específicos
+        // Parámetros para asignacion_mes_calc
+        $valor_punto_ant, $valor_punto_ant,
+        // Parámetros para asignacion_total_calc
+        $valor_punto_ant, $semanas_catedra_ant, $valor_punto_ant, $dias_ocasional_ant,
+        // Periodo anio_semestre (¡este es el del periodo anterior!)
+        $periodo_anterior,
+        // Filtros de WHERE para AggregatedTotals (facultad y departamento)
+        $facultad_id, $facultad_id, $departamento_id, $departamento_id // MODIFIED: Use $facultad_id from above logic
+    ];
+
+    // Los tipos de parámetros son los mismos que para la consulta actual
+    $stmt_previous->bind_param($types_current, ...$bind_params_previous);
+    $stmt_previous->execute();
+    $result_previous_period = $stmt_previous->get_result();
+
+    while ($row = $result_previous_period->fetch_assoc()) {
+        $data_previous_period[] = $row;
+    }
+    $stmt_previous->close();
+
+}
+// --- CSS profesional estilo Unicauca ---
+
+// Include Google Fonts
+echo "<link href='https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap' rel='stylesheet'>";
+
+// Custom Styles for the headers
+echo "<style>
+    .card-header-custom { /* Using a custom class to avoid conflict with existing Bootstrap if any */
+        border-bottom: none;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: white;
+        font-family: 'Open Sans', sans-serif;
+    }
+    .card-header-custom h2, .card-header-custom h3, .card-header-custom h5, .card-header-custom h6 {
+        color: white;
+        margin-bottom: 0;
+    }
+    .bg-unicauca-blue-dark {
+        background-color: #004d60 !important; /* A professional dark blue */
+    }
+/* Contenedor para las dos tarjetas de cada facultad */
+.faculty-cards-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 30px;
+    width: 100%;
+    /* Aumenta el ancho máximo del contenedor para dar más espacio a las tarjetas */
+    max-width: 1200px; /* Incrementado de 900px para permitir tarjetas más anchas */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Ajustes para las tarjetas individuales */
+.card {
+    /* Mantén tus estilos actuales para la tarjeta */
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box; /* Crucial para que padding y border no aumenten el tamaño */
+    min-width: 350px; /* Aumenta el ancho mínimo para que no se compriman demasiado */
+
+    
+    flex: 1 1 calc(50% - 10px + 30%); /* O 1 1 585px;  Si el contenedor padre es 1200px y quieres 585px por tarjeta */
+ 
+    flex: 1 1 calc(49% - 10px); /* Esto las hará más anchas que el 45% anterior, aprovechando el nuevo max-width del padre */
+    max-width: calc(600px - 10px); /* Limita el ancho máximo para evitar que crezcan demasiado si solo hay una */
+
+   
+}
+
+/* Media query para pantallas más pequeñas (opcional, pero recomendado) */
+@media (max-width: 768px) {
+    .faculty-cards-row {
+        flex-direction: column; /* Apila las tarjetas verticalmente en pantallas pequeñas */
+        align-items: center; /* Centra las tarjetas cuando están apiladas */
+    }
+
+    .card {
+        width: 95%; /* Ocupa casi todo el ancho disponible en pantallas pequeñas */
+        max-width: 400px; /* Limita el ancho máximo para móviles */
+        flex: 0 0 95%; /* Asegura que la tarjeta tome casi todo el ancho en móviles */
+    }
+}
+</style>";
+
+echo '<style>
+    /* Estilos generales */
+    body {
+        font-family: "Segoe UI", "Roboto", sans-serif;
+        background-color: #f8fafc;
+        color: #333;
+        margin: 0;
+        padding: 15px;
+        font-size: 14px;
+    }
+
+
+    .unicauca-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 0;
+        font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    /* Encabezado premium */
+
+    h2 {
+        color: white;
+        font-size: 1.8rem;
+        margin-top: 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    h3 {
+        color: #0056b3;
+        font-size: 1.4rem;
+        margin: 25px 0 15px;
+    }
+
+    /* Tablas compactas profesionales */
+    .table-container {
+        overflow-x: auto;
+        margin-bottom: 25px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .compact-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 800px;
+    }
+
+    .compact-table th {
+        background-color: #004d99;
+        color: white;
+        font-weight: 600;
+        padding: 8px 10px;
+        text-align: left;
+        position: sticky;
+        top: 0;
+        font-size: 13px;
+    }
+
+    .compact-table td {
+        padding: 6px 10px;
+        border-bottom: 1px solid #eaeaea;
+        font-size: 13px;
+        vertical-align: top;
+    }
+
+    .compact-table tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    .compact-table tr:hover {
+        background-color: #e9f0f7;
+    }
+
+    /* Secciones de gráficos */
+    .chart-section {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+  /* Estilos para el contenedor de las dos gráficas comparativas */
+.chart-grid {
+    display: flex; /* Asegura que los elementos hijos se coloquen en fila */
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan a la siguiente línea si no caben */
+    justify-content: center; /* Centra las gráficas horizontalmente si el espacio lo permite */
+    gap: 20px; /* Espacio entre las gráficas */
+    width: 100%; /* Asegura que el contenedor ocupe todo el ancho disponible */
+    max-width: 1200px; /* Opcional: Define un ancho máximo para el contenedor si es muy grande */
+    margin: 20px auto; /* Centra el contenedor completo en la página y añade margen superior/inferior */
+}
+
+/* Estilos para cada caja de gráfica individual */
+.chart-box {
+    flex: 1; /* Permite que la caja crezca y ocupe el espacio disponible */
+    min-width: 48%; /* Ajustado para que cada gráfica ocupe casi el 45% y sea un poco más ancha */
+    max-width: 49%; /* Limita el ancho máximo para evitar que una sola gráfica ocupe demasiado y permita el gap */
+    box-sizing: border-box; /* Incluye padding y borde en el cálculo del ancho */
+    padding: 15px; /* Espaciado interno */
+    background-color: #fff; /* Fondo blanco */
+    border: 1px solid #ddd; /* Borde suave */
+    border-radius: 8px; /* Bordes redondeados */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Sombra ligera */
+    text-align: center; /* Centra el título del gráfico */
+}
+
+/* Para pantallas más pequeñas, que las gráficas se apilen */
+@media (max-width: 768px) {
+    .chart-box {
+        min-width: 90%; /* En pantallas pequeñas, que cada gráfica ocupe casi todo el ancho */
+        max-width: 100%;
+    }
+}
+    .chart-title {
+        text-align: center;
+        font-weight: 600;
+        color: #004d99;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+    }
+    /* Period boxes */
+    .period-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+    .period-box {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .period-header {
+        background-color: #e6f0ff;
+        padding: 12px 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-weight: 600;
+        color: #004d99;
+        border-left: 4px solid #004d99;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin-bottom: 15px;
+        font-size: 13px;
+    }
+    .info-item {
+        padding: 8px;
+        background: #f8fafc;
+        border-radius: 4px;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #555;
+        display: block;
+        margin-bottom: 3px;
+        font-size: 12px;
+    }
+    .currency {
+        font-weight: 600;
+        color: #006400;
+    }
+    .no-data {
+        text-align: center;
+        padding: 30px;
+        color: #777;
+        font-style: italic;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        margin-top: 15px;
+    }
+</style>';
+echo "<style> /* [Mantener todos los estilos CSS existentes] */ .selector-facultad { background: white; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); } .selector-facultad select { padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 16px; min-width: 300px; } .selector-facultad button { padding: 10px 20px; background: #004d60; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px; } .selector-facultad button:hover { background: #003d50; } </style>";
+echo "<div class='unicauca-container'>";
+
+// Mostrar selector de facultad para admin
+if ($tipo_usuario == 1) {
+    echo "<div class='selector-facultad'>";
+    
+    echo "<h3>Seleccione una Facultad</h3>";
+    echo "<form method='get' action=''>";
+    echo "<input type='hidden' name='anio_semestre' value='$anio_semestre'>";
+        echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($anio_semestre_anterior) . "'>";
+
+    echo "<select name='facultad_id'>";
+    // Added "Ver General" option
+    echo "<option value=''>Ver General</option>"; // MODIFIED: Added general option
+    foreach ($facultades as $id => $nombre) {
+        // MODIFIED: Check for $facultad_seleccionada against the current $id
+        echo "<option value='$id'" . ($facultad_seleccionada == $id ? ' selected' : '') . ">$nombre</option>";
+    }
+    echo "</select>";
+    echo "<button type='submit'>Ver Reporte</button>";
+    echo "</form>";
+    echo "</div>";
+}
+
+// Logic for combining data for charts (MOVED UP FOR GENERAL COMPARATIVE)
+$facultades_data = [];
+// Process current period data
+foreach ($data_current_period as $row) {
+    $facultad = $row['nombre_facultad'];
+    $departamento = $row['nombre_departamento'];
+    $tipo = $row['tipo_docente'];
+    if (!isset($facultades_data[$facultad])) {
+        $facultades_data[$facultad] = [
+            'departamentos' => [],
+            'total_profesores_actual' => 0,
+            'gran_total_ajustado_actual' => 0,
+            'total_profesores_anterior' => 0,
+            'gran_total_ajustado_anterior' => 0
+        ];
+    }
+    if (!isset($facultades_data[$facultad]['departamentos'][$departamento])) {
+        $facultades_data[$facultad]['departamentos'][$departamento] = [
+            'profesores_actual' => 0,
+            'profesores_anterior' => 0,
+            'total_actual' => 0,
+            'total_anterior' => 0
+        ];
+    }
+    $facultades_data[$facultad]['departamentos'][$departamento]['profesores_actual'] += $row['total_profesores'];
+    $facultades_data[$facultad]['departamentos'][$departamento]['total_actual'] += $row['gran_total_ajustado'];
+    $facultades_data[$facultad]['total_profesores_actual'] += $row['total_profesores'];
+    $facultades_data[$facultad]['gran_total_ajustado_actual'] += $row['gran_total_ajustado'];
+}
+
+// Process previous period data
+foreach ($data_previous_period as $row) {
+    $facultad = $row['nombre_facultad'];
+    $departamento = $row['nombre_departamento'];
+    // Ensure the faculty key exists before trying to access departments
+    if (!isset($facultades_data[$facultad])) {
+         $facultades_data[$facultad] = [
+            'departamentos' => [],
+            'total_profesores_actual' => 0, // Initialize as 0 for current period if not present
+            'gran_total_ajustado_actual' => 0, // Initialize as 0 for current period if not present
+            'total_profesores_anterior' => 0,
+            'gran_total_ajustado_anterior' => 0
+        ];
+    }
+    if (!isset($facultades_data[$facultad]['departamentos'][$departamento])) {
+        $facultades_data[$facultad]['departamentos'][$departamento] = [
+            'profesores_actual' => 0,
+            'profesores_anterior' => 0,
+            'total_actual' => 0,
+            'total_anterior' => 0
+        ];
+    }
+    $facultades_data[$facultad]['departamentos'][$departamento]['profesores_anterior'] += $row['total_profesores'];
+    $facultades_data[$facultad]['departamentos'][$departamento]['total_anterior'] += $row['gran_total_ajustado'];
+    $facultades_data[$facultad]['total_profesores_anterior'] += $row['total_profesores'];
+    $facultades_data[$facultad]['gran_total_ajustado_anterior'] += $row['gran_total_ajustado'];
+}
+
+
+// Check if it's a specific faculty report OR if it's an admin viewing general report
+if ($tipo_usuario == 1 && !$facultad_seleccionada) { // MODIFIED: Show general comparative if admin and no specific faculty selected
+    // Gráfica comparativa de totales por facultad (these remain vertical)
+    echo "<div style='margin: 40px 0; border: 1px solid #ddd; padding: 20px; border-radius: 8px;'>";
+    echo "<h3 style='text-align: center;'>Comparativa General por Facultad</h3>";
+
+    // Ensure faculties array is properly populated from $facultades_data keys for consistent labels
+    $facultades_chart_labels = array_keys($facultades_data);
+    sort($facultades_chart_labels); // Sort labels for consistency
+
+    $totales_actual_general = [];
+    $totales_anterior_general = [];
+    $profesores_actual_total_general = [];
+    $profesores_anterior_total_general = [];
+
+    foreach ($facultades_chart_labels as $facultad_label) {
+        $data = $facultades_data[$facultad_label];
+        $totales_actual_general[] = $data['gran_total_ajustado_actual'];
+        $totales_anterior_general[] = $data['gran_total_ajustado_anterior'];
+        $profesores_actual_total_general[] = $data['total_profesores_actual'];
+        $profesores_anterior_total_general[] = $data['total_profesores_anterior'];
+    }
+
+    if (!empty($facultades_data)) {
+        echo "<div style='display: flex;'>";
+        echo "<div style='width: 50%; padding: 15px;'>";
+        echo "<h4 style='text-align: center;'>Total de Profesores por Facultad</h4>";
+        echo "<canvas id='chartTotalProfesoresFac' height='400'></canvas>";
+        echo "</div>";
+
+        echo "<div style='width: 50%; padding: 15px;'>";
+        echo "<h4 style='text-align: center;'>Valor Proyectado por Facultad</h4>";
+        echo "<canvas id='chartTotalValorFac' height='400'></canvas>";
+        echo "</div>";
+        echo "</div>";
+
+        echo "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>"; // Ensure Chart.js is loaded
+        echo "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0'></script>"; // Ensure datalabels plugin is loaded
+        echo "<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Chart.register(ChartDataLabels);
+
+    // Gráfica de Profesores por Facultad (Vertical Bar)
+    const ctxTotalProfFac = document.getElementById('chartTotalProfesoresFac').getContext('2d');
+    new Chart(ctxTotalProfFac, {
+        type: 'bar',
+        data: {
+            labels: " . json_encode($facultades_chart_labels) . ",
+            datasets: [
+                {
+                    label: 'Periodo Actual (" . htmlspecialchars($anio_semestre) . ")',
+                    data: " . json_encode($profesores_actual_total_general) . ",
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")',
+                    data: " . json_encode($profesores_anterior_total_general) . ",
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cantidad de Profesores'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Facultades'
+                    }
+                }
+            },
+            plugins: {
+                datalabels: {
+                    display: true,
+                    color: '#333',
+                    anchor: 'end',
+                    align: 'center',
+                    offset: 4,
+                    formatter: function(value, context) {
+                        return value.toLocaleString();
+                    }
+                },
+                tooltip: {
+                    enabled: true
+                }
+            }
+        }
+    });
+
+    // Gráfica de Valor Proyectado por Facultad (Vertical Bar)
+    const ctxTotalValFac = document.getElementById('chartTotalValorFac').getContext('2d');
+    new Chart(ctxTotalValFac, {
+        type: 'bar',
+        data: {
+            labels: " . json_encode($facultades_chart_labels) . ",
+            datasets: [
+                {
+                    label: 'Periodo Actual (" . htmlspecialchars($anio_semestre) . ")',
+                    data: " . json_encode($totales_actual_general) . ",
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")',
+                    data: " . json_encode($totales_anterior_general) . ",
+                    backgroundColor: 'rgba(153, 102, 255, 0.7)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Valor Proyectado'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Facultades'
+                    }
+                }
+            },
+            plugins: {
+                datalabels: {
+                    display: true,
+                    color: '#333',
+                    anchor: 'end',
+                    align: 'center',
+                    offset: 4,
+                    formatter: function(value, context) {
+                        return '$' + value.toLocaleString();
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Valor: $' + context.raw.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>";
+
+    } else {
+        echo "<div class='no-data'>No se encontraron datos para la comparativa general por facultad.</div>";
+    }
+    echo "</div>"; // Cierre del contenedor de comparativa general
+
+} else if ($facultad_seleccionada || $tipo_usuario == 2 || $tipo_usuario == 3) { // Only show specific faculty/department report if a specific faculty is selected (or if not admin)
+    // If it's a specific faculty report, show its header
+    
+    echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex justify-content-between align-items-center' style='margin-top: 30px;'>";
+    echo "<h2 class='mb-0'>Datos de Facultad: " . htmlspecialchars($facultades[$pk_fac] ?? '') . "</h2>"; // MODIFIED: Added N/A for safety
+    echo "</div>";
+
+    echo "<h2 style='text-align: center; margin-top: 30px;'>Comparativa s por Facultad</h2>";
+
+    if (!empty($data_current_period)) {
+        foreach ($facultades_data as $facultad => $data) {
+    // Calcular diferencias para profesores
+    $prof_actual = $data['total_profesores_actual'];
+    $prof_anterior = $data['total_profesores_anterior'];
+    $diff_prof = $prof_actual - $prof_anterior;
+    $porc_prof = ($prof_anterior != 0) ? (abs($diff_prof) / $prof_anterior * 100) : 0;
+    $color_prof = ($diff_prof >= 0) ? '#e74c3c' : '#27ae60';
+    $icon_prof = ($diff_prof >= 0) ? '▲' : '▼';
+
+    // Calcular diferencias para valor proyectado
+    $valor_actual = $data['gran_total_ajustado_actual'];
+    $valor_anterior = $data['gran_total_ajustado_anterior'];
+    $diff_valor = $valor_actual - $valor_anterior;
+    $porc_valor = ($valor_anterior != 0) ? (abs($diff_valor) / $valor_anterior * 100) : 0;
+    $color_valor = ($diff_valor >= 0) ? '#e74c3c' : '#27ae60';
+    $icon_valor = ($diff_valor >= 0) ? '▲' : '▼';
+
+    // Formatear valores monetarios
+    $formatted_valor_actual = number_format($valor_actual, 0, ',', '.');
+    $formatted_valor_anterior = number_format($valor_anterior, 0, ',', '.');
+    $formatted_diff_valor = number_format(abs($diff_valor), 0, ',', '.');
+
+    // INICIO DEL NUEVO CONTENEDOR PARA LAS DOS TARJETAS DE ESTA FACULTAD
+    echo "<div class='faculty-cards-row'>";
+
+    // Tarjeta de Profesores - Estilo mejorado
+    echo "<div class='card' style='
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-left: 4px solid #3498db;
+    '>";
+    
+    echo "<div style='padding: 25px;'>";
+    echo "<h4 style='margin-top: 0; margin-bottom: 20px; color: #2c3e50; font-size: 1.2rem; border-bottom: 1px solid #f1f2f6; padding-bottom: 12px;'>
+            <span style='font-weight: 600;'>$facultad</span> - Profesores
+          </h4>";
+    
+    echo "<div style='display: flex; justify-content: space-between; margin-bottom: 15px;'>";
+    echo "<div>";
+    echo "<div style='font-size: 0.9rem; color: #7f8c8d; margin-bottom: 4px;'>Actual ($anio_semestre)</div>";
+    echo "<div style='font-weight: 700; font-size: 1.5rem; color: #2c3e50;'>$prof_actual</div>";
+    echo "</div>";
+    
+    echo "<div style='text-align: right;'>";
+    echo "<div style='font-size: 0.9rem; color: #7f8c8d; margin-bottom: 4px;'>Anterior ($periodo_anterior)</div>";
+    echo "<div style='font-size: 1.1rem;'>$prof_anterior</div>";
+    echo "</div>";
+    echo "</div>";
+    
+    echo "<div style='
+        background: linear-gradient(to right, {$color_prof}10, {$color_prof}08);
+        padding: 14px;
+        border-radius: 8px;
+        border-left: 3px solid $color_prof;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    '>";
+    echo "<span style='font-weight: 500; color: #34495e;'>Diferencia</span>";
+    echo "<div style='display: flex; align-items: center; gap: 8px;'>";
+    echo "<span style='color: $color_prof; font-weight: 700; font-size: 1.1rem;'>";
+    echo $icon_prof . " " . ($diff_prof >= 0 ? "+$diff_prof" : $diff_prof);
+    echo "</span>";
+    echo "<span style='background: {$color_prof}15; color: $color_prof; padding: 4px 10px; border-radius: 12px; font-size: 0.9rem; font-weight: 600;'>";
+    echo number_format($porc_prof, 2) . "%";
+    echo "</span>";
+    echo "</div>";
+    echo "</div>";
+    echo "</div></div>"; // Cierra la tarjeta de Profesores
+
+    // Tarjeta de Valor Proyectado - Estilo mejorado
+    echo "<div class='card' style='
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-left: 4px solid #9b59b6;
+    '>";
+    
+    echo "<div style='padding: 25px;'>";
+    echo "<h4 style='margin-top: 0; margin-bottom: 20px; color: #2c3e50; font-size: 1.2rem; border-bottom: 1px solid #f1f2f6; padding-bottom: 12px;'>
+            <span style='font-weight: 600;'>$facultad</span> - Valor Proyectado
+          </h4>";
+    
+    echo "<div style='display: flex; justify-content: space-between; margin-bottom: 15px;'>";
+    echo "<div>";
+    echo "<div style='font-size: 0.9rem; color: #7f8c8d; margin-bottom: 4px;'>Actual ($anio_semestre)</div>";
+    echo "<div style='font-weight: 700; font-size: 1.5rem; color: #2c3e50;'>$" . $formatted_valor_actual . "</div>";
+    echo "</div>";
+    
+    echo "<div style='text-align: right;'>";
+    echo "<div style='font-size: 0.9rem; color: #7f8c8d; margin-bottom: 4px;'>Anterior ($periodo_anterior)</div>";
+    echo "<div style='font-size: 1.1rem;'>$" . $formatted_valor_anterior . "</div>";
+    echo "</div>";
+    echo "</div>";
+    
+    echo "<div style='
+        background: linear-gradient(to right, {$color_valor}10, {$color_valor}08);
+        padding: 14px;
+        border-radius: 8px;
+        border-left: 3px solid $color_valor;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    '>";
+    echo "<span style='font-weight: 500; color: #34495e;'>Diferencia</span>";
+    echo "<div style='display: flex; align-items: center; gap: 8px;'>";
+    echo "<span style='color: $color_valor; font-weight: 700; font-size: 1.1rem;'>";
+    echo $icon_valor . " " . ($diff_valor >= 0 ? "+$" : "-$") . $formatted_diff_valor;
+    echo "</span>";
+    echo "<span style='background: {$color_valor}15; color: $color_valor; padding: 4px 10px; border-radius: 12px; font-size: 0.9rem; font-weight: 600;'>";
+    echo number_format($porc_valor, 2) . "%";
+    echo "</span>";
+    echo "</div>";
+    echo "</div>";
+    echo "</div></div>"; // Cierra la tarjeta de Valor Proyectado
+
+    echo "</div>"; // FIN DEL NUEVO CONTENEDOR PARA LAS DOS TARJETAS DE ESTA FACULTAD
+}
+    
+     } else {
+        echo "<div class='no-data'>No se encontraron datos para el periodo actual.</div>"; // MODIFIED: More descriptive message
+    }
+
+    echo "<div class='chart-grid'>";
+    echo "<div class='chart-box'>";
+    echo "<h4 class='chart-title'>Comparativa de Profesores por Tipo de Docente</h4>";
+    echo "<canvas id='chartProfesoresTipo' height='300'></canvas>";
+    echo "</div>";
+    echo "<div class='chart-box'>";
+    echo "<h4 class='chart-title'>Comparativa de Valor Proyectado por Tipo de Docente</h4>";
+    echo "<canvas id='chartValorTipo' height='300'></canvas>";
+    echo "</div>";
+    echo "</div>";
+
+    echo "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>";
+    echo "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0'></script>";
+    echo "<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        Chart.register(ChartDataLabels);
+
+        const dataCurrent = " . json_encode($data_current_period) . ";
+        const dataPrevious = " . json_encode($data_previous_period) . ";
+
+        const processDataForCharts = (data) => {
+            const result = {};
+            data.forEach(row => {
+                const tipo = row.tipo_docente;
+                if (!result[tipo]) {
+                    result[tipo] = { total_profesores: 0, gran_total_ajustado: 0 };
+                }
+                result[tipo].total_profesores += parseInt(row.total_profesores);
+                result[tipo].gran_total_ajustado += parseFloat(row.gran_total_ajustado);
+            });
+            return result;
+        };
+
+        const currentPeriodSummary = processDataForCharts(dataCurrent);
+        const previousPeriodSummary = processDataForCharts(dataPrevious);
+
+        const labels = Array.from(new Set([...Object.keys(currentPeriodSummary), ...Object.keys(previousPeriodSummary)]));
+        labels.sort();
+
+        const profesoresActual = labels.map(label => currentPeriodSummary[label]?.total_profesores || 0);
+        const profesoresAnterior = labels.map(label => previousPeriodSummary[label]?.total_profesores || 0);
+        const valorActual = labels.map(label => currentPeriodSummary[label]?.gran_total_ajustado || 0);
+        const valorAnterior = labels.map(label => previousPeriodSummary[label]?.gran_total_ajustado || 0);
+
+        // Gráfica de Profesores por Tipo de Docente
+        const ctxProfesoresTipo = document.getElementById('chartProfesoresTipo').getContext('2d');
+        new Chart(ctxProfesoresTipo, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Periodo Actual (" . htmlspecialchars($anio_semestre) . ")',
+                        data: profesoresActual,
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")',
+                        data: profesoresAnterior,
+                        backgroundColor: 'rgba(153, 102, 255, 0.7)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Número de Profesores'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tipo de Docente'
+                        }
+                    }
+                },
+                plugins: {
+                    datalabels: {
+                        display: true,
+                        color: '#333',
+                        anchor: 'end',
+                        align: 'end',
+                        formatter: function(value, context) {
+                            return value.toLocaleString();
+                        }
+                    },
+                    tooltip: {
+                        enabled: true
+                    }
+                }
+            }
+        });
+
+        // Gráfica de Valor Proyectado por Tipo de Docente
+        const ctxValorTipo = document.getElementById('chartValorTipo').getContext('2d');
+        new Chart(ctxValorTipo, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Periodo Actual (" . htmlspecialchars($anio_semestre) . ")',
+                        data: valorActual,
+                        backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")',
+                        data: valorAnterior,
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Valor Proyectado'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tipo de Docente'
+                        }
+                    }
+                },
+                plugins: {
+                    datalabels: {
+                        display: true,
+                        color: '#333',
+                        anchor: 'end',
+                        align: 'end',
+                        formatter: function(value, context) {
+                            return '$' + value.toLocaleString();
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Valor: $' + context.raw.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+    </script>";
+}
+    echo "<div class='period-container'>";
+
+        // Sección de Periodo Actual
+        echo "<div class='period-box'>";
+        echo "<div class='period-header'>Periodo Actual: " . htmlspecialchars($anio_semestre) . "</div>";
+        echo "<div class='info-grid'>";
+        echo "<div class='info-item'><span class='info-label'>Días Cátedra:</span> " . number_format($dias_catedra, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>Semanas Cátedra:</span> " . number_format($semanas_catedra, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>Días Ocasional:</span> " . number_format($dias_ocasional, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>Semanas Ocasional:</span> " . number_format($semanas_ocasional, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>Meses Ocasional:</span> " . number_format($meses_ocasional, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>Valor Punto:</span> $" . number_format($valor_punto, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>SMLV:</span> $" . number_format($smlv, 0, ',', '.') . "</div>";
+        echo "</div>"; // cierre info-grid
+
+        if (!empty($data_current_period)) {
+            echo "<div class='table-container'>";
+            echo "<table class='compact-table'>";
+            echo "<thead><tr>
+                    <th>Facultad</th>
+                    <th>Departamento</th>
+                    <th>Tipo</th>
+                    <th>Profesores</th>
+                    <th>Total Proyectado</th>
+                  </tr></thead>";
+            echo "<tbody>";
+            foreach ($data_current_period as $row) {
+                echo "<tr>";
+                echo "<td>" . htmlspecialchars($row['nombre_facultad']) . "</td>";
+                echo "<td>" . htmlspecialchars($row['nombre_departamento']) . "</td>";
+                echo "<td>" . htmlspecialchars($row['tipo_docente']) . "</td>";
+                echo "<td>" . htmlspecialchars($row['total_profesores']) . "</td>";
+                echo "<td class='currency'>$" . number_format($row['gran_total_ajustado'], 0, ',', '.') . "</td>";
+                echo "</tr>";
+            }
+            echo "</tbody></table>";
+            echo "</div>"; // cierre table-container
+        } else {
+            echo "<div class='no-data'>No hay datos disponibles para el periodo actual</div>";
+        }
+        echo "</div>"; // cierre period-box
+
+        // Sección de Periodo Anterior
+        echo "<div class='period-box'>";
+        echo "<div class='period-header'>Periodo Anterior: " . htmlspecialchars($periodo_anterior) . "</div>";
+        echo "<div class='info-grid'>";
+        echo "<div class='info-item'><span class='info-label'>Días Cátedra:</span> " . number_format($dias_catedra_ant, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>Semanas Cátedra:</span> " . number_format($semanas_catedra_ant, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>Días Ocasional:</span> " . number_format($dias_ocasional_ant, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>Semanas Ocasional:</span> " . number_format($semanas_ocasional_ant, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>Meses Ocasional:</span> " . number_format($meses_ocasional_ant, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>Valor Punto:</span> $" . number_format($valor_punto_ant, 0, ',', '.') . "</div>";
+        echo "<div class='info-item'><span class='info-label'>SMLV:</span> $" . number_format($smlv_ant, 0, ',', '.') . "</div>";
+        echo "</div>"; // cierre info-grid
+
+        if (!empty($data_previous_period)) {
+            echo "<div class='table-container'>";
+            echo "<table class='compact-table'>";
+            echo "<thead><tr>
+                    <th>Facultad</th>
+                    <th>Departamento</th>
+                    <th>Tipo</th>
+                    <th>Profesores</th>
+                    <th>Total Proyectado</th>
+                  </tr></thead>";
+            echo "<tbody>";
+            foreach ($data_previous_period as $row) {
+                echo "<tr>";
+                echo "<td>" . htmlspecialchars($row['nombre_facultad']) . "</td>";
+                echo "<td>" . htmlspecialchars($row['nombre_departamento']) . "</td>";
+                echo "<td>" . htmlspecialchars($row['tipo_docente']) . "</td>";
+                echo "<td>" . htmlspecialchars($row['total_profesores']) . "</td>";
+                echo "<td class='currency'>$" . number_format($row['gran_total_ajustado'], 0, ',', '.') . "</td>";
+                echo "</tr>";
+            }
+            echo "</tbody></table>";
+            echo "</div>"; // cierre table-container
+        } else {
+            echo "<div class='no-data'>No hay datos disponibles para el periodo anterior</div>";
+        }
+        echo "</div>"; // cierre period-box
+        echo "</div>"; // cierre period-container
+   
+echo "</div>"; // cierre unicauca-container
+?>

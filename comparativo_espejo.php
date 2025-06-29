@@ -656,6 +656,8 @@ if ($tipo_usuario != '3') {
     echo '</form>';
 
     // Botón Exportar Excel (NO se marca como activo)
+   
+    // Botón Exportar Excel (NO se marca como activo)
     echo '<form action="excel_compartivo.php" method="POST" class="mb-0">';
     echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
     echo '<input type="hidden" name="anio_semestre_anterior" value="' . htmlspecialchars($anio_semestre_anterior) . '">';
@@ -663,6 +665,16 @@ if ($tipo_usuario != '3') {
     echo '<i class="fas fa-file-excel mr-2"></i>Exportar';
     echo '</button>';
     echo '</form>';
+
+    // Botón "Ver Gráficos" (al lado del de Excel, con estilo acorde)
+    echo '<form action="report__compartivo_test.php" method="GET" class="mb-0">';
+    echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
+    echo '<input type="hidden" name="anio_semestre_anterior" value="' . htmlspecialchars($anio_semestre_anterior) . '">';
+    echo '<button type="submit" class="btn-unicauca-info px-4">'; // Estilo 'btn-unicauca-success' para que se vea acorde al de Excel
+    echo '<i class="fas fa-chart-line mr-2"></i>Ver Gráficos';
+    echo '</button>';
+    echo '</form>';
+
 }
 
 echo '</div>';
