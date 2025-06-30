@@ -370,7 +370,7 @@ if (isset($_POST['envia'])) {
             $archivo_regreso = 'report_depto_comparativo.php';
     }
 } else {
-    $archivo_regreso = 'report_depto_comparativo.php';
+    $archivo_regreso = 'report__compartivo_test.php';
 }
 ?>
 
@@ -893,19 +893,21 @@ function obtenerTRDDepartamento($departamento_id) {
     </style>
 <div class="card card-plazo mb-4" >
     <div class="navigation-header">
-       <div>
-    <?php if (isset($_POST['envia']) && $_POST['envia'] === 'consulta_todo_depto'): ?>
-        <form action="<?= $archivo_regreso ?>" method="post" style="display:inline;">
-            <input type="hidden" name="anio_semestre" value="<?= htmlspecialchars($anio_semestre) ?>">
-            <input type="hidden" name="departamento_id" value="<?= htmlspecialchars($departamento_id) ?>">
-            <button type="submit">Volver</button>
-        </form>
-    <?php else: ?>
-        <a href="<?= $archivo_regreso ?>?anio_semestre=<?= urlencode($anio_semestre) ?>&departamento_id=<?= urlencode($departamento_id) ?>" class="btn-back">
-            <i class="fas fa-arrow-left me-2"></i> Regresar
-        </a>
-    <?php endif; ?>
-</div>
+     <div>
+                <?php if (isset($_POST['envia']) && $_POST['envia'] === 'consulta_todo_depto'): ?>
+                    <form action="<?= $archivo_regreso ?>" method="post" style="display:inline;">
+                        <input type="hidden" name="anio_semestre" value="<?= htmlspecialchars($anio_semestre) ?>">
+                        <input type="hidden" name="anio_semestre_anterior" value="<?= htmlspecialchars($periodo_anterior) ?>">
+                        <input type="hidden" name="departamento_id" value="<?= htmlspecialchars($departamento_id) ?>">
+                        <button type="submit">Volver</button>
+                    </form>
+                <?php else: ?>
+                    <a href="<?= $archivo_regreso ?>?anio_semestre=<?= urlencode($anio_semestre) ?>&anio_semestre_anterior=<?= urlencode($periodo_anterior) ?>&departamento_id=<?= urlencode($departamento_id) ?>" class="btn-back">
+                        <i class="fas fa-arrow-left me-2"></i> Regresar
+                    </a>
+                <?php endif; ?>
+            </div>
+
 
         <div class="d-flex align-items-baseline gap-2">
             <h2 class="mb-0" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -1141,357 +1143,357 @@ echo '</div>'; // Cierre grid-col
             } elseif ($tipo_docente == 'Catedra') {
                 $totalProfesoresCatedra += $count;
             }
-            
-            // --- TABLE STRUCTURE AND HEADERS ---
-            if ($result && $result->num_rows > 0) {
-                echo "<table border='1'>
-                <thead>
-                    <tr>
-                        <th rowspan='2'>Ítem</th>
-                        <th rowspan='2'>Cédula</th>
-                        <th rowspan='2'>Nombre</th>";
-            
-                if ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra") {
-                    echo "<th colspan='2'>Dedicación</th>";
-                }
-                if ($tipo_usuario == 1) {
-                    echo "<th colspan='2'>Acciones</th>";
-                }
-                echo "<th rowspan='2'>Puntos</th>";
-                echo "<th rowspan='2'>Proyec</th>";
-                echo "</tr>
-                <tr>";
-            
-                if ($tipo_docente == "Ocasional") {
-                    echo "
-                        <th title='Sede Popayán'>Pop</th>
-                        <th title='Sede Regionalización'>Reg</th>
-                    ";
-                } elseif ($tipo_docente == "Catedra") {
-                    echo "
-                        <th title='Horas en Sede Popayán'>Pop</th>
-                        <th title='Horas en Sede Regionalización'>Reg</th>
-                    ";
-                }
-                if ($tipo_usuario == 1) {
-                    echo "
-                        <th>Supr</th>
-                        <th>Edit</th>
-                    ";
-                }
-                echo "</tr>
-                </thead>
-                <tbody>"; // Added tbody for better HTML structure
-            
-                $item = 1; // Initialize item counter for this table
-                $todosLosRegistrosValidos = true; // Assuming this flag's purpose remains
-                $datos_acta = obtener_acta($anio_semestre, $departamento_id);
-                $num_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['acta_periodo']) : "";
-                $fecha_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['fecha_acta']) : "";
-                $total_proyect = 0; // Initialize variable for accumulating total
-            $contadorCambioAOcasional = 0; // Contará los profesores que eran Cátedra y ahora son Ocasional
-                    $contadorCambioACatedra = 0;   // Contará los profesores que eran Ocasional y ahora son Cátedra
 
-                // --- LOOP TO DISPLAY EACH PROFESSOR'S ROW ---
-                while ($row = $result->fetch_assoc()) {
-                    $cedula = $row['cedula'];
-                    $claseFila = '';    // Reset for each row
-                    $claseTexto = '';   // Reset for each row
-                    $tooltipText = '';  // Reset for each row
-            
-                    // --- DETERMINE PROFESSOR'S STATUS FOR THIS ROW ---
-                    $cambioTipo = false;
-                    if (isset($cedulasPeriodoAnteriorGlobal[$cedula])) {
-                        if ($cedulasPeriodoAnteriorGlobal[$cedula] !== $tipo_docente) {
-                            $cambioTipo = true;
-                        }
-                    }
-            
-                    // 2. Is this professor "new" to this specific type of vinculación in the current period?
-                    $esNueva = !in_array($cedula, $cedulasPeriodoAnteriorPorTipoActual);
-            
-                    // --- APPLY CSS CLASSES AND SET THE SINGLE TOOLTIP BASED ON PRIORITY ---
-                    if ($cambioTipo) {
-                        $claseFila = 'fondo-amarillo';
-                        $claseTexto = 'cedula-nueva';
-                        $tooltipText = 'Este profesor tuvo vinculación temporal diferente en el periodo anterior ('.$periodo_anterior.')';
-       
+                // --- TABLE STRUCTURE AND HEADERS ---
+                if ($result && $result->num_rows > 0) {
+                    echo "<table border='1'>
+                    <thead>
+                        <tr>
+                            <th rowspan='2'>Ítem</th>
+                            <th rowspan='2'>Cédula</th>
+                            <th rowspan='2'>Nombre</th>";
 
-                    } elseif ($esNueva) {
-                        $claseTexto = 'cedula-nueva';
-                        $tooltipText = 'Profesor nuevo para este periodo, no registrado en el periodo anterior ('.$periodo_anterior.')';
-            
-                        $contadorVerdes++;
-                        if ($tipo_docente == 'Ocasional') {
-                            $contadorVerdesOc++;
-                        } else {
-                            $contadorVerdesCa++;
-                        }
-                    }
-                    
-                    $titleAttribute = '';
-                    if (!empty($tooltipText)) {
-                        $titleAttribute = "title=\"" . htmlspecialchars($tooltipText) . "\"";
-                    }
-            
-                    // --- OUTPUT THE TABLE ROW AND ITS CELLS ---
-                    echo "<tr class='$claseFila' $titleAttribute>";
-                    echo "<td>" . $item . "</td>";
-                    echo "<td style='text-align: left;' class='$claseTexto'>" . htmlspecialchars($cedula) . "</td>";
-                    echo "<td style='text-align: left;' class='$claseTexto'>" . htmlspecialchars($row["nombre"]) . "</td>";
-                    if ($tipo_docente == "Ocasional") {
-                        echo "<td>" . htmlspecialchars($row["tipo_dedicacion"]) . "</td>
-                              <td>" . htmlspecialchars($row["tipo_dedicacion_r"]) . "</td>";
-                    }
-                    
-                    if ($tipo_docente == "Catedra") {
-                        $horas = ($row["horas"] == 0) ? "" : htmlspecialchars($row["horas"]);
-                        $horas_r = ($row["horas_r"] == 0) ? "" : htmlspecialchars($row["horas_r"]);
-                        echo "<td>" . $horas . "</td>
-                              <td>" . $horas_r . "</td>";
+                    if ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra") {
+                        echo "<th colspan='2'>Dedicación</th>";
                     }
                     if ($tipo_usuario == 1) {
-                        echo "<td>";
-                        echo "
-                        <form action='eliminar_admin.php' method='POST' class='delete-form' style='display:inline;'>
-                            <input type='hidden' name='id_solicitud' value='".htmlspecialchars($row["id_solicitud"])."'>
-                            <input type='hidden' name='facultad_id' value='".htmlspecialchars($facultad_id)."'>
-                            <input type='hidden' name='departamento_id' value='".htmlspecialchars($departamento_id)."'>
-                            <input type='hidden' name='anio_semestre' value='".htmlspecialchars($anio_semestre)."'>
-                            <input type='hidden' name='anio_semestre_anterior' value='".htmlspecialchars($periodo_anterior)."'>
-                            <input type='hidden' name='tipo_docente' value='".htmlspecialchars($tipo_docente)."'>
-                            <input type='hidden' name='motivo_eliminacion' class='motivo-input' value=''>
-                            <button type='submit' class='delete-btn' title='Eliminar registro'>
-                                <i class='fas fa-trash fa-sm'></i>
-                            </button>
-                        </form>";
-                        echo "</td><td>";
-                        echo "
-                            <form action='actualizar_admin.php' method='GET' style='display:inline;'>
-                                <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row["id_solicitud"]) . "'>
-                                <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
-                                <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
-                                <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
-                                <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
-                                <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
-                                <button type='submit' class='update-btn'><i class='fas fa-edit'></i></button>
-                            </form></td>";
-                    }   
-                        // --- Lógica para mostrar Puntos con indicadores de actualización ---
-    $valorPuntos = 0; // Inicializar para evitar posibles advertencias
-    $puntosCellClass = ''; // Clase CSS para la celda de puntos
-    $puntosTooltip = ''; // Tooltip específico para la celda de puntos
+                        echo "<th colspan='2'>Acciones</th>";
+                    }
+                    echo "<th rowspan='2'>Puntos</th>";
+                    echo "<th rowspan='2'>Proyec</th>";
+                    echo "</tr>
+                    <tr>";
 
-                    // Si $row["puntos"] (que corresponde a puntos_periodo_actual) está vacío o es cero,
-                    // se usa $row["puntos_periodo_anterior"]. De lo contrario, se usa $row["puntos"].
-if (empty($row["puntos_periodo_actual"]) || $row["puntos_periodo_actual"] == 0) {
-        $valorPuntos = $row["puntos_periodo_anterior"];
-        $puntosCellClass = " puntos-no-actualizados"; // Clase para el color de alerta
-        $puntosTooltip = "Puntos tomados del periodo anterior (" . htmlspecialchars($periodo_ant_real) . "). Pendientes de actualización.";
-        
-        // Incrementar el contador global si se usa el valor anterior
-        // Asegúrate de que $contadorPuntosPendientes se inicializa a 0 antes del bucle
-        if (isset($contadorPuntosPendientes)) { // Verificar si la variable existe
-            $contadorPuntosPendientes++;
+                    if ($tipo_docente == "Ocasional") {
+                        echo "
+                            <th title='Sede Popayán'>Pop</th>
+                            <th title='Sede Regionalización'>Reg</th>
+                        ";
+                    } elseif ($tipo_docente == "Catedra") {
+                        echo "
+                            <th title='Horas en Sede Popayán'>Pop</th>
+                            <th title='Horas en Sede Regionalización'>Reg</th>
+                        ";
+                    }
+                    if ($tipo_usuario == 1) {
+                        echo "
+                            <th>Supr</th>
+                            <th>Edit</th>
+                        ";
+                    }
+                    echo "</tr>
+                    </thead>
+                    <tbody>"; // Added tbody for better HTML structure
+
+                    $item = 1; // Initialize item counter for this table
+                    $todosLosRegistrosValidos = true; // Assuming this flag's purpose remains
+                    $datos_acta = obtener_acta($anio_semestre, $departamento_id);
+                    $num_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['acta_periodo']) : "";
+                    $fecha_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['fecha_acta']) : "";
+                    $total_proyect = 0; // Initialize variable for accumulating total
+                $contadorCambioAOcasional = 0; // Contará los profesores que eran Cátedra y ahora son Ocasional
+                        $contadorCambioACatedra = 0;   // Contará los profesores que eran Ocasional y ahora son Cátedra
+
+                    // --- LOOP TO DISPLAY EACH PROFESSOR'S ROW ---
+                    while ($row = $result->fetch_assoc()) {
+                        $cedula = $row['cedula'];
+                        $claseFila = '';    // Reset for each row
+                        $claseTexto = '';   // Reset for each row
+                        $tooltipText = '';  // Reset for each row
+
+                        // --- DETERMINE PROFESSOR'S STATUS FOR THIS ROW ---
+                        $cambioTipo = false;
+                        if (isset($cedulasPeriodoAnteriorGlobal[$cedula])) {
+                            if ($cedulasPeriodoAnteriorGlobal[$cedula] !== $tipo_docente) {
+                                $cambioTipo = true;
+                            }
+                        }
+
+                        // 2. Is this professor "new" to this specific type of vinculación in the current period?
+                        $esNueva = !in_array($cedula, $cedulasPeriodoAnteriorPorTipoActual);
+
+                        // --- APPLY CSS CLASSES AND SET THE SINGLE TOOLTIP BASED ON PRIORITY ---
+                        if ($cambioTipo) {
+                            $claseFila = 'fondo-amarillo';
+                            $claseTexto = 'cedula-nueva';
+                            $tooltipText = 'Este profesor tuvo vinculación temporal diferente en el periodo anterior ('.$periodo_anterior.')';
+
+
+                        } elseif ($esNueva) {
+                            $claseTexto = 'cedula-nueva';
+                            $tooltipText = 'Profesor nuevo para este periodo, no registrado en el periodo anterior ('.$periodo_anterior.')';
+
+                            $contadorVerdes++;
+                            if ($tipo_docente == 'Ocasional') {
+                                $contadorVerdesOc++;
+                            } else {
+                                $contadorVerdesCa++;
+                            }
+                        }
+
+                        $titleAttribute = '';
+                        if (!empty($tooltipText)) {
+                            $titleAttribute = "title=\"" . htmlspecialchars($tooltipText) . "\"";
+                        }
+
+                        // --- OUTPUT THE TABLE ROW AND ITS CELLS ---
+                        echo "<tr class='$claseFila' $titleAttribute>";
+                        echo "<td>" . $item . "</td>";
+                        echo "<td style='text-align: left;' class='$claseTexto'>" . htmlspecialchars($cedula) . "</td>";
+                        echo "<td style='text-align: left;' class='$claseTexto'>" . htmlspecialchars($row["nombre"]) . "</td>";
+                        if ($tipo_docente == "Ocasional") {
+                            echo "<td>" . htmlspecialchars($row["tipo_dedicacion"]) . "</td>
+                                  <td>" . htmlspecialchars($row["tipo_dedicacion_r"]) . "</td>";
+                        }
+
+                        if ($tipo_docente == "Catedra") {
+                            $horas = ($row["horas"] == 0) ? "" : htmlspecialchars($row["horas"]);
+                            $horas_r = ($row["horas_r"] == 0) ? "" : htmlspecialchars($row["horas_r"]);
+                            echo "<td>" . $horas . "</td>
+                                  <td>" . $horas_r . "</td>";
+                        }
+                        if ($tipo_usuario == 1) {
+                            echo "<td>";
+                            echo "
+                            <form action='eliminar_admin.php' method='POST' class='delete-form' style='display:inline;'>
+                                <input type='hidden' name='id_solicitud' value='".htmlspecialchars($row["id_solicitud"])."'>
+                                <input type='hidden' name='facultad_id' value='".htmlspecialchars($facultad_id)."'>
+                                <input type='hidden' name='departamento_id' value='".htmlspecialchars($departamento_id)."'>
+                                <input type='hidden' name='anio_semestre' value='".htmlspecialchars($anio_semestre)."'>
+                                <input type='hidden' name='anio_semestre_anterior' value='".htmlspecialchars($periodo_anterior)."'>
+                                <input type='hidden' name='tipo_docente' value='".htmlspecialchars($tipo_docente)."'>
+                                <input type='hidden' name='motivo_eliminacion' class='motivo-input' value=''>
+                                <button type='submit' class='delete-btn' title='Eliminar registro'>
+                                    <i class='fas fa-trash fa-sm'></i>
+                                </button>
+                            </form>";
+                            echo "</td><td>";
+                            echo "
+                                <form action='actualizar_admin.php' method='GET' style='display:inline;'>
+                                    <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row["id_solicitud"]) . "'>
+                                    <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
+                                    <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
+                                    <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
+                                    <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
+                                    <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
+                                    <button type='submit' class='update-btn'><i class='fas fa-edit'></i></button>
+                                </form></td>";
+                        }   
+                            // --- Lógica para mostrar Puntos con indicadores de actualización ---
+        $valorPuntos = 0; // Inicializar para evitar posibles advertencias
+        $puntosCellClass = ''; // Clase CSS para la celda de puntos
+        $puntosTooltip = ''; // Tooltip específico para la celda de puntos
+
+                        // Si $row["puntos"] (que corresponde a puntos_periodo_actual) está vacío o es cero,
+                        // se usa $row["puntos_periodo_anterior"]. De lo contrario, se usa $row["puntos"].
+    if (empty($row["puntos_periodo_actual"]) || $row["puntos_periodo_actual"] == 0) {
+            $valorPuntos = $row["puntos_periodo_anterior"];
+            $puntosCellClass = " puntos-no-actualizados"; // Clase para el color de alerta
+            $puntosTooltip = "Puntos tomados del periodo anterior (" . htmlspecialchars($periodo_ant_real) . "). Pendientes de actualización.";
+
+            // Incrementar el contador global si se usa el valor anterior
+            // Asegúrate de que $contadorPuntosPendientes se inicializa a 0 antes del bucle
+            if (isset($contadorPuntosPendientes)) { // Verificar si la variable existe
+                $contadorPuntosPendientes++;
+            }
+
+        } else {
+            $valorPuntos = $row["puntos_periodo_actual"];
+            // Si quieres un tooltip incluso cuando está actualizado:
+            $puntosTooltip = "Puntos actualizados para el periodo actual.";
+            // $puntosCellClass permanece vacío, sin color especial
         }
-        
+
+        // Imprimir la celda de Puntos con su clase y tooltip
+        echo "<td class='" . $puntosCellClass . "' title='" . htmlspecialchars($puntosTooltip) . "'>" . $valorPuntos . "</td>";
+
+                        // Cálculos de proyección
+                        if ($tipo_docente == "Catedra")  {
+
+                      $asignacion_total= $valorPuntos*$valor_punto *($row["horas"]+$row["horas_r"])*$semanas_cat;
+                    $asignacion_mes=$valorPuntos*$valor_punto*($row["horas"] +$row["horas_r"])*4;
+                    $prima_navidad = $asignacion_mes*3/12;
+                    $indem_vacaciones = $asignacion_mes*$dias/360;
+                    $indem_prima_vacaciones = $indem_vacaciones*2/3;
+                    $cesantias =($asignacion_total + $prima_navidad)/12;
+                    $total_devengos=$asignacion_total + $prima_navidad+$indem_vacaciones+$indem_prima_vacaciones+$cesantias;
+                 //eps
+                    if ($asignacion_mes < $smlv){
+                    $valor_base = ($smlv * $dias / 30) * 8.5 / 100;
+                } else {
+                    $valor_base = round($asignacion_total * 8.5 / 100, 0);
+                }
+
+                // Redondear al múltiplo de 100 más cercano
+                $eps = round($valor_base, -2);
+
+                        //pension
+
+                // Cálculo principal
+                if ($asignacion_mes < $smlv) {
+                    $valor_base = (($smlv * $dias) / 30) * (12 / 100);
+                } else {
+                    $valor_base = round($asignacion_total * (12 / 100), 0);
+                }
+
+                // Redondear al múltiplo de 100 más cercano
+                $afp = round($valor_base, -2);
+
+                        //arp
+                        $porcentaje = 0.522 / 100;
+
+                // Lógica del cálculo
+                if ($asignacion_mes < $smlv) {
+                    $valor_base = (($smlv * $dias) / 30) * $porcentaje;
+                } else {
+                    $valor_base = round($asignacion_total * $porcentaje, 0);
+                }
+
+                // Redondeo al múltiplo de 100 más cercano
+                $arl = round($valor_base, -2);
+
+                        //comfaucaua
+                // Porcentaje a aplicar
+                $porcentaje = 4 / 100;
+
+                // Cálculo condicional
+                if ($asignacion_mes < $smlv) {
+                    $valor_base = (($smlv * $dias) / 30) * $porcentaje;
+                } else {
+                    $valor_base = round($asignacion_total * $porcentaje, 0);
+                }
+
+                // Redondear al múltiplo de 100 más cercano
+                $cajacomp = round($valor_base, -2);
+
+                        // icbf
+                $porcentaje = 3 / 100;
+
+                // Cálculo condicional
+                if ($asignacion_mes < $smlv) {
+                    $valor_base = (($smlv * $dias) / 30) * $porcentaje;
+                } else {
+                    $valor_base = round($asignacion_total * $porcentaje, 0);
+                }
+
+                // Redondear al múltiplo de 100 más cercano (como REDONDEAR(...;-2) en Excel)
+                $icbf = round($valor_base, -2);
+                        $total_aportes= $eps +$afp+$arl+$cajacomp+$icbf;
+                        $gran_total = $total_devengos+$total_aportes;
+
+        }
+       else {        
+                 //calculo  si $tipo_docente <> "Catedra"
+
+                    $horas = 0;
+                    $mesesocas = intval($semanas_ocas / 4.33)-1; // 4.33 semanas ≈ 1 mes
+                    // Asegurarse que los índices existen y son iguales a "MT" o "TC"
+                    if (($row["tipo_dedicacion"] == "MT") || ($row["tipo_dedicacion_r"] == "MT")) {
+                        $horas = 20;
+                    } elseif (($row["tipo_dedicacion"] == "TC") || ($row["tipo_dedicacion_r"] == "TC")) {
+                        $horas = 40;
+                    }
+
+                    // Calculo de la asignación mensual y total
+    $asignacion_mes = round($valorPuntos * $valor_punto * ($horas / 40), 0);
+                    $asignacion_total = $asignacion_mes * $dias_ocas / 30;
+
+
+                    $prima_navidad = $asignacion_mes*$mesesocas/12;
+                    $indem_vacaciones = $asignacion_mes*($dias_ocas)/360;
+                    $indem_prima_vacaciones = $asignacion_mes*(2/3)*(($dias_ocas)/360);
+                    $cesantias = round(($asignacion_total + $prima_navidad) / 12);
+                    $total_empleado=$asignacion_total + $prima_navidad+$indem_vacaciones+$indem_prima_vacaciones;
+                 //eps
+                    $eps = round(($asignacion_total * 8.5) / 100);
+
+                        //pension
+
+
+
+                // Redondear al múltiplo de 100 más cercano
+                 $afp = round(($asignacion_total * 12) / 100);
+
+
+                // Redondeo al múltiplo de 100 más cercano
+                $arl =round(($asignacion_total * 0.522) / 100,-2);
+
+                        //comfaucaua
+
+                // Redondear al múltiplo de 100 más cercano
+                $cajacomp = round(($asignacion_total * 4) / 100,-2);
+
+                        // icbf
+
+                // Redondear al múltiplo de 100 más cercano (como REDONDEAR(...;-2) en Excel)
+                        $icbf = round(($asignacion_total * 3) / 100,-2);
+                            $total_entidades=$cesantias+ $eps +$afp+$arl+$cajacomp+$icbf;
+
+
+                        $gran_total = $total_empleado+$total_entidades;
+
+        }
+       // Asignar valores condicionales si es de cátedra
+    if ($tipo_docente == "Catedra") {
+        $total_empleado_mostrar = $total_devengos;
+        $total_entidades_mostrar = $total_aportes;
     } else {
-        $valorPuntos = $row["puntos_periodo_actual"];
-        // Si quieres un tooltip incluso cuando está actualizado:
-        $puntosTooltip = "Puntos actualizados para el periodo actual.";
-        // $puntosCellClass permanece vacío, sin color especial
+        $total_empleado_mostrar = $total_empleado;
+        $total_entidades_mostrar = $total_entidades;
     }
-    
-    // Imprimir la celda de Puntos con su clase y tooltip
-    echo "<td class='" . $puntosCellClass . "' title='" . htmlspecialchars($puntosTooltip) . "'>" . $valorPuntos . "</td>";
-                    
-                    // Cálculos de proyección
-                    if ($tipo_docente == "Catedra")  {
 
-                  $asignacion_total= $valorPuntos*$valor_punto *($row["horas"]+$row["horas_r"])*$semanas_cat;
-                $asignacion_mes=$valorPuntos*$valor_punto*($row["horas"] +$row["horas_r"])*4;
-                $prima_navidad = $asignacion_mes*3/12;
-                $indem_vacaciones = $asignacion_mes*$dias/360;
-                $indem_prima_vacaciones = $indem_vacaciones*2/3;
-                $cesantias =($asignacion_total + $prima_navidad)/12;
-                $total_devengos=$asignacion_total + $prima_navidad+$indem_vacaciones+$indem_prima_vacaciones+$cesantias;
-             //eps
-                if ($asignacion_mes < $smlv){
-                $valor_base = ($smlv * $dias / 30) * 8.5 / 100;
-            } else {
-                $valor_base = round($asignacion_total * 8.5 / 100, 0);
-            }
+    $title =
 
-            // Redondear al múltiplo de 100 más cercano
-            $eps = round($valor_base, -2);
+        "Detalle salarial\n" .
 
-                    //pension
+            "mese ocasionaels: " .$dias_ocas . "\n" .
 
-            // Cálculo principal
-            if ($asignacion_mes < $smlv) {
-                $valor_base = (($smlv * $dias) / 30) * (12 / 100);
-            } else {
-                $valor_base = round($asignacion_total * (12 / 100), 0);
-            }
+        "Asignación mensual: $" . number_format($asignacion_mes, 0, ',', '.') . "\n" .
+        "Asignación total: $" . number_format($asignacion_total, 0, ',', '.') . "\n" .
+        "Prima de Navidad: $" . number_format($prima_navidad, 0, ',', '.') . "\n" .
+        "Indem. Vacaciones: $" . number_format($indem_vacaciones, 0, ',', '.') . "\n" .
+        "Indem. Prima Vacaciones: $" . number_format($indem_prima_vacaciones, 0, ',', '.') . "\n" .
+        "Total empleado: $" . number_format($total_empleado_mostrar, 0, ',', '.') . "\n\n" .
+        "Cesantías: $" . number_format($cesantias, 0, ',', '.') . "\n" .
 
-            // Redondear al múltiplo de 100 más cercano
-            $afp = round($valor_base, -2);
+        "Aportes a entidades\n" .
+        "EPS: $" . number_format($eps, 0, ',', '.') . "\n" .
+        "Pensión: $" . number_format($afp, 0, ',', '.') . "\n" .
+        "ARL: $" . number_format($arl, 0, ',', '.') . "\n" .
+        "Caja Compensación: $" . number_format($cajacomp, 0, ',', '.') . "\n" .
+        "ICBF: $" . number_format($icbf, 0, ',', '.') . "\n" .
+        "Total entidades: $" . number_format($total_entidades_mostrar, 0, ',', '.') . "\n\n" .
 
-                    //arp
-                    $porcentaje = 0.522 / 100;
+        "GRAN TOTAL: $" . number_format($gran_total, 0, ',', '.');
+    echo '<td  data-placement="right" title="' . htmlspecialchars($title, ENT_QUOTES) . '">
+    $' . number_format($gran_total / 1000000, 2) . ' M</td>';
 
-            // Lógica del cálculo
-            if ($asignacion_mes < $smlv) {
-                $valor_base = (($smlv * $dias) / 30) * $porcentaje;
-            } else {
-                $valor_base = round($asignacion_total * $porcentaje, 0);
-            }
-
-            // Redondeo al múltiplo de 100 más cercano
-            $arl = round($valor_base, -2);
-
-                    //comfaucaua
-            // Porcentaje a aplicar
-            $porcentaje = 4 / 100;
-
-            // Cálculo condicional
-            if ($asignacion_mes < $smlv) {
-                $valor_base = (($smlv * $dias) / 30) * $porcentaje;
-            } else {
-                $valor_base = round($asignacion_total * $porcentaje, 0);
-            }
-
-            // Redondear al múltiplo de 100 más cercano
-            $cajacomp = round($valor_base, -2);
-
-                    // icbf
-            $porcentaje = 3 / 100;
-
-            // Cálculo condicional
-            if ($asignacion_mes < $smlv) {
-                $valor_base = (($smlv * $dias) / 30) * $porcentaje;
-            } else {
-                $valor_base = round($asignacion_total * $porcentaje, 0);
-            }
-
-            // Redondear al múltiplo de 100 más cercano (como REDONDEAR(...;-2) en Excel)
-            $icbf = round($valor_base, -2);
-                    $total_aportes= $eps +$afp+$arl+$cajacomp+$icbf;
-                    $gran_total = $total_devengos+$total_aportes;
-
+    $total_proyect += $gran_total;
+        echo "</tr>";
+        $item++;
     }
-   else {        
-             //calculo  si $tipo_docente <> "Catedra"
 
-                $horas = 0;
-                $mesesocas = intval($semanas_ocas / 4.33)-1; // 4.33 semanas ≈ 1 mes
-                // Asegurarse que los índices existen y son iguales a "MT" o "TC"
-                if (($row["tipo_dedicacion"] == "MT") || ($row["tipo_dedicacion_r"] == "MT")) {
-                    $horas = 20;
-                } elseif (($row["tipo_dedicacion"] == "TC") || ($row["tipo_dedicacion_r"] == "TC")) {
-                    $horas = 40;
+                    // Fila de subtotal
+                    echo "<tr style='font-weight: bold; background-color: #f2f2f2;'>";
+                    echo "<td colspan='".($tipo_usuario == 1 ? ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra" ? 8 : 6) : ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra" ?  6: 4))."'>Subtotal</td>";
+                    echo "<td>$".number_format($total_proyect/1000000, 2)." M</td>";
+                    echo "</tr>";
+                    echo "</table>";
+
+                    // Acumular el total proyectado por tipo de nómina
+                    if ($tipo_docente == 'Ocasional') {
+                        $totalProyectadoOcasional += $total_proyect;
+                    } elseif ($tipo_docente == 'Catedra') {
+                        $totalProyectadoCatedra += $total_proyect;
+                    }
+                } else {
+                    echo "<p style='text-align: center;'>No se encontraron resultados.</p>";
                 }
+    $total_consolidado += $total_proyect ?? 0;
+                echo "</div>"; // Cierre de box-gray
 
-                // Calculo de la asignación mensual y total
-$asignacion_mes = round($valorPuntos * $valor_punto * ($horas / 40), 0);
-                $asignacion_total = $asignacion_mes * $dias_ocas / 30;
+                echo '</div>'; // Cierre de grid-col (periodo actual)
 
-
-                $prima_navidad = $asignacion_mes*$mesesocas/12;
-                $indem_vacaciones = $asignacion_mes*($dias_ocas)/360;
-                $indem_prima_vacaciones = $asignacion_mes*(2/3)*(($dias_ocas)/360);
-                $cesantias = round(($asignacion_total + $prima_navidad) / 12);
-                $total_empleado=$asignacion_total + $prima_navidad+$indem_vacaciones+$indem_prima_vacaciones;
-             //eps
-                $eps = round(($asignacion_total * 8.5) / 100);
-
-                    //pension
-
-
-
-            // Redondear al múltiplo de 100 más cercano
-             $afp = round(($asignacion_total * 12) / 100);
-
-
-            // Redondeo al múltiplo de 100 más cercano
-            $arl =round(($asignacion_total * 0.522) / 100,-2);
-
-                    //comfaucaua
-
-            // Redondear al múltiplo de 100 más cercano
-            $cajacomp = round(($asignacion_total * 4) / 100,-2);
-
-                    // icbf
-
-            // Redondear al múltiplo de 100 más cercano (como REDONDEAR(...;-2) en Excel)
-                    $icbf = round(($asignacion_total * 3) / 100,-2);
-                        $total_entidades=$cesantias+ $eps +$afp+$arl+$cajacomp+$icbf;
-
-
-                    $gran_total = $total_empleado+$total_entidades;
-    
-    }
-   // Asignar valores condicionales si es de cátedra
-if ($tipo_docente == "Catedra") {
-    $total_empleado_mostrar = $total_devengos;
-    $total_entidades_mostrar = $total_aportes;
-} else {
-    $total_empleado_mostrar = $total_empleado;
-    $total_entidades_mostrar = $total_entidades;
-}
-
-$title =
-
-    "Detalle salarial\n" .
-
-        "mese ocasionaels: " .$dias_ocas . "\n" .
-
-    "Asignación mensual: $" . number_format($asignacion_mes, 0, ',', '.') . "\n" .
-    "Asignación total: $" . number_format($asignacion_total, 0, ',', '.') . "\n" .
-    "Prima de Navidad: $" . number_format($prima_navidad, 0, ',', '.') . "\n" .
-    "Indem. Vacaciones: $" . number_format($indem_vacaciones, 0, ',', '.') . "\n" .
-    "Indem. Prima Vacaciones: $" . number_format($indem_prima_vacaciones, 0, ',', '.') . "\n" .
-    "Total empleado: $" . number_format($total_empleado_mostrar, 0, ',', '.') . "\n\n" .
-    "Cesantías: $" . number_format($cesantias, 0, ',', '.') . "\n" .
-
-    "Aportes a entidades\n" .
-    "EPS: $" . number_format($eps, 0, ',', '.') . "\n" .
-    "Pensión: $" . number_format($afp, 0, ',', '.') . "\n" .
-    "ARL: $" . number_format($arl, 0, ',', '.') . "\n" .
-    "Caja Compensación: $" . number_format($cajacomp, 0, ',', '.') . "\n" .
-    "ICBF: $" . number_format($icbf, 0, ',', '.') . "\n" .
-    "Total entidades: $" . number_format($total_entidades_mostrar, 0, ',', '.') . "\n\n" .
-
-    "GRAN TOTAL: $" . number_format($gran_total, 0, ',', '.');
-echo '<td  data-placement="right" title="' . htmlspecialchars($title, ENT_QUOTES) . '">
-$' . number_format($gran_total / 1000000, 2) . ' M</td>';
-
-$total_proyect += $gran_total;
-    echo "</tr>";
-    $item++;
-}
-    
-                // Fila de subtotal
-                echo "<tr style='font-weight: bold; background-color: #f2f2f2;'>";
-                echo "<td colspan='".($tipo_usuario == 1 ? ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra" ? 8 : 6) : ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra" ?  6: 4))."'>Subtotal</td>";
-                echo "<td>$".number_format($total_proyect/1000000, 2)." M</td>";
-                echo "</tr>";
-                echo "</table>";
-                
-                // Acumular el total proyectado por tipo de nómina
-                if ($tipo_docente == 'Ocasional') {
-                    $totalProyectadoOcasional += $total_proyect;
-                } elseif ($tipo_docente == 'Catedra') {
-                    $totalProyectadoCatedra += $total_proyect;
-                }
-            } else {
-                echo "<p style='text-align: center;'>No se encontraron resultados.</p>";
-            }
-$total_consolidado += $total_proyect ?? 0;
-            echo "</div>"; // Cierre de box-gray
-            
-            echo '</div>'; // Cierre de grid-col (periodo actual)
-            
             // ================= COLUMNA PERIODO ANTERIOR =================
             echo '<div class="grid-col">';
             
@@ -3536,7 +3538,24 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
             }
         );
     });
-</script>
+             </script></div></div></div><div style='text-align: right; margin-top: 30px;'>
+<a href='#seccionTablas' style='
+    display: inline-block;
+    background-color: #0066cc;
+    color: white;
+    padding: 10px 18px;
+    font-size: 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease;'
+    onmouseover=\"this.style.backgroundColor='#004999';\"
+    onmouseout=\"this.style.backgroundColor='#0066cc';\">
+    ↑ Volver arriba
+</a>
+</div>
+
     </body>
 </html>
 <?php

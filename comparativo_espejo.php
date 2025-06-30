@@ -640,7 +640,7 @@ echo '</form>';
 
 if ($tipo_usuario != '3') {
     // Botón Puntos y Costos
-    echo '<form action="report_depto_comparativo_costos.php" method="GET" class="mb-0">';
+  /*  echo '<form action="report_depto_comparativo_costos.php" method="GET" class="mb-0">';
     echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
     echo '<button type="submit" class="btn-unicauca-light px-4' . botonActivo('report_depto_comparativo_costos.php') . '">';
     echo '<i class="fas fa-calculator mr-2"></i>Puntos y Costos';
@@ -654,7 +654,7 @@ if ($tipo_usuario != '3') {
     echo '<i class="fas fa-exchange-alt mr-2"></i>Costos Espejo';
     echo '</button>';
     echo '</form>';
-
+*/
     // Botón Exportar Excel (NO se marca como activo)
    
     // Botón Exportar Excel (NO se marca como activo)

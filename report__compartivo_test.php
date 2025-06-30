@@ -365,6 +365,8 @@ AggregatedTotals AS (
     SELECT
         f.nombre_fac_minb AS nombre_facultad,
         d.depto_nom_propio AS nombre_departamento,
+        d.PK_DEPTO,       -- ID del departamento
+        d.FK_FAC,          -- ID de la facultad (relación)
         df.tipo_docente,
         COUNT(DISTINCT df.cedula) AS total_profesores,
         SUM(df.asignacion_mes_calc) AS total_asignacion_mensual_agregada,
@@ -400,6 +402,8 @@ AggregatedTotals AS (
 SELECT
     ata.nombre_facultad,
     ata.nombre_departamento,
+     ata.PK_DEPTO,       -- Asegúrate de incluir esto
+    ata.FK_FAC,         -- Asegúrate de incluir esto
     ata.tipo_docente,
     ata.total_profesores,
     ata.total_asignacion_mensual_agregada,
@@ -444,18 +448,7 @@ $bind_params_current = [
 // String de tipos para bind_param (d = double/float, i = int, s = string)
 // 18 'd's + 1 's' + 4 'i's = 23 parámetros en total
 // MODIFIED: Corrected the type string length for dynamic parameters
-$types_current = str_repeat('d', 12) . str_repeat('d', 6) . 's'; // 12 for dynamic constants, 6 for assignation calcs, 1 for anio_semestre
-// Append 'si' or 'ii' for facultad_id and departamento_id. If $facultad_id or $departamento_id can be null, it might need 's' even for int in bind_param.
-// For NULL, bind_param typically expects 's' and the value to be NULL.
-// Let's assume for now they are always ints or strings, and the SQL handles NULL correctly with IS NULL check.
-// If $facultad_id or $departamento_id can truly be NULL and not an empty string, the type needs to be 's' for NULL, or 'i' for int.
-// Given your current setup, 'i' is likely the intended type for PK_FAC, but we are passing them as null in PHP, so 's' might be safer for null values.
-// Re-evaluating based on the original bind_param and the NULL handling in SQL.
-// The SQL uses `? IS NULL OR df.facultad_id = ?`, which means the first `?` should receive the parameter (which can be NULL) and the second `?` receives the parameter again.
-// To pass NULL in bind_param, the type for that parameter must be 's' (string), and the value must be actual PHP null.
-// Let's adjust the types string based on the total parameters (23 if all are filled).
-// 12 for dynamic params (all doubles), 6 for assignation (all doubles), 1 for anio_semestre (string)
-// 4 for facultad_id and departamento_id (each repeated twice, let's treat them as strings 's' because they can be null)
+$types_current = str_repeat('d', 12) . str_repeat('d', 6) . 's'; 
 $types_current = str_repeat('d', 12) . str_repeat('d', 6) . 's' . 'ssss'; // 12 doubles, 6 doubles, 1 string (anio_semestre), 4 strings (facultad_id, facultad_id, departamento_id, departamento_id)
 
 // Adjust bind_params_current for NULL values
@@ -600,10 +593,10 @@ echo '<style>
 
 
     .unicauca-container {
-        max-width: 1600px;
+        max-width: 1400px;
         margin: 0 auto;
         padding: 0;
-        font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+font-family: "Open Sans", sans-serif;
     }
 
     /* Encabezado premium */
@@ -712,63 +705,179 @@ echo '<style>
         margin-bottom: 15px;
         font-size: 1.1rem;
     }
-    /* Period boxes */
-    .period-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-        gap: 25px;
-        margin-bottom: 30px;
-    }
-    .period-box {
-        background: white;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 20px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
-    .period-header {
-        background-color: #e6f0ff;
-        padding: 12px 15px;
-        border-radius: 6px;
-        margin-bottom: 15px;
-        font-weight: 600;
-        color: #004d99;
-        border-left: 4px solid #004d99;
-    }
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 10px;
-        margin-bottom: 15px;
-        font-size: 13px;
-    }
-    .info-item {
-        padding: 8px;
-        background: #f8fafc;
-        border-radius: 4px;
-    }
-    .info-label {
-        font-weight: 600;
-        color: #555;
-        display: block;
-        margin-bottom: 3px;
-        font-size: 12px;
-    }
-    .currency {
-        font-weight: 600;
-        color: #006400;
-    }
-    .no-data {
-        text-align: center;
-        padding: 30px;
-        color: #777;
-        font-style: italic;
-        background-color: #f8f9fa;
-        border-radius: 6px;
-        margin-top: 15px;
-    }
+ /* Contenedor principal para las tablas en línea */
+.period-container {
+    display: flex;
+    gap: 20px; /* Espacio entre tablas */
+    margin-bottom: 30px;
+}
+
+/* Estilo para cada periodo (caja) */
+.period-box {
+    flex: 1; /* Ocupa igual espacio */
+    min-width: 0; /* Permite que se ajuste correctamente */
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+}
+
+/* Cabecera de periodo */
+.period-header {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 1.1em;
+}
+
+
+
+
+.info-label {
+    font-weight: 500;
+    color: #555;
+}
+
+/* Contenedor de tabla */
+.table-container {
+    overflow-x: auto;
+    margin-top: 15px;
+}
+
+/* Estilo para tablas */
+.compact-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.compact-table th {
+    background-color: #f5f5f5;
+    text-align: left;
+    padding: 8px 12px;
+    font-weight: 500;
+    color: #444;
+}
+
+.compact-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+}
+
+/* Mensaje cuando no hay datos */
+.no-data {
+    color: #666;
+    font-style: italic;
+    padding: 15px 0;
+    text-align: center;
+}
+
+/* Estilo para valores monetarios */
+.currency {
+    font-family: "Roboto Mono", monospace;
+    white-space: nowrap;
+}
+
+
+
+
+/* CONTENEDOR PRINCIPAL - TABLAS EN LÍNEA */
+.period-container {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start; /* Alinea al tope */
+}
+
+/* ESTILO COMPACTO PARA TABLAS */
+.compact-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em; /* Texto más pequeño */
+}
+
+.compact-table th {
+    background-color: #f8f9fa;
+    padding: 6px 10px !important; /* Más compacto */
+    font-weight: 500;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.compact-table td {
+    padding: 5px 10px !important; /* Más compacto */
+    border-bottom: 1px solid #eee;
+    line-height: 1.3; /* Reduce espacio entre líneas */
+}
+
+/* ENLACE DE DEPARTAMENTO - ESTILO CLARO */
+.departamento-link {
+    background: none;
+    border: none;
+    color: #1a73e8 !important; /* Azul destacado */
+    text-decoration: underline !important;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    padding: 0;
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.departamento-link:hover {
+    color: #0d62c9 !important;
+    text-decoration: none !important;
+    background-color: rgba(26, 115, 232, 0.05);
+}
+
+/* Indicador visual (manita + flecha) */
+.departamento-link:hover::after {
+    content: "→";
+    margin-left: 4px;
+    font-size: 0.9em;
+}
+
+/* PERIODO BOX - CONTENEDOR DE CADA TABLA */
+.period-box {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.period-header {
+    background-color: #f8f9fa;
+    padding: 8px 12px;
+    font-weight: 600;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* TABLA CONTAINER - AJUSTE DE SCROLL */
+.table-container {
+    max-height: 400px; /* Altura máxima */
+    overflow-y: auto; /* Scroll vertical si es necesario */
+}
+
+/* INFO GRID COMPACTO */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 10px;
+    font-size: 0.82em;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+}
+
 </style>';
-echo "<style> /* [Mantener todos los estilos CSS existentes] */ .selector-facultad { background: white; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); } .selector-facultad select { padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 16px; min-width: 300px; } .selector-facultad button { padding: 10px 20px; background: #004d60; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px; } .selector-facultad button:hover { background: #003d50; } </style>";
+echo "<style> /* [Mantener todos los estilos CSS existentes] */ .selector-facultad { background: white; border-radius: 8px; padding: 10px; margin: 1Ss0px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); } .selector-facultad select { padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 16px; min-width: 300px; } .selector-facultad button { padding: 10px 20px; background: #004d60; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px; } .selector-facultad button:hover { background: #003d50; } </style>";
 echo "<div class='unicauca-container'>";
 
 // Mostrar selector de facultad para admin
@@ -876,41 +985,86 @@ if ($tipo_usuario == 1 && !$facultad_seleccionada) { // MODIFIED: Show general c
     }
 
     if (!empty($facultades_data)) {
-        echo "<div style='display: flex;'>";
-        echo "<div style='width: 50%; padding: 15px;'>";
-        echo "<h4 style='text-align: center;'>Total de Profesores por Facultad</h4>";
-        echo "<canvas id='chartTotalProfesoresFac' height='400'></canvas>";
-        echo "</div>";
+      ?>
+<?php
 
-        echo "<div style='width: 50%; padding: 15px;'>";
-        echo "<h4 style='text-align: center;'>Valor Proyectado por Facultad</h4>";
-        echo "<canvas id='chartTotalValorFac' height='400'></canvas>";
-        echo "</div>";
-        echo "</div>";
+$profesores_data_combined = [];
+foreach ($facultades_chart_labels as $index => $label) {
+    $profesores_data_combined[] = [
+        'label' => $label,
+        'actual' => $profesores_actual_total_general[$index],
+        'anterior' => $profesores_anterior_total_general[$index]
+    ];
+}
 
-        echo "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>"; // Ensure Chart.js is loaded
-        echo "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0'></script>"; // Ensure datalabels plugin is loaded
-        echo "<script>
+// Sort by 'actual' count in descending order
+usort($profesores_data_combined, function($a, $b) {
+    return $b['actual'] <=> $a['actual'];
+});
+
+// Separate back into sorted arrays
+$sorted_facultades_profesores_labels = array_column($profesores_data_combined, 'label');
+$sorted_profesores_actual_total_general = array_column($profesores_data_combined, 'actual');
+$sorted_profesores_anterior_total_general = array_column($profesores_data_combined, 'anterior');
+
+// --- Sorting Logic for "Valor Proyectado por Facultad" Chart ---
+// Combine data for sorting
+$valores_data_combined = [];
+foreach ($facultades_chart_labels as $index => $label) {
+    $valores_data_combined[] = [
+        'label' => $label,
+        'actual' => $totales_actual_general[$index],
+        'anterior' => $totales_anterior_general[$index]
+    ];
+}
+
+// Sort by 'actual' value in descending order
+usort($valores_data_combined, function($a, $b) {
+    return $b['actual'] <=> $a['actual'];
+});
+
+// Separate back into sorted arrays
+$sorted_facultades_valores_labels = array_column($valores_data_combined, 'label');
+$sorted_totales_actual_general = array_column($valores_data_combined, 'actual');
+$sorted_totales_anterior_general = array_column($valores_data_combined, 'anterior');
+
+?>
+
+<div style='display: flex;'>
+    <div style='width: 50%; padding: 15px;'>
+        <h4 style='text-align: center;'>Total de Profesores por Facultad</h4>
+        <canvas id='chartTotalProfesoresFac' height='400'></canvas>
+    </div>
+
+    <div style='width: 50%; padding: 15px;'>
+        <h4 style='text-align: center;'>Valor Proyectado por Facultad</h4>
+        <canvas id='chartTotalValorFac' height='400'></canvas>
+    </div>
+</div>
+
+<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0'></script>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
     Chart.register(ChartDataLabels);
 
-    // Gráfica de Profesores por Facultad (Vertical Bar)
+    // Gráfica de Profesores por Facultad (Horizontal Bar)
     const ctxTotalProfFac = document.getElementById('chartTotalProfesoresFac').getContext('2d');
     new Chart(ctxTotalProfFac, {
         type: 'bar',
         data: {
-            labels: " . json_encode($facultades_chart_labels) . ",
+            labels: <?= json_encode($sorted_facultades_profesores_labels) ?>,
             datasets: [
                 {
-                    label: 'Periodo Actual (" . htmlspecialchars($anio_semestre) . ")',
-                    data: " . json_encode($profesores_actual_total_general) . ",
+                    label: 'Periodo Actual (<?= htmlspecialchars($anio_semestre) ?>)',
+                    data: <?= json_encode($sorted_profesores_actual_total_general) ?>,
                     backgroundColor: 'rgba(54, 162, 235, 0.7)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1
                 },
                 {
-                    label: 'Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")',
-                    data: " . json_encode($profesores_anterior_total_general) . ",
+                    label: 'Periodo Anterior (<?= htmlspecialchars($periodo_anterior) ?>)',
+                    data: <?= json_encode($sorted_profesores_anterior_total_general) ?>,
                     backgroundColor: 'rgba(255, 99, 132, 0.7)',
                     borderColor: 'rgba(255, 99, 132, 1)',
                     borderWidth: 1
@@ -918,16 +1072,17 @@ document.addEventListener('DOMContentLoaded', function() {
             ]
         },
         options: {
+            indexAxis: 'y', // <--- THIS MAKES IT HORIZONTAL
             responsive: true,
             scales: {
-                y: {
+                x: { // <--- X-axis for horizontal bar charts
                     beginAtZero: true,
                     title: {
                         display: true,
                         text: 'Cantidad de Profesores'
                     }
                 },
-                x: {
+                y: { // <--- Y-axis for horizontal bar charts (labels)
                     title: {
                         display: true,
                         text: 'Facultades'
@@ -938,8 +1093,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 datalabels: {
                     display: true,
                     color: '#333',
-                    anchor: 'end',
-                    align: 'center',
+                    anchor: 'end', // Position data labels at the end of the bars
+                    align: 'end', // Align them with the end of the bars
                     offset: 4,
                     formatter: function(value, context) {
                         return value.toLocaleString();
@@ -952,23 +1107,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Gráfica de Valor Proyectado por Facultad (Vertical Bar)
+    // Gráfica de Valor Proyectado por Facultad (Horizontal Bar)
     const ctxTotalValFac = document.getElementById('chartTotalValorFac').getContext('2d');
     new Chart(ctxTotalValFac, {
         type: 'bar',
         data: {
-            labels: " . json_encode($facultades_chart_labels) . ",
+            labels: <?= json_encode($sorted_facultades_valores_labels) ?>,
             datasets: [
                 {
-                    label: 'Periodo Actual (" . htmlspecialchars($anio_semestre) . ")',
-                    data: " . json_encode($totales_actual_general) . ",
+                    label: 'Periodo Actual (<?= htmlspecialchars($anio_semestre) ?>)',
+                    data: <?= json_encode($sorted_totales_actual_general) ?>,
                     backgroundColor: 'rgba(75, 192, 192, 0.7)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1
                 },
                 {
-                    label: 'Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")',
-                    data: " . json_encode($totales_anterior_general) . ",
+                    label: 'Periodo Anterior (<?= htmlspecialchars($periodo_anterior) ?>)',
+                    data: <?= json_encode($sorted_totales_anterior_general) ?>,
                     backgroundColor: 'rgba(153, 102, 255, 0.7)',
                     borderColor: 'rgba(153, 102, 255, 1)',
                     borderWidth: 1
@@ -976,21 +1131,22 @@ document.addEventListener('DOMContentLoaded', function() {
             ]
         },
         options: {
+            indexAxis: 'y', // <--- THIS MAKES IT HORIZONTAL
             responsive: true,
             scales: {
-                y: {
+                x: { // <--- X-axis for horizontal bar charts
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Valor Proyectado'
+                        text: 'Valor Proyectado (en millones)'
                     },
                     ticks: {
                         callback: function(value) {
-                            return '$' + value.toLocaleString();
+                            return '$' + (value / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1}) + 'M';
                         }
                     }
                 },
-                x: {
+                y: { // <--- Y-axis for horizontal bar charts (labels)
                     title: {
                         display: true,
                         text: 'Facultades'
@@ -1001,17 +1157,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 datalabels: {
                     display: true,
                     color: '#333',
-                    anchor: 'end',
-                    align: 'center',
+                    anchor: 'end', // Position data labels at the end of the bars
+                    align: 'end', // Align them with the end of the bars
                     offset: 4,
                     formatter: function(value, context) {
-                        return '$' + value.toLocaleString();
+                        return '$' + (value / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1}) + 'M';
                     }
                 },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return 'Valor: $' + context.raw.toLocaleString();
+                            return 'Valor: $' + (context.raw / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' millones';
                         }
                     }
                 }
@@ -1019,8 +1175,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-</script>";
-
+</script>
+<?php
     } else {
         echo "<div class='no-data'>No se encontraron datos para la comparativa general por facultad.</div>";
     }
@@ -1028,12 +1184,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 } else if ($facultad_seleccionada || $tipo_usuario == 2 || $tipo_usuario == 3) { // Only show specific faculty/department report if a specific faculty is selected (or if not admin)
     // If it's a specific faculty report, show its header
-    
-    echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex justify-content-between align-items-center' style='margin-top: 30px;'>";
+if ($tipo_usuario ==1) {    
+echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex justify-content-between align-items-center' style='margin: 0 0 20px 0;'>";
     echo "<h2 class='mb-0'>Datos de Facultad: " . htmlspecialchars($facultades[$pk_fac] ?? '') . "</h2>"; // MODIFIED: Added N/A for safety
     echo "</div>";
-
-    echo "<h2 style='text-align: center; margin-top: 30px;'>Comparativa s por Facultad</h2>";
+}
 
     if (!empty($data_current_period)) {
         foreach ($facultades_data as $facultad => $data) {
@@ -1264,157 +1419,509 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-
-        // Gráfica de Valor Proyectado por Tipo de Docente
-        const ctxValorTipo = document.getElementById('chartValorTipo').getContext('2d');
-        new Chart(ctxValorTipo, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Periodo Actual (" . htmlspecialchars($anio_semestre) . ")',
-                        data: valorActual,
-                        backgroundColor: 'rgba(255, 159, 64, 0.7)',
-                        borderColor: 'rgba(255, 159, 64, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")',
-                        data: valorAnterior,
-                        backgroundColor: 'rgba(255, 99, 132, 0.7)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1
-                    }
-                ]
+// Gráfica de Valor Proyectado por Tipo de Docente
+const ctxValorTipo = document.getElementById('chartValorTipo').getContext('2d');
+new Chart(ctxValorTipo, {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Periodo Actual (" . htmlspecialchars($anio_semestre) . ")',
+                data: valorActual,
+                backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 1
             },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Valor Proyectado'
+            {
+                label: 'Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")',
+                data: valorAnterior,
+                backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Valor Proyectado (en millones)'
+                },
+                ticks: {
+                    callback: function(value) {
+                        return '$' + (value / 1000000).toFixed(1) + 'M';
+                    }
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Tipo de Docente'
+                }
+            }
+        },
+        plugins: {
+            datalabels: {
+                display: true,
+                color: '#333',
+                anchor: 'end',
+                align: 'end',
+                formatter: function(value) {
+                    return '$' + (value / 1000000).toFixed(2) + 'M';
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        // Opción 1: Mostrar en millones en tooltip
+                        return 'Valor: $' + (context.raw / 1000000).toFixed(2) + 'M';
+                        
+                        // Opción 2: Mantener valor completo en tooltip
+                        // return 'Valor: $' + context.raw.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+    });
+    </script>";
+}
+    
+// Procesamos los datos para los gráficos
+$departamentos_data = [];
+
+// Procesar datos del periodo actual
+foreach ($data_current_period as $row) {
+    $depto = $row['nombre_departamento'];
+    if (!isset($departamentos_data[$depto])) {
+        $departamentos_data[$depto] = [
+            'profesores_actual' => 0,
+            'profesores_anterior' => 0,
+            'valor_actual' => 0,
+            'valor_anterior' => 0
+        ];
+    }
+    $departamentos_data[$depto]['profesores_actual'] += $row['total_profesores'];
+    $departamentos_data[$depto]['valor_actual'] += $row['gran_total_ajustado'];
+}
+
+// Procesar datos del periodo anterior
+foreach ($data_previous_period as $row) {
+    $depto = $row['nombre_departamento'];
+    if (!isset($departamentos_data[$depto])) {
+        $departamentos_data[$depto] = [
+            'profesores_actual' => 0,
+            'profesores_anterior' => 0,
+            'valor_actual' => 0,
+            'valor_anterior' => 0
+        ];
+    }
+    $departamentos_data[$depto]['profesores_anterior'] += $row['total_profesores'];
+    $departamentos_data[$depto]['valor_anterior'] += $row['gran_total_ajustado'];
+}
+
+// Ordenar departamentos por cantidad de profesores (mayor a menor)
+uasort($departamentos_data, function($a, $b) {
+    return $b['profesores_actual'] - $a['profesores_actual'];
+});
+
+// Estilos CSS para los gráficos
+echo "<style>
+    .chart-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin: 30px 0;
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .chart-box {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        height: 500px;
+        position: relative;
+    }
+
+    .chart-wrapper {
+        width: 100%;
+        height: 100%;
+        min-height: 400px;
+        position: relative;
+    }
+
+    .chart-title {
+        text-align: center;
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    @media (max-width: 768px) {
+        .chart-container {
+            grid-template-columns: 1fr;
+        }
+        .chart-box {
+            height: 400px;
+        }
+    }
+</style>";
+// Mostrar los gráficos solo si hay datos
+if (!empty($departamentos_data) || $facultad_seleccionada) {
+    // Obtener IDs de departamentos y facultades
+    $depto_labels = array_keys($departamentos_data);
+    $depto_ids = [];
+    $facultad_ids = [];
+    
+    $query_deptos = "SELECT PK_DEPTO, depto_nom_propio, FK_FAC FROM deparmanentos 
+                    WHERE depto_nom_propio IN ('" . implode("','", array_map([$conn, 'real_escape_string'], $depto_labels)) . "')";
+    $result_deptos = $conn->query($query_deptos);
+    
+    $nombre_a_ids = [];
+    while ($row = $result_deptos->fetch_assoc()) {
+        $nombre_a_ids[$row['depto_nom_propio']] = [
+            'PK_DEPTO' => $row['PK_DEPTO'],
+            'PK_FAC' => $row['FK_FAC']
+        ];
+    }
+
+    // Preparar arrays ordenados para los gráficos
+    $depto_ids_ordenados = [];
+    $facultad_ids_ordenados = [];
+    foreach ($depto_labels as $depto_nombre) {
+        $depto_ids_ordenados[] = $nombre_a_ids[$depto_nombre]['PK_DEPTO'] ?? null;
+        $facultad_ids_ordenados[] = $nombre_a_ids[$depto_nombre]['PK_FAC'] ?? null;
+    }
+
+    echo "<div class='chart-grid'>";
+    echo "<div class='chart-box'>";
+    echo "<h3 class='chart-title'>Cantidad de Profesores por Departamento</h3>";
+    echo "<div class='chart-wrapper'>";
+    echo "<canvas id='chartProfesoresDepto'></canvas>";
+    echo "</div>";
+    echo "</div>";
+    
+    echo "<div class='chart-box'>";
+    echo "<h3 class='chart-title'>Valor Proyectado por Departamento</h3>";
+    echo "<div class='chart-wrapper'>";
+    echo "<canvas id='chartValorDepto'></canvas>";
+    echo "</div>";
+    echo "</div>";
+    echo "</div>";
+    
+    echo "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>";
+    echo "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0'></script>";
+    echo "<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        Chart.register(ChartDataLabels);
+        
+        // Datos preparados desde PHP
+        const labelsDepto = " . json_encode($depto_labels) . ";
+        const deptoIds = " . json_encode($depto_ids_ordenados) . ";
+        const facultadIds = " . json_encode($facultad_ids_ordenados) . ";
+        const profesoresActual = " . json_encode(array_column($departamentos_data, 'profesores_actual')) . ";
+        const profesoresAnterior = " . json_encode(array_column($departamentos_data, 'profesores_anterior')) . ";
+        const valorActual = " . json_encode(array_column($departamentos_data, 'valor_actual')) . ";
+        const valorAnterior = " . json_encode(array_column($departamentos_data, 'valor_anterior')) . ";
+        const anioSemestre = '" . htmlspecialchars($anio_semestre) . "';
+        const anioSemestreAnterior = '" . htmlspecialchars($periodo_anterior) . "';
+        
+        // Configuración común para ambos gráficos con eventos de clic
+        const commonOptions = {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                datalabels: {
+                    display: true,
+                    color: '#333',
+                    anchor: 'end',
+                    align: 'end',
+                    font: {
+                        weight: 'bold'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        autoSkip: false,
+                        maxRotation: 0,
+                        font: {
+                            size: 10
                         },
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value.toLocaleString();
+                        callback: function(value, index) {
+                            // Hacer que las etiquetas sean clickeables
+                            return labelsDepto[index];
+                        }
+                    }
+                }
+            },
+            onClick: function(evt, elements) {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const deptoId = deptoIds[index];
+                    const facultadId = facultadIds[index];
+                    
+                    if (deptoId && facultadId) {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = 'depto_comparativo.php';
+                        
+                        const campos = [
+                            {name: 'facultad_id', value: facultadId},
+                            {name: 'departamento_id', value: deptoId},
+                            {name: 'anio_semestre', value: anioSemestre},
+                            {name: 'anio_semestre_anterior', value: anioSemestreAnterior}
+                        ];
+                        
+                        campos.forEach(campo => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = campo.name;
+                            input.value = campo.value;
+                            form.appendChild(input);
+                        });
+                        
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                }
+            }
+        };
+        
+        // Gráfico de Profesores por Departamento
+        const ctxProfDepto = document.getElementById('chartProfesoresDepto');
+        if (ctxProfDepto) {
+            new Chart(ctxProfDepto, {
+                type: 'bar',
+                data: {
+                    labels: labelsDepto,
+                    datasets: [
+                        {
+                            label: 'Actual (' + anioSemestre + ')',
+                            data: profesoresActual,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Anterior (' + anioSemestreAnterior + ')',
+                            data: profesoresAnterior,
+                            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        ...commonOptions.plugins,
+                        datalabels: {
+                            ...commonOptions.plugins.datalabels,
+                            formatter: function(value) {
+                                return value.toLocaleString();
                             }
                         }
                     },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Tipo de Docente'
-                        }
-                    }
-                },
-                plugins: {
-                    datalabels: {
-                        display: true,
-                        color: '#333',
-                        anchor: 'end',
-                        align: 'end',
-                        formatter: function(value, context) {
-                            return '$' + value.toLocaleString();
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return 'Valor: $' + context.raw.toLocaleString();
+                    scales: {
+                        ...commonOptions.scales,
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Cantidad de Profesores'
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
+        
+        // Gráfico de Valor Proyectado por Departamento
+        const ctxValorDepto = document.getElementById('chartValorDepto');
+        if (ctxValorDepto) {
+            new Chart(ctxValorDepto, {
+                type: 'bar',
+                data: {
+                    labels: labelsDepto,
+                    datasets: [
+                        {
+                            label: 'Actual (' + anioSemestre + ')',
+                            data: valorActual,
+                            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Anterior (' + anioSemestreAnterior + ')',
+                            data: valorAnterior,
+                            backgroundColor: 'rgba(153, 102, 255, 0.7)',
+                            borderColor: 'rgba(153, 102, 255, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        ...commonOptions.plugins,
+                        datalabels: {
+                            ...commonOptions.plugins.datalabels,
+                            formatter: function(value) {
+                                return '$' + (value / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2}) + 'M';
+                            }
+                        }
+                    },
+                    scales: {
+                        ...commonOptions.scales,
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Valor Proyectado (en millones)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000000).toFixed(1) + 'M';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
     });
     </script>";
+} else {
+    echo "<div class='alert alert-info'>No hay datos de departamentos para mostrar gráficos</div>";
 }
-    echo "<div class='period-container'>";
-
-        // Sección de Periodo Actual
-        echo "<div class='period-box'>";
-        echo "<div class='period-header'>Periodo Actual: " . htmlspecialchars($anio_semestre) . "</div>";
-        echo "<div class='info-grid'>";
-        echo "<div class='info-item'><span class='info-label'>Días Cátedra:</span> " . number_format($dias_catedra, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>Semanas Cátedra:</span> " . number_format($semanas_catedra, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>Días Ocasional:</span> " . number_format($dias_ocasional, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>Semanas Ocasional:</span> " . number_format($semanas_ocasional, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>Meses Ocasional:</span> " . number_format($meses_ocasional, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>Valor Punto:</span> $" . number_format($valor_punto, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>SMLV:</span> $" . number_format($smlv, 0, ',', '.') . "</div>";
-        echo "</div>"; // cierre info-grid
-
-        if (!empty($data_current_period)) {
-            echo "<div class='table-container'>";
-            echo "<table class='compact-table'>";
-            echo "<thead><tr>
-                    <th>Facultad</th>
-                    <th>Departamento</th>
-                    <th>Tipo</th>
-                    <th>Profesores</th>
-                    <th>Total Proyectado</th>
-                  </tr></thead>";
-            echo "<tbody>";
-            foreach ($data_current_period as $row) {
-                echo "<tr>";
-                echo "<td>" . htmlspecialchars($row['nombre_facultad']) . "</td>";
-                echo "<td>" . htmlspecialchars($row['nombre_departamento']) . "</td>";
-                echo "<td>" . htmlspecialchars($row['tipo_docente']) . "</td>";
-                echo "<td>" . htmlspecialchars($row['total_profesores']) . "</td>";
-                echo "<td class='currency'>$" . number_format($row['gran_total_ajustado'], 0, ',', '.') . "</td>";
-                echo "</tr>";
+echo "<div class='period-container'>";
+          
+// Sección de Periodo Actual
+echo "<div class='period-box'>";
+            echo "<div class='period-header'>Periodo Actual: " . htmlspecialchars($anio_semestre) . "</div>";
+           /* echo "<div class='info-grid'>";
+            echo "<div class='info-item'><span class='info-label'>Días Cátedra:</span> " . number_format($dias_catedra, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>Semanas Cátedra:</span> " . number_format($semanas_catedra, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>Días Ocasional:</span> " . number_format($dias_ocasional, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>Semanas Ocasional:</span> " . number_format($semanas_ocasional, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>Meses Ocasional:</span> " . number_format($meses_ocasional, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>Valor Punto:</span> $" . number_format($valor_punto, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>SMLV:</span> $" . number_format($smlv, 0, ',', '.') . "</div>";
+            echo "</div>"; // cierre info-grid
+*/
+         if (!empty($data_current_period)) {
+    echo "<div class='table-container'>";
+    echo "<table class='compact-table'>";
+    echo "<thead><tr>
+            <th>Facultad</th>
+            <th>Departamento</th>
+            <th>Tipo</th>
+            <th>Profesores</th>
+            <th>Total Proyectado</th>
+          </tr></thead>";
+    echo "<tbody>";
+    
+    foreach ($data_current_period as $row) {
+        echo "<tr>";
+        echo "<td>" . htmlspecialchars($row['nombre_facultad']) . "</td>";
+        
+        // Celda con enlace al departamento (usa PK_DEPTO y FK_FAC)
+        echo "<td>";
+echo "<form action='depto_comparativo.php' method='POST' style='display: inline;'>";
+        echo "<input type='hidden' name='departamento_id' value='" . htmlspecialchars($row['PK_DEPTO']) . "'>";
+        echo "<input type='hidden' name='facultad_id' value='" . htmlspecialchars($row['FK_FAC']) . "'>";
+        echo "<input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>";
+        echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>";
+    echo "<button type='submit' class='departamento-link'>";
+echo htmlspecialchars($row['nombre_departamento']);
+echo "</button>";
+        echo "</form>";
+        echo "</td>";
+        
+        echo "<td>" . htmlspecialchars($row['tipo_docente']) . "</td>";
+        echo "<td>" . htmlspecialchars($row['total_profesores']) . "</td>";
+        echo "<td class='currency'>$" . number_format($row['gran_total_ajustado'], 0, ',', '.') . "</td>";
+        echo "</tr>";
+    }
+    
+    echo "</tbody></table>";
+    echo "</div>";
+} else {
+                echo "<div class='no-data'>No hay datos disponibles para el periodo actual</div>";
             }
-            echo "</tbody></table>";
-            echo "</div>"; // cierre table-container
-        } else {
-            echo "<div class='no-data'>No hay datos disponibles para el periodo actual</div>";
-        }
-        echo "</div>"; // cierre period-box
+            echo "</div>"; // cierre period-box
 
-        // Sección de Periodo Anterior
-        echo "<div class='period-box'>";
-        echo "<div class='period-header'>Periodo Anterior: " . htmlspecialchars($periodo_anterior) . "</div>";
-        echo "<div class='info-grid'>";
-        echo "<div class='info-item'><span class='info-label'>Días Cátedra:</span> " . number_format($dias_catedra_ant, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>Semanas Cátedra:</span> " . number_format($semanas_catedra_ant, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>Días Ocasional:</span> " . number_format($dias_ocasional_ant, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>Semanas Ocasional:</span> " . number_format($semanas_ocasional_ant, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>Meses Ocasional:</span> " . number_format($meses_ocasional_ant, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>Valor Punto:</span> $" . number_format($valor_punto_ant, 0, ',', '.') . "</div>";
-        echo "<div class='info-item'><span class='info-label'>SMLV:</span> $" . number_format($smlv_ant, 0, ',', '.') . "</div>";
-        echo "</div>"; // cierre info-grid
-
-        if (!empty($data_previous_period)) {
-            echo "<div class='table-container'>";
-            echo "<table class='compact-table'>";
-            echo "<thead><tr>
-                    <th>Facultad</th>
-                    <th>Departamento</th>
-                    <th>Tipo</th>
-                    <th>Profesores</th>
-                    <th>Total Proyectado</th>
-                  </tr></thead>";
-            echo "<tbody>";
-            foreach ($data_previous_period as $row) {
-                echo "<tr>";
-                echo "<td>" . htmlspecialchars($row['nombre_facultad']) . "</td>";
-                echo "<td>" . htmlspecialchars($row['nombre_departamento']) . "</td>";
-                echo "<td>" . htmlspecialchars($row['tipo_docente']) . "</td>";
-                echo "<td>" . htmlspecialchars($row['total_profesores']) . "</td>";
-                echo "<td class='currency'>$" . number_format($row['gran_total_ajustado'], 0, ',', '.') . "</td>";
-                echo "</tr>";
+            // Sección de Periodo Anterior
+            echo "<div class='period-box'>";
+            echo "<div class='period-header'>Periodo Anterior: " . htmlspecialchars($periodo_anterior) . "</div>";
+          /*  echo "<div class='info-grid'>";
+            echo "<div class='info-item'><span class='info-label'>Días Cátedra:</span> " . number_format($dias_catedra_ant, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>Semanas Cátedra:</span> " . number_format($semanas_catedra_ant, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>Días Ocasional:</span> " . number_format($dias_ocasional_ant, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>Semanas Ocasional:</span> " . number_format($semanas_ocasional_ant, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>Meses Ocasional:</span> " . number_format($meses_ocasional_ant, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>Valor Punto:</span> $" . number_format($valor_punto_ant, 0, ',', '.') . "</div>";
+            echo "<div class='info-item'><span class='info-label'>SMLV:</span> $" . number_format($smlv_ant, 0, ',', '.') . "</div>";
+            echo "</div>"; // cierre info-grid
+            */
+if (!empty($data_previous_period)) {
+    echo "<div class='table-container'>";
+    echo "<table class='compact-table'>";
+    echo "<thead><tr>
+            <th>Facultad</th>
+            <th>Departamento</th>
+            <th>Tipo</th>
+            <th>Profesores</th>
+            <th>Total Proyectado</th>
+          </tr></thead>";
+    echo "<tbody>";
+    
+    foreach ($data_previous_period as $row) {
+        echo "<tr>";
+        echo "<td>" . htmlspecialchars($row['nombre_facultad']) . "</td>";
+        
+        // Celda con enlace al departamento (usando PK_DEPTO y FK_FAC)
+        echo "<td>";
+echo "<form action='depto_comparativo.php' method='POST' style='display: inline;'>";
+        echo "<input type='hidden' name='departamento_id' value='" . htmlspecialchars($row['PK_DEPTO']) . "'>";
+        echo "<input type='hidden' name='facultad_id' value='" . htmlspecialchars($row['FK_FAC']) . "'>";
+        echo "<input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>";
+        echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>";
+     echo "<button type='submit' class='departamento-link'>";
+echo htmlspecialchars($row['nombre_departamento']);
+echo "</button>";
+        echo "</form>";
+        echo "</td>";
+        
+        echo "<td>" . htmlspecialchars($row['tipo_docente']) . "</td>";
+        echo "<td>" . htmlspecialchars($row['total_profesores']) . "</td>";
+        echo "<td class='currency'>$" . number_format($row['gran_total_ajustado'], 0, ',', '.') . "</td>";
+        echo "</tr>";
+    }
+    
+    echo "</tbody></table>";
+    echo "</div>"; // cierre table-container
+} else {
+                echo "<div class='no-data'>No hay datos disponibles para el periodo anterior</div>";
             }
-            echo "</tbody></table>";
-            echo "</div>"; // cierre table-container
-        } else {
-            echo "<div class='no-data'>No hay datos disponibles para el periodo anterior</div>";
-        }
-        echo "</div>"; // cierre period-box
-        echo "</div>"; // cierre period-container
+            echo "</div>"; // cierre period-box
+            echo "</div>"; // cierre period-container
+echo "</div>"; // cierre period-container
+
    
 echo "</div>"; // cierre unicauca-container
 ?>
