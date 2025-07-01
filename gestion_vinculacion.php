@@ -1,41 +1,172 @@
 <?php
 require('include/headerz.php');
-require 'vendor/autoload.php';
 require 'funciones.php';
 
+
+// 1. Verificar sesión
 if (!isset($_SESSION['name']) || empty($_SESSION['name'])) {
     echo "<div class='alert alert-warning text-center'>Debe <a href='index.html' class='alert-link'>iniciar sesión</a> para continuar</div>";
     exit();
 }
 
+// 2. Configuración de la base de datos
+$conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+if ($conn->connect_error) {
+    die("Error de conexión a la base de datos: " . $conn->connect_error);
+}
+
+// 3. Obtener parámetros con prioridad: GET > SESSION
 $nombre_sesion = $_SESSION['name'];
-$anio_semestre = isset($_POST['anio_semestre']) ? $_POST['anio_semestre'] : (isset($_GET['anio_semestre']) ? $_GET['anio_semestre'] : '2025-2');
+$anio_semestre = isset($_GET['anio_semestre']) ? $conn->real_escape_string($_GET['anio_semestre']) : '2025-2';
+$tipo_usuario = isset($_GET['tipo_usuario']) ? (int)$_GET['tipo_usuario'] : (isset($_SESSION['tipo_usuario']) ? (int)$_SESSION['tipo_usuario'] : 1);
+$facultad_id = isset($_GET['facultad_id']) ? (int)$_GET['facultad_id'] : (isset($_SESSION['facultad_id']) ? (int)$_SESSION['facultad_id'] : null);
+$departamento_id = isset($_GET['departamento_id']) ? (int)$_GET['departamento_id'] : (isset($_SESSION['departamento_id']) ? (int)$_SESSION['departamento_id'] : null);
 
-$tipo_usuario = isset($_SESSION['tipo_usuario']) ? (int)$_SESSION['tipo_usuario'] : 1;
-$facultad_id = isset($_SESSION['facultad_id']) ? (int)$_SESSION['facultad_id'] : null;
-$departamento_id = isset($_SESSION['departamento_id']) ? (int)$_SESSION['departamento_id'] : null;
-
-$data_url = "get_profesores.php?periodo=" . urlencode($anio_semestre) .
-            "&tipo_usuario=" . $tipo_usuario;
+// 4. Construir condición WHERE según tipo de usuario
+$where = "WHERE solicitudes.anio_semestre = '" . $anio_semestre . "' ";
+$where .= " AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
 
 if ($tipo_usuario == 2 && $facultad_id !== null) {
-    $data_url .= "&facultad_id=" . $facultad_id;
+    $where .= " AND facultad.PK_FAC = " . $facultad_id;
 } elseif ($tipo_usuario == 3 && $facultad_id !== null && $departamento_id !== null) {
-    $data_url .= "&facultad_id=" . $facultad_id . "&departamento_id=" . $departamento_id;
+    $where .= " AND facultad.PK_FAC = " . $facultad_id .
+              " AND deparmanentos.PK_DEPTO = " . $departamento_id;
 }
+
+// 5. Consulta SQL unificada
+
+$sql = "SELECT
+    solicitudes.anio_semestre,
+    facultad.NOMBREC_FAC,
+    deparmanentos.NOMBRE_DEPTO_CORT,
+    CASE
+        WHEN solicitudes.sede = 'Popayán-Regionalización' THEN 'Popayán'
+        ELSE solicitudes.sede
+    END AS sede,
+    solicitudes.cedula,
+    solicitudes.nombre,
+    solicitudes.tipo_docente,
+    CASE
+        WHEN solicitudes.tipo_docente = 'Ocasional' AND solicitudes.sede = 'Popayán' THEN solicitudes.tipo_dedicacion
+        WHEN solicitudes.tipo_docente = 'Ocasional' AND solicitudes.sede = 'Regionalización' THEN solicitudes.tipo_dedicacion_r
+        WHEN solicitudes.tipo_docente = 'Catedra' THEN 'HRS'
+    END AS dedicacion,
+    CASE
+        WHEN solicitudes.tipo_docente = 'Ocasional' AND (solicitudes.tipo_dedicacion = 'TC' OR solicitudes.tipo_dedicacion_r = 'TC') THEN 40
+        WHEN solicitudes.tipo_docente = 'Ocasional' AND (solicitudes.tipo_dedicacion = 'MT' OR solicitudes.tipo_dedicacion_r = 'MT') THEN 20
+        WHEN solicitudes.tipo_docente = 'Catedra' AND solicitudes.sede = 'Popayán' THEN solicitudes.horas
+        WHEN solicitudes.tipo_docente = 'Catedra' AND solicitudes.sede = 'Regionalización' THEN solicitudes.horas_r
+        WHEN solicitudes.tipo_docente = 'Catedra' AND solicitudes.sede = 'Popayán-Regionalización' THEN solicitudes.horas
+    END AS horas,
+    CASE
+        WHEN depto_periodo.dp_acepta_fac = 'aceptar' THEN 'Aceptado'
+        WHEN depto_periodo.dp_acepta_fac = 'rechazar' THEN 'Rechazado'
+        ELSE 'Pendiente'
+    END AS acepta_fac_status,
+    CASE
+        WHEN fac_periodo.fp_estado = 1 THEN 'Enviado'
+        WHEN fac_periodo.fp_estado = 0  THEN 'No enviado'
+        ELSE 'Pendiente'
+    END AS envia_fac_status,
+    CASE
+        WHEN fac_periodo.fp_acepta_vra = 2 THEN 'Aceptado'
+        WHEN fac_periodo.fp_acepta_vra = 1 THEN 'Rechazado'
+        ELSE 'Pendiente'
+    END AS acepta_vra_status,
+    facultad.PK_FAC,
+    solicitudes.anexa_hv_docente_nuevo,
+    solicitudes.actualiza_hv_antiguo,
+    solicitudes.puntos
+
+FROM
+    solicitudes
+JOIN
+    deparmanentos ON deparmanentos.PK_DEPTO = solicitudes.departamento_id
+JOIN
+    facultad ON facultad.PK_FAC = deparmanentos.FK_FAC
+LEFT JOIN
+    depto_periodo ON depto_periodo.periodo = solicitudes.anio_semestre
+                  AND depto_periodo.fk_depto_dp = solicitudes.departamento_id
+LEFT JOIN
+    fac_periodo ON fac_periodo.fp_periodo = solicitudes.anio_semestre
+                 AND fac_periodo.fp_fk_fac = solicitudes.facultad_id
+$where
+
+UNION ALL
+
+SELECT
+    solicitudes.anio_semestre,
+    facultad.NOMBREC_FAC,
+    deparmanentos.NOMBRE_DEPTO_CORT,
+    'Regionalización' AS sede,
+    solicitudes.cedula,
+    solicitudes.nombre,
+    solicitudes.tipo_docente,
+    'HRS' AS dedicacion,
+    solicitudes.horas_r AS horas,
+    CASE
+        WHEN depto_periodo.dp_acepta_fac = 'aceptar' THEN 'Aceptado'
+        WHEN depto_periodo.dp_acepta_fac = 'rechazar' THEN 'Rechazado'
+        ELSE 'Pendiente'
+    END AS acepta_fac_status,
+    CASE
+        WHEN fac_periodo.fp_estado = 1 THEN 'Enviado'
+        WHEN fac_periodo.fp_estado = 0  THEN 'No enviado'
+        ELSE 'Pendiente'
+    END AS envia_fac_status,
+    CASE
+        WHEN fac_periodo.fp_acepta_vra = 2 THEN 'Aceptado'
+        WHEN fac_periodo.fp_acepta_vra = 1 THEN 'Rechazado'
+        ELSE 'Pendiente'
+    END AS acepta_vra_status,
+    facultad.PK_FAC,
+    solicitudes.anexa_hv_docente_nuevo,
+    solicitudes.actualiza_hv_antiguo,
+    solicitudes.puntos
+
+FROM
+    solicitudes
+JOIN
+    deparmanentos ON deparmanentos.PK_DEPTO = solicitudes.departamento_id
+JOIN
+    facultad ON facultad.PK_FAC = deparmanentos.FK_FAC
+LEFT JOIN
+    depto_periodo ON depto_periodo.periodo = solicitudes.anio_semestre
+                  AND depto_periodo.fk_depto_dp = solicitudes.departamento_id
+LEFT JOIN
+    fac_periodo ON fac_periodo.fp_periodo = solicitudes.anio_semestre
+                 AND fac_periodo.fp_fk_fac = solicitudes.facultad_id
+$where
+AND solicitudes.tipo_docente = 'Catedra'
+AND solicitudes.horas > 0
+AND solicitudes.horas_r > 0
+
+ORDER BY
+    anio_semestre, PK_FAC, NOMBRE_DEPTO_CORT, nombre ASC;";// 6. Ejecutar consulta y preparar datos para DataTables
+$result = $conn->query($sql);
+$profesoresData = [];
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $profesoresData[] = $row;
+    }
+}
+$conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Vinculación de Temporales</title>
+    <title>Listado  de Vinculación de Docentes Temporales - Unicauca</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/3.0.2/css/buttons.dataTables.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+    
+    <!-- Favicon Unicauca -->
+    <link rel="icon" href="https://www.unicauca.edu.co/version7/sites/all/themes/unicauca/favicon.ico" type="image/x-icon">
 
     <style>
         :root {
@@ -47,630 +178,533 @@ if ($tipo_usuario == 2 && $facultad_id !== null) {
             --unicauca-primary-btn: #002D72;
             --unicauca-primary-btn-hover: #001f50;
             --unicauca-gray: #f0f2f5;
+            --unicauca-bg-light: #f8fafc;
         }
         
         body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--unicauca-bg-light);
+            font-family: 'Open Sans', sans-serif;
+            color: #333;
         }
         
-        .container-fluid {
-            padding: 0 5%;
-            padding-top: 0 !important;
+        .container-main {
+            padding: 0 4%;
+            max-width: 1800px;
+            margin: 0 auto;
         }
         
-        .card {
-            border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        /* Header institucional mejorado */
+        .institutional-header {
+            background: linear-gradient(135deg, var(--unicauca-azul) 0%, #0039a6 100%);
+            color: white;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            border-bottom: 4px solid var(--unicauca-amarillo);
+        }
+        
+        .institutional-header .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .institutional-header .logo-img {
+            height: 50px;
+        }
+        
+        .institutional-header .header-text {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .institutional-header .header-title {
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.4rem;
+        }
+        
+        /* Tarjeta principal */
+        .main-card {
+            border-radius: 12px;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
             border: none;
-            margin-top: 2rem;
             margin-bottom: 3rem;
             overflow: hidden;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background: white;
         }
         
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.12);
+        .main-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
         }
         
-        .card:first-child {
-            margin-top: 1rem !important;
-        }
-
-        .card-header {
+        .card-header-unicauca {
             background: linear-gradient(135deg, var(--unicauca-azul) 0%, #0039a6 100%);
             color: white;
-            border-radius: 15px 15px 0 0 !important;
+            border-radius: 12px 12px 0 0 !important;
             padding: 1.5rem;
             border-bottom: 3px solid var(--unicauca-amarillo);
         }
         
-        .table thead th {
-            background-color: var(--unicauca-azul);
-            color: white;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid var(--unicauca-amarillo);
-        }
-        
-        .table-hover tbody tr {
-            transition: all 0.1s ease;
-        }
-        
-        .table-hover tbody tr:hover {
-       
-        }
-        
-        .status-icon {
-            font-size: 1.25rem;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-        
-        .status-icon:hover {
-            transform: scale(1.15);
-        }
-        
-        .status-accepted {
-            color: var(--unicauca-verde);
-            background-color: rgba(36, 147, 55, 0.15);
-        }
-        
-        .status-rejected {
-            color: var(--unicauca-rojo);
-            background-color: rgba(229, 39, 36, 0.15);
-        }
-        
-        .status-pending {
-            color: var(--unicauca-amarillo);
-            background-color: rgba(248, 174, 21, 0.15);
-        }
-        
-        .status-info {
-            color: var(--unicauca-azul-claro);
-            background-color: rgba(22, 168, 225, 0.15);
-        }
-        
-        .periodo-badge {
-            background-color: var(--unicauca-amarillo);
-            color: #333;
+        .card-header-title {
             font-weight: 700;
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
-
+        
+        /* Badge de periodo mejorado */
+        .periodo-badge-unicauca {
+            background-color: white;
+            color: var(--unicauca-azul);
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        /* Botones institucionales */
         .btn-unicauca {
             background-color: var(--unicauca-rojo);
             border-color: var(--unicauca-rojo);
             color: white;
             transition: all 0.3s;
             font-weight: 600;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            padding: 0.5rem 1.2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 0.6rem 1.4rem;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
+        
         .btn-unicauca:hover {
             background-color: #c82333;
             border-color: #bd2130;
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-
-        .btn-unicauca-success {
-            background-color: var(--unicauca-verde);
-            border-color: var(--unicauca-verde);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             color: white;
-            transition: all 0.3s;
-            font-weight: 600;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            padding: 0.5rem 1.2rem;
-        }
-        .btn-unicauca-success:hover {
-            background-color: #1e7e34;
-            border-color: #1c7430;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-
-        .btn-unicauca-primary {
-            background-color: var(--unicauca-primary-btn);
-            color: white;
-            border: 1px solid var(--unicauca-primary-btn);
-            transition: all 0.3s;
-            font-weight: 600;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            padding: 0.5rem 1.2rem;
-        }
-        .btn-unicauca-primary:hover {
-            background-color: var(--unicauca-primary-btn-hover);
-            color: white;
-            border: 1px solid var(--unicauca-primary-btn-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         
-        /* MEJORAS PARA LOS CONTROLES DE DATATABLES */
-        .dataTables_wrapper .row:first-child {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
+        .btn-unicauca-outline {
+            background-color: transparent;
+            border: 2px solid var(--unicauca-azul);
+            color: var(--unicauca-azul);
+        }
+        
+        .btn-unicauca-outline:hover {
+            background-color: var(--unicauca-azul);
+            color: white;
+        }
+        /* Tabla de datos mejorada */
+.table-container-unicauca {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    background: white;
+    border: 1px solid rgba(0,0,0,0.05);
+    margin:  0 10px; /* Margen vertical */
+    margin: .5rem 0; /* Alternativa en rem (recomendado) */
+}
+        /* Añade esto a tu CSS */
+.table-responsive {
+    padding: 15px; /* Espacio interno */
+    margin-top: 10px; /* Espacio superior */
+}
+
+/* O si estás usando tu clase personalizada: */
+.table-container-unicauca {
+    padding: 1rem;
+    margin: 1rem 0;
+}
+        
+        .table-unicauca thead th {
+            background-color: var(--unicauca-azul);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            padding: 1rem;
+            text-align: center;
+            vertical-align: middle;
+            border-bottom: 3px solid var(--unicauca-amarillo);
+        }
+        
+        .table-unicauca tbody tr {
+            transition: all 0.15s ease;
+        }
+        
+        .table-unicauca tbody tr:hover {
+            background-color: rgba(0, 18, 130, 0.03);
+        }
+        
+        .table-unicauca td {
+            padding: 0.9rem 1rem;
+            vertical-align: middle;
+            text-align: center;
+            border-top: 1px solid rgba(0,0,0,0.03);
+        }
+        
+        /* Estados mejorados */
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.35rem 0.7rem;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-accepted {
+            background-color: rgba(36, 147, 55, 0.15);
+            color: var(--unicauca-verde);
+        }
+        
+        .status-rejected {
+            background-color: rgba(229, 39, 36, 0.15);
+            color: var(--unicauca-rojo);
+        }
+        
+        .status-pending {
+            background-color: rgba(248, 174, 21, 0.15);
+            color: var(--unicauca-amarillo);
+        }
+        
+        /* Mejoras para DataTables */
+        .dataTables-controls {
             background: white;
-            padding: 1.2rem 1.5rem;
+            padding: .2rem 1rem;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: center;
         }
+        
+        .dataTables-filter input {
+            border-radius: 8px !important;
+            padding: 0.65rem 1.25rem !important;
+            border: 1px solid #ddd !important;
+            transition: all 0.3s !important;
+        }
+        
+        .dataTables-filter input:focus {
+            border-color: var(--unicauca-azul) !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 18, 130, 0.1) !important;
+        }
+        
+        /* Tooltip para nombres largos */
+       .nombre-cell {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    position: relative;
+}
 
-        .dataTables_wrapper .dataTables_length {
-            margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            font-size: 0.9rem;
-            color: #555;
-            flex-grow: 0;
+/* Tooltip mejorado */
+.nombre-cell:hover::before {
+    content: attr(title);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 100%;
+    background: var(--unicauca-azul);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    z-index: 1000;
+    white-space: normal;
+    width: max-content;
+    max-width: 300px;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    margin-bottom: 5px;
+} /* Puntos destacados */
+        .points-cell {
+            font-weight: 700;
+            color: var(--unicauca-azul);
+            font-size: 1rem;
         }
         
-        .dataTables_wrapper .dataTables_length label {
-            margin-bottom: 0;
-            display: flex;
-            align-items: center;
+        /* Footer institucional */
+        .institutional-footer {
+            background-color: var(--unicauca-azul);
+            color: white;
+            padding: 1.5rem 0;
+            margin-top: 3rem;
+            font-size: 0.9rem;
         }
         
-        .dataTables_wrapper .dataTables_length select {
-            border-radius: 8px;
-            padding: 0.375rem 0.75rem;
-            border: 1px solid #ddd;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-            margin: 0 0.5rem;
-            font-size: 0.9rem;
-            height: calc(1.5em + 0.75rem + 2px);
-            background-color: #f8f9fa;
+        .footer-logo {
+            height: 40px;
+            opacity: 0.9;
+        }
+        
+        .footer-links a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
             transition: all 0.3s;
         }
         
-        .dataTables_wrapper .dataTables_length select:focus {
-            border-color: var(--unicauca-azul-claro);
-            box-shadow: 0 0 0 0.25rem rgba(22, 168, 225, 0.25);
-            outline: none;
-            background-color: white;
-        }
-
-        /* CAMPO DE BÚSQUEDA MEJORADO */
-        .dataTables_wrapper .dataTables_filter {
-            margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            font-size: 0.9rem;
-            color: #555;
-            flex-grow: 1;
-            justify-content: flex-end;
-            width: 100%;
+        .footer-links a:hover {
+            color: white;
+            text-decoration: underline;
         }
         
-        .dataTables_wrapper .dataTables_filter label {
-            margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            width: 100%;
-            max-width: 400px;
-            position: relative;
-        }
-        
-        .dataTables_wrapper .dataTables_filter input {
-            border-radius: 30px;
-            padding: 0.65rem 1.25rem 0.65rem 3rem;
-            border: 1px solid #ddd;
-            margin-left: 0.5rem;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-            font-size: 0.95rem;
-            height: calc(1.5em + 0.75rem + 2px);
-            width: 100%;
-            transition: all 0.3s;
-            background-color: #f8f9fa;
-        }
-        
-        .dataTables_wrapper .dataTables_filter input:focus {
-            border-color: var(--unicauca-azul-claro);
-            box-shadow: 0 0 0 0.25rem rgba(22, 168, 225, 0.25);
-            outline: none;
-            background-color: white;
-        }
-        
-        .dataTables_wrapper .dataTables_filter::before {
-            content: "\f002";
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            position: absolute;
-            left: 2rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #777;
-            z-index: 10;
-        }
-
-        /* Ajuste para pantallas pequeñas */
+        /* Responsividad mejorada */
         @media (max-width: 992px) {
-            .card-header {
+            .card-header-content {
                 flex-direction: column;
-                text-align: center;
+                gap: 1rem;
             }
             
-            .card-header .d-flex {
-                margin-top: 1rem;
-                justify-content: center;
+            .header-actions {
+                justify-content: flex-start !important;
             }
             
-            .periodo-badge {
-                margin: 0.5rem auto;
-            }
-            
-            .container-fluid {
+            .container-main {
                 padding: 0 2%;
             }
         }
         
         @media (max-width: 768px) {
-            .dataTables_wrapper .row:first-child {
+            .dataTables-controls {
                 flex-direction: column;
                 align-items: stretch;
-                gap: 1.2rem;
+                gap: 1rem;
             }
             
-            .dataTables_wrapper .dataTables_length {
-                width: 100%;
-                justify-content: space-between;
+            .table-unicauca thead th {
+                font-size: 0.75rem;
+                padding: 0.75rem 0.5rem;
             }
             
-            .dataTables_wrapper .dataTables_filter {
-                width: 100%;
+            .table-unicauca td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.85rem;
             }
             
-            .dataTables_wrapper .dataTables_filter label {
-                max-width: 100%;
-            }
-            
-            .table-responsive {
-                border-radius: 10px;
-                overflow: hidden;
-                border: 1px solid rgba(0,0,0,0.05);
+            .card-header-title {
+                font-size: 1.3rem;
             }
         }
+        .depto-cell {
+    max-width: 120px; /* Ajusta según necesites */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    position: relative;
+}
 
-        .dt-buttons {
-            display: none !important;
-        }
-
-        .dataTables_wrapper .dataTables_info {
-            font-size: 0.9rem;
-            color: #666;
-            padding-top: 0.75em;
-            padding-left: 1rem;
-        }
-        
-        .dataTables_wrapper .dataTables_paginate {
-            padding-top: 0.75em;
-            padding-right: 1rem;
-        }
-        
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            border-radius: 8px;
-            margin: 0 0.15rem;
-            padding: 0.5rem 0.9rem;
-            min-width: 36px;
-            text-align: center;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 0.875rem;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            color: var(--unicauca-azul);
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
-            background-color: var(--unicauca-azul);
-            color: white !important;
-            border-color: var(--unicauca-azul);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled):not(.current) {
-            background-color: var(--unicauca-azul-claro);
-            color: white !important;
-            border-color: var(--unicauca-azul-claro);
-            transform: translateY(-1px);
-        }
-        
-        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
-            background-color: #e9ecef;
-            color: #adb5bd !important;
-            border-color: #dee2e6;
-            cursor: not-allowed;
-        }
-
-        .modal-xl {
-            --bs-modal-width: 90vw;
-        }
-        
-        .modal-body.p-0 iframe {
-            height: 80vh;
-        }
-        
-        .table-container {
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            background: white;
-        }
-        
-        .table > :not(:first-child) {
-            border-top: 2px solid rgba(0,0,0,0.05);
-        }
-        
-        .table td {
-            vertical-align: middle;
-            padding: 0.8rem 1rem;
-        }
-        
-        .table th {
-            padding: 1rem;
-        }
-        
-        .points-cell {
-            font-weight: 700;
-            color: var(--unicauca-azul);
-            font-size: 1.1rem;
-        }
-        
-        .header-title {
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            position: relative;
-            padding-left: 1.5rem;
-        }
-        
-        .header-title::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 70%;
-            width: 4px;
-            background: var(--unicauca-amarillo);
-            border-radius: 10px;
-        }
+/* Tooltip para mostrar el texto completo */
+.depto-cell:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 100%;
+    background: var(--unicauca-azul);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    z-index: 1000;
+    white-space: normal;
+    width: auto;
+    min-width: 200px;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
     </style>
 </head>
-<body>
-<div class="container-fluid py-3">
-    <div class="card">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center flex-wrap">
-                <div>
-                    <h4 class="mb-0 header-title">
-                        <i class="fas fa-users-cog me-2"></i>Gestión de Vinculación de Profesores Temporales
-                    </h4>
+<body><main class="container-main">
+        <div class="main-card">
+            <div class="card-header-unicauca">
+                <div class="d-flex justify-content-between align-items-center flex-wrap card-header-content">
+                    <div>
+                        <h2 class="card-header-title mb-0">
+                            <i class="fas fa-users-gear"></i>
+                            Listado de Profesores Temporales a vincular
+                        </h2>
+                    </div>
+                    <div class="d-flex align-items-center flex-wrap gap-2 header-actions">
+                        <span class="periodo-badge-unicauca">
+                            <i class="fas fa-calendar-alt me-2"></i>Periodo: <?= htmlspecialchars($anio_semestre) ?>
+                        </span>
+                        
+                        <a href="gestion_vinculacion.php?tipo_usuario=<?= $tipo_usuario ?>&facultad_id=<?= $facultad_id ?>&anio_semestre=<?= $anio_semestre ?>"
+                           class="btn btn-unicauca">
+                            <i class="fas fa-sync-alt me-1"></i> Actualizar
+                        </a>
+                    </div>
                 </div>
-                <div class="d-flex align-items-center flex-wrap">
-                    <span class="badge periodo-badge fs-6 py-2 px-3 me-3">
-                        <i class="fas fa-calendar-alt me-2"></i>Periodo: <?= htmlspecialchars($anio_semestre) ?>
-                    </span>
-                    
-                    <button id="exportExcelBtn" class="btn btn-unicauca-success btn-sm me-3" title="Exportar reporte completo a Excel">
-                        <i class="fas fa-file-excel me-1"></i> Exportar a Excel
-                    </button>
-                  
+            </div>
+            
+            <div class="card-body">
+
+                
+<div class="table-container-unicauca mt-1">  <!-- Reducimos MARGIN-TOP a 1 unidad (4px) -->
+                    <table id="profesoresDatatable" class="table-unicauca table-striped" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Periodo</th>
+                                <th>Facultad</th>
+                                <th>Depto.</th>
+                                <th>Sede</th>
+                                <th>Cédula</th>
+                                <th>Nombre</th>
+                                <th>Tipo</th>
+                                <th>Dedicación</th>
+                                <th>Horas</th>
+                                <th>Rta. Fac.</th>
+                                <th>Rta. VRA</th>
+                                <th>HV.nuev </th>
+                                <th>HV.Actlz</th>
+                                <th>Puntos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($profesoresData as $profesor): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($profesor['anio_semestre']) ?></td>
+                                <td><?= htmlspecialchars($profesor['NOMBREC_FAC']) ?></td>
+                    <td class="depto-cell" title="<?= htmlspecialchars($profesor['NOMBRE_DEPTO_CORT']) ?>">
+    <?= htmlspecialchars(mb_substr($profesor['NOMBRE_DEPTO_CORT'], 0, 17)) . (mb_strlen($profesor['NOMBRE_DEPTO_CORT']) > 18 ? '...' : '') ?>
+</td>            <td><?= htmlspecialchars($profesor['sede']) ?></td>
+                                <td><?= htmlspecialchars($profesor['cedula']) ?></td>
+                                <td class="nombre-cell" title="<?= htmlspecialchars($profesor['nombre']) ?>">
+    <?= htmlspecialchars(mb_substr($profesor['nombre'], 0, 20)) . (mb_strlen($profesor['nombre']) > 20 ? '...' : '') ?>
+</td><td><?= htmlspecialchars($profesor['tipo_docente']) ?></td>
+                                <td><?= htmlspecialchars($profesor['dedicacion']) ?></td>
+                                <td><?= htmlspecialchars($profesor['horas']) ?></td>
+                                
+                                <td>
+    <?php if($profesor['acepta_fac_status'] === 'Aceptado'): ?>
+        <span class="status-badge status-accepted">
+            <i class="fas fa-check-circle me-1"></i> 
+        </span>
+    <?php elseif($profesor['acepta_fac_status'] === 'Rechazado'): ?>
+        <span class="status-badge status-rejected">
+            <i class="fas fa-times-circle me-1"></i> 
+        </span>
+    <?php else: ?>
+        <span class="status-badge status-pending">
+            <i class="fas fa-clock me-1"></i> Pendiente
+        </span>
+    <?php endif; ?>
+</td>
+
+<td>
+    <?php if($profesor['acepta_vra_status'] === 'Aceptado'): ?>
+        <span class="status-badge status-accepted">
+            <i class="fas fa-check-circle me-1"></i> 
+        </span>
+    <?php elseif($profesor['acepta_vra_status'] === 'Rechazado'): ?>
+        <span class="status-badge status-rejected">
+            <i class="fas fa-times-circle me-1"></i> 
+        </span>
+    <?php else: ?>
+        <span class="status-badge status-pending">
+            <i class="fas fa-clock me-1"></i> Pendiente
+        </span>
+    <?php endif; ?>
+</td>
+                                
+                                <td>
+                                    <?= $profesor['anexa_hv_docente_nuevo'] == 1 
+                                        ? '<span class="status-badge status-accepted"><i class="fas fa-check me-1"></i> Sí</span>'
+                                        : '<span class="status-badge status-rejected"><i class="fas fa-times me-1"></i> No</span>' ?>
+                                </td>
+                                
+                                <td>
+                                    <?= $profesor['actualiza_hv_antiguo'] == 1 
+                                        ? '<span class="status-badge status-accepted"><i class="fas fa-check me-1"></i> Sí</span>'
+                                        : '<span class="status-badge status-rejected"><i class="fas fa-times me-1"></i> No</span>' ?>
+                                </td>
+                                
+                                <td class="points-cell"><?= htmlspecialchars($profesor['puntos'] ?? '0') ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-        
-        <div class="card-body">
-            <div class="table-container">
-                <table id="profesoresDatatable" class="table table-striped table-hover" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>Periodo</th>
-                            <th>Facultad</th>
-                            <th>Depto.</th>
-                            <th>Sede</th>
-                            <th>Cédula</th>
-                            <th>Nombre</th>
-                            <th>Tipo Docente</th>
-                            <th>Dedicación</th>
-                            <th>Horas</th>
-                            <th>Acep. Fac.</th>
-                            <th>Acep. VRA</th>
-                            <th>HV Nuevo</th>
-                            <th>HV Antiguo</th>
-                            <th>Puntos</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="powerBIModal" tabindex="-1" aria-labelledby="powerBIModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="powerBIModalLabel">Reporte Power BI de Vinculación</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </main>
+    
+    <!-- Footer institucional 
+    <footer class="institutional-footer">
+        <div class="container-main">
+            <div class="row">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <img src="https://www.unicauca.edu.co/version7/sites/all/themes/unicauca/logo-footer.png" alt="Logo Unicauca" class="footer-logo">
                 </div>
-                <div class="modal-body p-0">
-                    <iframe
-                        src="https://app.powerbi.com/view?r=eyJrIjoiNDg0ODNjODQtZGE3Mi00ZDMzLWFhMjUtM2FhMmMwZTNhMTI2IiwidCI6ImU4MjE0OTM3LTIzM2ItNGIzNi04NmJmLTBiNWYzMzM3YmVlMSIsImMiOjF9&pageName=282ee5a41849cca01e17"
-                        frameborder="0"
-                        allowfullscreen="true"
-                        style="width: 100%; height: 75vh;">
-                    </iframe>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <h5 class="text-white mb-3">Contacto</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-phone-alt me-2"></i> Teléfono: (602) 8209800</li>
+                        <li><i class="fas fa-envelope me-2"></i> Email: vicerrectoria@unicauca.edu.co</li>
+                        <li><i class="fas fa-map-marker-alt me-2"></i> Popayán, Cauca, Colombia</li>
+                    </ul>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <div class="col-md-4">
+                    <h5 class="text-white mb-3">Enlaces</h5>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="https://www.unicauca.edu.co" target="_blank">Sitio Web Unicauca</a></li>
+                        <li><a href="https://vicerrectoria.unicauca.edu.co" target="_blank">Vicerrectoría Académica</a></li>
+                        <li><a href="#" target="_blank">Políticas de Privacidad</a></li>
+                    </ul>
                 </div>
             </div>
+            <div class="text-center mt-4 pt-3 border-top border-white-10">
+                <small>&copy; <?= date('Y') ?> Universidad del Cauca. Todos los derechos reservados.</small>
+            </div>
         </div>
-    </div>
-</div>
-
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<script type="text/javascript" src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
-<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.0.2/js/dataTables.buttons.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.0.2/js/buttons.html5.min.js"></script>
-<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.0.2/js/buttons.print.min.js"></script>
-
-<script>
-$(document).ready(function() {
-    var table = $('#profesoresDatatable').DataTable({
-        "ajax": {
-            "url": "<?= $data_url ?>",
-            "dataSrc": "data"
-        },
-        "columns": [
-            { "data": "anio_semestre", "className": "text-center" },
-            { "data": "NOMBREF_FAC" },
-            { "data": "NOMBRE_DEPTO_CORT", "className": "text-center" },
-            { "data": "sede", "className": "text-center" },
-            { "data": "cedula", "className": "text-center" },
-            { "data": "nombre" },
-            { "data": "tipo_docente", "className": "text-center" },
-            { "data": "dedicacion", "className": "text-center" },
-            { "data": "horas", "className": "text-center" },
-            // Acep. Fac. con íconos visuales
-            { 
-                "data": "acepta_fac_status",
-                "render": function(data, type, row) {
-                    let icon = '';
-                    let color = '';
-                    let title = '';
-                    if (data === 'Aceptado') {
-                        icon = 'fa-check-circle';
-                        color = 'status-accepted';
-                        title = '';
-                    } else if (data === 'Rechazado') {
-                        icon = 'fa-times-circle';
-                        color = 'status-rejected';
-                        title = '';
-                    } else {
-                        icon = 'fa-clock';
-                        color = 'status-pending';
-                        title = '';
-                    }
-                    return '<div class="d-flex align-items-center justify-content-center"><div class="status-icon ' + color + '"><i class="fas ' + icon + '"></i></div><span class="ms-2 d-none d-md-inline">' + title + '</span></div>';
-                },
-                "className": "text-center"
-            },
-            // Acep. VRA con íconos visuales
-            { 
-                "data": "acepta_vra_status",
-                "render": function(data, type, row) {
-                    let icon = '';
-                    let color = '';
-                    let title = '';
-                    if (data === 'Aceptado') {
-                        icon = 'fa-check-circle';
-                        color = 'status-accepted';
-                        title = '';
-                    } else if (data === 'Rechazado') {
-                        icon = 'fa-times-circle';
-                        color = 'status-rejected';
-                        title = '';
-                    } else {
-                        icon = 'fa-clock';
-                        color = 'status-pending';
-                        title = '';
-                    }
-                    return '<div class="d-flex align-items-center justify-content-center"><div class="status-icon ' + color + '"><i class="fas ' + icon + '"></i></div><span class="ms-2 d-none d-md-inline">' + title + '</span></div>';
-                },
-                "className": "text-center"
-            },
-            { 
-                "data": "anexa_hv_docente_nuevo",
-                "render": function(data, type, row) {
-                    return data == 1 
-                        ? '<div class="status-icon status-accepted"><i class="fas fa-check"></i></div>' 
-                        : '<div class="status-icon status-rejected"><i class="fas fa-times"></i></div>';
-                },
-                "className": "text-center"
-            },
-            { 
-                "data": "actualiza_hv_antiguo",
-                "render": function(data, type, row) {
-                    return data == 1 
-                        ? '<div class="status-icon status-accepted"><i class="fas fa-check"></i></div>' 
-                        : '<div class="status-icon status-rejected"><i class="fas fa-times"></i></div>';
-                },
-                "className": "text-center"
-            },
-            { 
-                "data": "puntos", 
-                "className": "text-center points-cell",
-                "render": function(data) {
-                    return data || '0';
-                }
-            }
-        ],
+    </footer>
+-->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+    
+    <script>
+  $(document).ready(function() {
+    $('#profesoresDatatable').DataTable({
         "language": {
-            "url": "https://cdn.datatables.net/plug-ins/2.0.8/i18n/es-ES.json"
-        },
-        "dom": '<"row"<"col-md-6"l><"col-md-6"f>><"row"<"col-sm-12"t>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-        "buttons": [
-            {
-                extend: 'excelHtml5',
-                text: '<i class="fas fa-file-excel"></i> Excel',
-                titleAttr: 'Exportar a Excel',
-                exportOptions: {
-                    columns: ':visible'
-                },
-                filename: 'Reporte_Vinculacion_Temporales_<?= $anio_semestre ?>'
+            "url": "https://cdn.datatables.net/plug-ins/2.0.8/i18n/es-ES.json",
+            "search": "Buscar:", // Esto solo cambia la etiqueta, no habilita el campo si 'f' no está en dom
+            "lengthMenu": "Mostrar _MENU_ registros por página",
+            "zeroRecords": "No se encontraron registros coincidentes",
+            "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
+            "infoEmpty": "No hay registros disponibles",
+            "infoFiltered": "(filtrado de _MAX_ registros totales)",
+            "paginate": {
+                "first": "Primera",
+                "last": "Última",
+                "next": "Siguiente",
+                "previous": "Anterior"
             }
-        ],
-        "searching": true,
-        "paging": true,
-        "ordering": true,
-        "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
+        },
+        // CAMBIO AQUÍ: Añade 'f' para incluir el campo de búsqueda
+"dom": '<"row"<"col-md-6"l><"col-md-6 text-end"f>><"row"<"col-sm-12"t>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        "responsive": true,
         "initComplete": function() {
-            // Añadir margen superior a la tabla
-            $('.dataTables_wrapper').css('margin-top', '1.5rem');
+            // Estas líneas ahora sí tendrán un efecto porque el input de búsqueda se creará
+            $('.dataTables_filter input').attr('placeholder', 'Buscar por nombre, cédula, facultad...');
+            $('.dataTables_filter input').addClass('form-control');
+            $('.dataTables_length select').addClass('form-select form-select-sm');
         }
     });
-
-    $('#exportExcelBtn').on('click', function() {
-        table.button('.buttons-excel').trigger();
-    });
-
-    // Enfocar automáticamente el campo de búsqueda al cargar la página
-    $('.dataTables_filter input').focus();
-    
-    // Animación para las filas al cargar
-    setTimeout(function() {
-        $('tbody tr').each(function(i) {
-            $(this).delay(50 * i).animate({
-                opacity: 1
-            }, 200);
-        });
-    }, 500);
+    // ...
 });
-</script>
+    </script>
 </body>
 </html>

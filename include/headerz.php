@@ -520,13 +520,14 @@ nav ul li ul.submenu li.active a::after {
                                     <?php echo $previousPeriod; ?>
                                 </a>
                             </li>
-                            <li class="<?= ($active_menu_item == 'gestion_facultad' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                        <?php endif; ?>
+                        <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
+                        <li class="<?= ($active_menu_item == 'gestion_facultad' && $selected_period == $periodo_work) ? 'active' : '' ?>">
                                 <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>">
                                     <?php echo $periodo_work; ?>
                                 </a>
                             </li>
-                        <?php endif; ?>
-                        <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
+                       
                             <li class="<?= ($active_menu_item == 'gestion_facultad' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
                                 <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
                                     <?php echo $nextPeriod; ?>
@@ -542,7 +543,7 @@ nav ul li ul.submenu li.active a::after {
         Comparativo <span class="new-badge">New!</span>
     </a>
     <ul class="submenu">
-        <?php if ($tipo_usuario == 1): // Mostrar todos los periodos para tipo 1 ?>
+        <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar todos los periodos para tipo 1 ?>
             <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
                 <a href="#" class="report-linkb"
                    data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"

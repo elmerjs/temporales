@@ -1095,7 +1095,7 @@ echo '<div class="grid-col">';
 echo "<div class='periodo-info-container periodo-actual-box'>"; // Usamos el contenedor unificado y el borde específico
 echo "<h5 class='periodo-title-h5'>"; // Nueva clase para el h5
 echo "<i class='fas fa-calendar-alt'></i>"; // Icono para el período actual (ajustado en CSS)
-echo "<span class='periodo-label'>Período en revisión:</span> ";
+echo "<span class='periodo-label'>Período:</span> ";
 echo "<span class='periodo-value'>" . htmlspecialchars($_POST['anio_semestre']) . "</span>";
 echo "<span class='periodo-separator'>|</span>"; // Separador
 echo "<span class='vinculacion-label'>Vinculación:</span> ";
@@ -1126,7 +1126,7 @@ if ($tipo_usuario == 1) {
             <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
             <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
             <button type='submit' class='btn-agregar-profesor' title='Agregar Profesor'>
-                <i class='fas fa-user-plus'></i> <span>Agregar Profesor</span>
+                <i class='fas fa-user-plus'></i> <span>Agregar</span>
             </button>
         </form>";
     echo "</div>"; // Cierre btn-container
@@ -1406,10 +1406,7 @@ echo '</div>'; // Cierre grid-col
                     $total_empleado=$asignacion_total + $prima_navidad+$indem_vacaciones+$indem_prima_vacaciones;
                  //eps
                     $eps = round(($asignacion_total * 8.5) / 100);
-
                         //pension
-
-
 
                 // Redondear al múltiplo de 100 más cercano
                  $afp = round(($asignacion_total * 12) / 100);
@@ -2408,7 +2405,9 @@ elseif ($diffTotalProfesores < 0 && $diffTotalProyectado < 0) {
     $interpretacion .= "<li>Posible <strong>optimización de recursos</strong> o disminución de necesidades académicas</li>";
     $interpretacion .= "<li>Relación costo-eficiencia: ";
     $costoPorProfesorAnterior = $totalProyectadoTotalAnterior / $totalProfesoresTotalAnterior;
-    $costoPorProfesorActual = $totalProyectadoTotal / $totalProfesoresTotal;
+$costoPorProfesorActual = $totalProfesoresTotal > 0 
+    ? $totalProyectadoTotal / $totalProfesoresTotal 
+    : 0;
     $variacionCosto = (($costoPorProfesorActual - $costoPorProfesorAnterior) / $costoPorProfesorAnterior) * 100;
     
     $interpretacion .= number_format($costoPorProfesorActual, 0, ',', '.') . " vs " . 
