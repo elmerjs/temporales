@@ -225,6 +225,31 @@ function obtenerperiodonov($anio_semestre) {
         return "Período nov Desconocido";
     }
 }
+
+function contarSolicitudesNoAnuladas($anio_semestre) {
+    $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+    
+    // Preparamos la consulta con parámetros para evitar inyección SQL
+    $sql = "SELECT COUNT(*) as total FROM `solicitudes` 
+            WHERE solicitudes.anio_semestre = ? 
+            AND (solicitudes.estado IS NULL OR solicitudes.estado <> 'an')";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $anio_semestre);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return $row['total'];
+    } else {
+        return 0;
+    }
+    
+    $stmt->close();
+    $conn->close();
+}
+
 function obteneridfac($departamento_id) {
     $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
     $sql = "SELECT deparmanentos.FK_FAC FROM deparmanentos WHERE PK_DEPTO = '$departamento_id'";

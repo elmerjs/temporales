@@ -366,7 +366,7 @@ if (isset($_POST['envia'])) {
         case 'consulta_todo_depto':  // ¡Nuevo caso!
             $archivo_regreso = 'consulta_todo_depto.php';
             break;
-        default:
+        case 'report_depto_comparativo':  // ¡Nuevo caso!
             $archivo_regreso = 'report_depto_comparativo.php';
     }
 } else {
@@ -2202,8 +2202,18 @@ $cambioSemanasSignificativo = (abs($porcentajeCambioSemanasCat) > 5 || abs($porc
 
 // GENERACIÓN DE INTERPRETACIONES
 $interpretaciones = [];
-// Escenario 1: Profesores bajan pero presupuesto sube
-if ($diffTotalProfesores < 0 && $diffTotalProyectado > 0) {
+
+                     // Escenario 0: Periodo nuevo (datos vacíos/ceros)
+if ($totalProyectadoTotal=== 0 ) {
+    $interpretaciones[] = [
+        'icono' => 'fas fa-hourglass-start', // Icono de reloj de arena
+        'titulo' => 'Periodo en configuración',
+        'texto' => 'Este es un periodo nuevo sin datos históricos. La información se mostrará aquí conforme se registren las vinculaciones.',
+        'tipo' => 'info' // Estilo azul informativo
+    ];
+}
+                     // Escenario 1: Profesores bajan pero presupuesto sube
+elseif ($diffTotalProfesores < 0 && $diffTotalProyectado > 0) {
     $interpretacion = "A pesar de la disminución de <strong>" . abs($diffTotalProfesores) . " profesores</strong> ";
     $interpretacion .= "(un <strong>" . number_format(abs($porcentajeTotalProfesores), 1) . "%</strong> menos), el presupuesto proyectado aumentó ";
     $interpretacion .= "en <strong>$" . number_format($diffTotalProyectado, 0, ',', '.') . "</strong>. "; // Formateo para millones si es grande, o el valor exacto

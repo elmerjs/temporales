@@ -2007,7 +2007,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <?php endif; ?>
 
         <a href="gestion_vinculacion.php?tipo_usuario=<?= htmlspecialchars($tipo_usuario) ?>&facultad_id=<?= htmlspecialchars($facultad_id) ?>&anio_semestre=<?= htmlspecialchars($anio_semestre) ?>"
-            class="btn btn-unicauca-primary"> <i class="fas fa-table me-2"></i> Listado Web  profesores
+            class="btn btn-unicauca-primary"> <i class="fas fa-table me-2"></i> Listado profesores solicitados
         </a>
     </div>
 </div>

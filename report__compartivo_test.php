@@ -60,14 +60,21 @@ while ($row = $resultadof->fetch_assoc()) {
 
 
 // Obtener lista de facultades (para el admin)
+// Obtener lista de facultades
 $facultades = [];
-if ($tipo_usuario == 1) {
-    $query_facultades = "SELECT PK_FAC, nombre_fac_minb FROM facultad ORDER BY nombre_fac_minb";
-    $result_facultades = $conn->query($query_facultades);
+// Esta consulta debe ejecutarse para que cualquier tipo de usuario que necesite el nombre de la facultad por ID
+// tenga acceso a la lista de mapeo ID -> Nombre
+$query_facultades = "SELECT PK_FAC, nombre_fac_minb FROM facultad ORDER BY nombre_fac_minb";
+$result_facultades = $conn->query($query_facultades);
+if ($result_facultades) { // Asegúrate de que la consulta fue exitosa
     while ($row = $result_facultades->fetch_assoc()) {
         $facultades[$row['PK_FAC']] = $row['nombre_fac_minb'];
     }
+} else {
+    // Opcional: Manejar el error si la consulta falla
+    error_log("Error al obtener facultades: " . $conn->error);
 }
+
 
 // Lógica para inicializar $anio_semestre actual
 $anio_semestre = isset($_POST['anio_semestre'])
@@ -505,8 +512,101 @@ if (!empty($periodo_anterior) && $valor_punto_ant > 0) { // Asegúrate de tener 
         $data_previous_period[] = $row;
     }
     $stmt_previous->close();
-
 }
+    
+    
+    
+// Query para el PERIODO ACTUAL - SIN FILTROS DE FACULTAD/DEPTO
+$stmt_global_current = $conn->prepare($sql_query);
+if (!$stmt_global_current) {
+    die("Error al preparar la consulta GLOBAL para el periodo actual: " . $conn->error);
+}
+
+$bind_params_global_current = [
+    $valor_punto, $smlv, $dias_catedra, $semanas_catedra, $dias_ocasional,
+    $semanas_ocasional, $meses_ocasional, $porcentaje_arl, $porcentaje_caja, $porcentaje_icbf,
+    $ajuste_catedra, $ajuste_ocasional,
+    $valor_punto, $valor_punto,
+    $valor_punto, $semanas_catedra, $valor_punto, $dias_ocasional,
+    $anio_semestre,
+    null, null, null, null // <<-- ESTO ES CLAVE: Pasar NULL para ignorar los filtros de facultad/departamento
+];
+$stmt_global_current->bind_param($types_current, ...$bind_params_global_current);
+$stmt_global_current->execute();
+$result_global_current_period = $stmt_global_current->get_result();
+
+$facultades_data_for_global_sum_actual = [];
+while ($row = $result_global_current_period->fetch_assoc()) {
+    $facultad_name = $row['nombre_facultad'];
+    if (!isset($facultades_data_for_global_sum_actual[$facultad_name])) {
+        $facultades_data_for_global_sum_actual[$facultad_name] = [
+            'total_profesores_actual' => 0,
+            'gran_total_ajustado_actual' => 0
+        ];
+    }
+    $facultades_data_for_global_sum_actual[$facultad_name]['total_profesores_actual'] += $row['total_profesores'];
+    $facultades_data_for_global_sum_actual[$facultad_name]['gran_total_ajustado_actual'] += $row['gran_total_ajustado'];
+}
+$stmt_global_current->close();
+
+// Query para el PERIODO ANTERIOR - SIN FILTROS DE FACULTAD/DEPTO
+$facultades_data_for_global_sum_anterior = [];
+if (!empty($periodo_anterior) && $valor_punto_ant > 0) {
+    $stmt_global_previous = $conn->prepare($sql_query);
+    if (!$stmt_global_previous) {
+        die("Error al preparar la consulta GLOBAL para el periodo anterior: " . $conn->error);
+    }
+
+    $ajuste_catedra_anterior = 0;
+    $ajuste_ocasional_anterior = 0.018;
+
+    $bind_params_global_previous = [
+        $valor_punto_ant, $smlv_ant, $dias_catedra_ant, $semanas_catedra_ant, $dias_ocasional_ant,
+        $semanas_ocasional_ant, $meses_ocasional_ant, $porcentaje_arl, $porcentaje_caja, $porcentaje_icbf,
+        $ajuste_catedra_anterior, $ajuste_ocasional_anterior,
+        $valor_punto_ant, $valor_punto_ant,
+        $valor_punto_ant, $semanas_catedra_ant, $valor_punto_ant, $dias_ocasional_ant,
+        $periodo_anterior,
+        null, null, null, null // <<-- ESTO ES CLAVE: Pasar NULL para ignorar los filtros
+    ];
+
+    $stmt_global_previous->bind_param($types_current, ...$bind_params_global_previous);
+    $stmt_global_previous->execute();
+    $result_global_previous_period = $stmt_global_previous->get_result();
+
+    while ($row = $result_global_previous_period->fetch_assoc()) {
+        $facultad_name = $row['nombre_facultad'];
+        if (!isset($facultades_data_for_global_sum_anterior[$facultad_name])) {
+            $facultades_data_for_global_sum_anterior[$facultad_name] = [
+                'total_profesores_anterior' => 0,
+                'gran_total_ajustado_anterior' => 0
+            ];
+        }
+        $facultades_data_for_global_sum_anterior[$facultad_name]['total_profesores_anterior'] += $row['total_profesores'];
+        $facultades_data_for_global_sum_anterior[$facultad_name]['gran_total_ajustado_anterior'] += $row['gran_total_ajustado'];
+    }
+    $stmt_global_previous->close();
+
+    
+}
+    
+// --- CALCULAR LOS TOTALES GLOBALES A PARTIR DE LOS DATOS SIN FILTRAR ---
+$grand_total_ajustado_global_actual = 0;
+$grand_total_profesores_global_actual = 0;
+foreach ($facultades_data_for_global_sum_actual as $facultad_nombre => $data) {
+    $grand_total_ajustado_global_actual += $data['gran_total_ajustado_actual'];
+    $grand_total_profesores_global_actual += $data['total_profesores_actual'];
+}
+
+$grand_total_ajustado_global_anterior = 0;
+$grand_total_profesores_global_anterior = 0;
+foreach ($facultades_data_for_global_sum_anterior as $facultad_nombre => $data) {
+    $grand_total_ajustado_global_anterior += $data['gran_total_ajustado_anterior'];
+    $grand_total_profesores_global_anterior += $data['total_profesores_anterior'];
+}
+
+// --- FIN: OBTENER DATOS SIN FILTRAR PARA CÁLCULO DE TOTALES GLOBALES ---
+
 // --- CSS profesional estilo Unicauca ---
 
 // Include Google Fonts
@@ -540,7 +640,7 @@ echo "<style>
     margin-bottom: 30px;
     width: 100%;
     /* Aumenta el ancho máximo del contenedor para dar más espacio a las tarjetas */
-    max-width: 1200px; /* Incrementado de 900px para permitir tarjetas más anchas */
+    max-width: 1600px; /* Incrementado de 900px para permitir tarjetas más anchas */
     margin-left: auto;
     margin-right: auto;
 }
@@ -593,7 +693,7 @@ echo '<style>
 
 
     .unicauca-container {
-        max-width: 1400px;
+        max-width: 1600px;
         margin: 0 auto;
         padding: 0;
 font-family: "Open Sans", sans-serif;
@@ -665,23 +765,14 @@ font-family: "Open Sans", sans-serif;
         margin-bottom: 30px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
-
-  /* Estilos para el contenedor de las dos gráficas comparativas */
-.chart-grid {
-    display: flex; /* Asegura que los elementos hijos se coloquen en fila */
-    flex-wrap: wrap; /* Permite que los elementos se envuelvan a la siguiente línea si no caben */
-    justify-content: center; /* Centra las gráficas horizontalmente si el espacio lo permite */
-    gap: 20px; /* Espacio entre las gráficas */
-    width: 100%; /* Asegura que el contenedor ocupe todo el ancho disponible */
-    max-width: 1200px; /* Opcional: Define un ancho máximo para el contenedor si es muy grande */
-    margin: 20px auto; /* Centra el contenedor completo en la página y añade margen superior/inferior */
-}
-
 /* Estilos para cada caja de gráfica individual */
 .chart-box {
     flex: 1; /* Permite que la caja crezca y ocupe el espacio disponible */
-    min-width: 48%; /* Ajustado para que cada gráfica ocupe casi el 45% y sea un poco más ancha */
-    max-width: 49%; /* Limita el ancho máximo para evitar que una sola gráfica ocupe demasiado y permita el gap */
+    /* CAMBIO AQUI: Ajusta los anchos para acomodar 3 elementos en fila */
+    min-width: 30%; /* Para 3 elementos, aproximadamente 30% cada uno (30*3=90%) */
+    max-width: 32%; /* Un poco más de margen para el gap */
+    /* Si quieres que sean exactamente 3 en fila, podrías usar calc() */
+    /* width: calc(33.33% - 14px); /* (14px = 2/3 del gap de 20px para distribuir equitativamente) */
     box-sizing: border-box; /* Incluye padding y borde en el cálculo del ancho */
     padding: 15px; /* Espaciado interno */
     background-color: #fff; /* Fondo blanco */
@@ -692,11 +783,90 @@ font-family: "Open Sans", sans-serif;
 }
 
 /* Para pantallas más pequeñas, que las gráficas se apilen */
+@media (max-width: 992px) { /* Ajusta el breakpoint si lo deseas, 992px es un buen estándar para tabletas */
+    .chart-box {
+        min-width: 45%; /* En pantallas medianas, que se muestren 2 por fila */
+        max-width: 48%;
+    }
+}
+
 @media (max-width: 768px) {
     .chart-box {
         min-width: 90%; /* En pantallas pequeñas, que cada gráfica ocupe casi todo el ancho */
         max-width: 100%;
     }
+}
+/* Estilos para el contenedor de las gráficas */
+.chart-grid {
+    display: flex;
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan a la siguiente línea si no caben */
+    justify-content: center; /* Centra las gráficas horizontalmente si el espacio lo permite */
+    gap: 20px; /* Espacio entre las gráficas */
+    width: 100%; /* Asegura que el contenedor ocupe todo el ancho disponible */
+    max-width: 1600px; /* Opcional: Define un ancho máximo para el contenedor si es muy grande */
+    margin: 20px auto; /* Centra el contenedor completo en la página y añade margen superior/inferior */
+}
+
+/* Estilos para cada caja de gráfica individual (CONSOLIDADO y AJUSTADO) */
+.chart-box {
+    /* Utiliza calc() para distribuir el ancho de forma precisa */
+    /* Para 3 columnas: (100% - 2 * gap) / 3 */
+    width: calc((100% - (2 * 20px)) / 3);
+    
+    /* Asegúrate de que flex-grow y flex-shrink permitan el ajuste */
+    flex-grow: 1; /* Permite que la caja crezca si hay espacio extra */
+    flex-shrink: 1; /* Permite que la caja se encoja si es necesario (pero el width es la prioridad) */
+    flex-basis: auto; 
+
+    box-sizing: border-box; /* Incluye padding y borde en el cálculo del ancho */
+    padding: 20px; /* Mantuve el padding de 20px que tenías en el segundo bloque */
+    background-color: #fff; /* Fondo blanco */
+    border: 1px solid #ddd; /* Borde suave */
+    border-radius: 8px; /* Bordes redondeados */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); /* Sombra ligera (mantuve la del segundo bloque) */
+    text-align: center; /* Centra el título del gráfico */
+    height: 450px; /* Altura fija para las gráficas */
+    position: relative; /* Si necesitas posicionar elementos internos de forma absoluta */
+}
+
+/* Media Query para pantallas medianas (ej. tabletas): 2 columnas */
+@media (max-width: 992px) { /* Puedes ajustar este breakpoint si es necesario */
+    .chart-box {
+        /* Para 2 columnas: (100% - 1 * gap) / 2 */
+        width: calc((100% - 20px) / 2);
+    }
+}
+
+/* Media Query para pantallas pequeñas (ej. móviles): 1 columna */
+@media (max-width: 768px) {
+    .chart-box {
+        width: 100%; /* Cada gráfica ocupa el ancho completo */
+    }
+}
+
+.chart-grid {
+    display: flex;
+    flex-wrap: wrap; /* Importante para que los elementos se envuelvan a la siguiente línea */
+    gap: 20px; /* Espacio entre los cuadros de los gráficos */
+    justify-content: center; /* O space-around, space-between, etc. */
+    align-items: flex-start; /* Alinea los elementos en la parte superior */
+}
+
+.chart-box {
+    flex: 1 1 calc(33.333% - 20px); /* Para 3 columnas con 20px de gap */
+    /* O si quieres que sean flexibles y se ajusten */
+    min-width: 300px; /* Ancho mínimo antes de que se envuelvan */
+    max-width: 400px; /* Ancho máximo */
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px; /* Espacio entre filas */
+}
+
+/* Estilos específicos para las tarjetas de participación dentro del chart-box */
+.chart-box div[style*="display: flex; justify-content: space-around;"] {
+    /* Puedes añadir estilos aquí si es necesario para el layout interno */
 }
     .chart-title {
         text-align: center;
@@ -1056,14 +1226,14 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: <?= json_encode($sorted_facultades_profesores_labels) ?>,
             datasets: [
                 {
-                    label: 'Periodo Actual (<?= htmlspecialchars($anio_semestre) ?>)',
+                    label: 'Actual (<?= htmlspecialchars($anio_semestre) ?>)',
                     data: <?= json_encode($sorted_profesores_actual_total_general) ?>,
                     backgroundColor: 'rgba(54, 162, 235, 0.7)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1
                 },
                 {
-                    label: 'Periodo Anterior (<?= htmlspecialchars($periodo_anterior) ?>)',
+                    label: 'Anterior (<?= htmlspecialchars($periodo_anterior) ?>)',
                     data: <?= json_encode($sorted_profesores_anterior_total_general) ?>,
                     backgroundColor: 'rgba(255, 99, 132, 0.7)',
                     borderColor: 'rgba(255, 99, 132, 1)',
@@ -1115,14 +1285,14 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: <?= json_encode($sorted_facultades_valores_labels) ?>,
             datasets: [
                 {
-                    label: 'Periodo Actual (<?= htmlspecialchars($anio_semestre) ?>)',
+                    label: 'Actual (<?= htmlspecialchars($anio_semestre) ?>)',
                     data: <?= json_encode($sorted_totales_actual_general) ?>,
                     backgroundColor: 'rgba(75, 192, 192, 0.7)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1
                 },
                 {
-                    label: 'Periodo Anterior (<?= htmlspecialchars($periodo_anterior) ?>)',
+                    label: 'Anterior (<?= htmlspecialchars($periodo_anterior) ?>)',
                     data: <?= json_encode($sorted_totales_anterior_general) ?>,
                     backgroundColor: 'rgba(153, 102, 255, 0.7)',
                     borderColor: 'rgba(153, 102, 255, 1)',
@@ -1214,105 +1384,11 @@ echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex jus
     $formatted_diff_valor = number_format(abs($diff_valor), 0, ',', '.');
 
     // INICIO DEL NUEVO CONTENEDOR PARA LAS DOS TARJETAS DE ESTA FACULTAD
-    echo "<div class='faculty-cards-row'>";
+   // echo "<div class='faculty-cards-row'>";
 
-    // Tarjeta de Profesores - Estilo mejorado
-    echo "<div class='card' style='
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-        overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border-left: 4px solid #3498db;
-    '>";
-    
-    echo "<div style='padding: 25px;'>";
-    echo "<h4 style='margin-top: 0; margin-bottom: 20px; color: #2c3e50; font-size: 1.2rem; border-bottom: 1px solid #f1f2f6; padding-bottom: 12px;'>
-            <span style='font-weight: 600;'>$facultad</span> - Profesores
-          </h4>";
-    
-    echo "<div style='display: flex; justify-content: space-between; margin-bottom: 15px;'>";
-    echo "<div>";
-    echo "<div style='font-size: 0.9rem; color: #7f8c8d; margin-bottom: 4px;'>Actual ($anio_semestre)</div>";
-    echo "<div style='font-weight: 700; font-size: 1.5rem; color: #2c3e50;'>$prof_actual</div>";
-    echo "</div>";
-    
-    echo "<div style='text-align: right;'>";
-    echo "<div style='font-size: 0.9rem; color: #7f8c8d; margin-bottom: 4px;'>Anterior ($periodo_anterior)</div>";
-    echo "<div style='font-size: 1.1rem;'>$prof_anterior</div>";
-    echo "</div>";
-    echo "</div>";
-    
-    echo "<div style='
-        background: linear-gradient(to right, {$color_prof}10, {$color_prof}08);
-        padding: 14px;
-        border-radius: 8px;
-        border-left: 3px solid $color_prof;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    '>";
-    echo "<span style='font-weight: 500; color: #34495e;'>Diferencia</span>";
-    echo "<div style='display: flex; align-items: center; gap: 8px;'>";
-    echo "<span style='color: $color_prof; font-weight: 700; font-size: 1.1rem;'>";
-    echo $icon_prof . " " . ($diff_prof >= 0 ? "+$diff_prof" : $diff_prof);
-    echo "</span>";
-    echo "<span style='background: {$color_prof}15; color: $color_prof; padding: 4px 10px; border-radius: 12px; font-size: 0.9rem; font-weight: 600;'>";
-    echo number_format($porc_prof, 2) . "%";
-    echo "</span>";
-    echo "</div>";
-    echo "</div>";
-    echo "</div></div>"; // Cierra la tarjeta de Profesores
 
-    // Tarjeta de Valor Proyectado - Estilo mejorado
-    echo "<div class='card' style='
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-        overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border-left: 4px solid #9b59b6;
-    '>";
-    
-    echo "<div style='padding: 25px;'>";
-    echo "<h4 style='margin-top: 0; margin-bottom: 20px; color: #2c3e50; font-size: 1.2rem; border-bottom: 1px solid #f1f2f6; padding-bottom: 12px;'>
-            <span style='font-weight: 600;'>$facultad</span> - Valor Proyectado
-          </h4>";
-    
-    echo "<div style='display: flex; justify-content: space-between; margin-bottom: 15px;'>";
-    echo "<div>";
-    echo "<div style='font-size: 0.9rem; color: #7f8c8d; margin-bottom: 4px;'>Actual ($anio_semestre)</div>";
-    echo "<div style='font-weight: 700; font-size: 1.5rem; color: #2c3e50;'>$" . $formatted_valor_actual . "</div>";
-    echo "</div>";
-    
-    echo "<div style='text-align: right;'>";
-    echo "<div style='font-size: 0.9rem; color: #7f8c8d; margin-bottom: 4px;'>Anterior ($periodo_anterior)</div>";
-    echo "<div style='font-size: 1.1rem;'>$" . $formatted_valor_anterior . "</div>";
-    echo "</div>";
-    echo "</div>";
-    
-    echo "<div style='
-        background: linear-gradient(to right, {$color_valor}10, {$color_valor}08);
-        padding: 14px;
-        border-radius: 8px;
-        border-left: 3px solid $color_valor;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    '>";
-    echo "<span style='font-weight: 500; color: #34495e;'>Diferencia</span>";
-    echo "<div style='display: flex; align-items: center; gap: 8px;'>";
-    echo "<span style='color: $color_valor; font-weight: 700; font-size: 1.1rem;'>";
-    echo $icon_valor . " " . ($diff_valor >= 0 ? "+$" : "-$") . $formatted_diff_valor;
-    echo "</span>";
-    echo "<span style='background: {$color_valor}15; color: $color_valor; padding: 4px 10px; border-radius: 12px; font-size: 0.9rem; font-weight: 600;'>";
-    echo number_format($porc_valor, 2) . "%";
-    echo "</span>";
-    echo "</div>";
-    echo "</div>";
-    echo "</div></div>"; // Cierra la tarjeta de Valor Proyectado
 
-    echo "</div>"; // FIN DEL NUEVO CONTENEDOR PARA LAS DOS TARJETAS DE ESTA FACULTAD
+//    echo "</div>"; // FIN DEL NUEVO CONTENEDOR PARA LAS DOS TARJETAS DE ESTA FACULTAD
 }
     
      } else {
@@ -1321,15 +1397,106 @@ echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex jus
 
     echo "<div class='chart-grid'>";
     echo "<div class='chart-box'>";
-    echo "<h4 class='chart-title'>Comparativa de Profesores por Tipo de Docente</h4>";
+    echo "<h4 class='chart-title'>Profesores por Tipo de Profesor</h4>";
     echo "<canvas id='chartProfesoresTipo' height='300'></canvas>";
     echo "</div>";
     echo "<div class='chart-box'>";
-    echo "<h4 class='chart-title'>Comparativa de Valor Proyectado por Tipo de Docente</h4>";
+    echo "<h4 class='chart-title'>Valor Proyectado por Tipo Profesores</h4>";
     echo "<canvas id='chartValorTipo' height='300'></canvas>";
     echo "</div>";
+    echo "<div class='chart-box' style='display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;'>";
+   
+    // Tarjeta de Profesores - Versión compacta
+    echo "<div class='card' style='
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border-left: 4px solid #3498db;
+        padding: 16px;
+    '>";
+    
+    echo "<div style='display: flex; align-items: center; margin-bottom: 12px;'>";
+    echo "<div style='width: 32px; height: 32px; background-color: #3498db20; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 10px;'>";
+    echo "<svg width='16' height='16' viewBox='0 0 24 24' fill='#3498db' xmlns='http://www.w3.org/2000/svg'><path d='M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z'/><path d='M12 14C7.58172 14 4 17.5817 4 22H20C20 17.5817 16.4183 14 12 14Z'/></svg>";
     echo "</div>";
-
+    echo "<h4 style='margin: 0; color: #2c3e50; font-size: 1rem; font-weight: 600;'>Profesores</h4>";
+    echo "</div>";
+    
+    echo "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;'>";
+    echo "<div>";
+    echo "<div style='font-size: 0.75rem; color: #7f8c8d; margin-bottom: 4px;'>Actual</div>";
+    echo "<div style='font-weight: 700; font-size: 1.4rem; color: #2c3e50; line-height: 1;'>$prof_actual</div>";
+    echo "</div>";
+    
+    echo "<div style='text-align: right;'>";
+    echo "<div style='font-size: 0.75rem; color: #7f8c8d; margin-bottom: 4px;'>Anterior</div>";
+    echo "<div style='font-weight: 600; font-size: 1.1rem; color: #95a5a6; line-height: 1;'>$prof_anterior</div>";
+    echo "</div>";
+    echo "</div>";
+    
+    echo "<div style='
+        background-color: #f8fafc;
+        padding: 10px 12px;
+        border-radius: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+    '>";
+    echo "<div style='color: #7f8c8d; font-weight: 500;'>Variación</div>";
+    echo "<div style='display: flex; align-items: center; gap: 6px;'>";
+    echo "<span style='color: $color_prof; font-weight: 600;'>$icon_prof " . ($diff_prof >= 0 ? "+$diff_prof" : $diff_prof) . "</span>";
+    echo "<span style='background-color: {$color_prof}15; color: $color_prof; padding: 2px 8px; border-radius: 10px; font-weight: 600;'>" . number_format($porc_prof, 1) . "%</span>";
+    echo "</div>";
+    echo "</div>";
+    echo "</div>"; // Cierra tarjeta Profesores
+    
+    // Tarjeta de Valor Proyectado - Versión compacta
+    echo "<div class='card' style='
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border-left: 4px solid #9b59b6;
+        padding: 16px;
+    '>";
+    
+    echo "<div style='display: flex; align-items: center; margin-bottom: 12px;'>";
+    echo "<div style='width: 32px; height: 32px; background-color: #9b59b620; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 10px;'>";
+    echo "<svg width='16' height='16' viewBox='0 0 24 24' fill='#9b59b6' xmlns='http://www.w3.org/2000/svg'><path d='M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM12 11.99H19C18.47 16.11 15.72 19.78 12 20.93V12H5V6.3L12 3.19V11.99Z'/></svg>";
+    echo "</div>";
+    echo "<h4 style='margin: 0; color: #2c3e50; font-size: 1rem; font-weight: 600;'>Valor Proyectado</h4>";
+    echo "</div>";
+    
+    echo "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;'>";
+    echo "<div>";
+    echo "<div style='font-size: 0.75rem; color: #7f8c8d; margin-bottom: 4px;'>Actual</div>";
+    echo "<div style='font-weight: 700; font-size: 1.4rem; color: #2c3e50; line-height: 1;'>$" . $formatted_valor_actual . "</div>";
+    echo "</div>";
+    
+    echo "<div style='text-align: right;'>";
+    echo "<div style='font-size: 0.75rem; color: #7f8c8d; margin-bottom: 4px;'>Anterior</div>";
+    echo "<div style='font-weight: 600; font-size: 1.1rem; color: #95a5a6; line-height: 1;'>$" . $formatted_valor_anterior . "</div>";
+    echo "</div>";
+    echo "</div>";
+    
+    echo "<div style='
+        background-color: #f8fafc;
+        padding: 10px 12px;
+        border-radius: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+    '>";
+    echo "<div style='color: #7f8c8d; font-weight: 500;'>Variación</div>";
+    echo "<div style='display: flex; align-items: center; gap: 6px;'>";
+    echo "<span style='color: $color_valor; font-weight: 600;'>$icon_valor " . ($diff_valor >= 0 ? "+$" : "-$") . $formatted_diff_valor . "</span>";
+    echo "<span style='background-color: {$color_valor}15; color: $color_valor; padding: 2px 8px; border-radius: 10px; font-weight: 600;'>" . number_format($porc_valor, 1) . "%</span>";
+    echo "</div>";
+    echo "</div>";
+    echo "</div>"; // Cierra tarjeta Valor Proyectado
+    
+echo "</div>"; // Cierra chart-box
     echo "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>";
     echo "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0'></script>";
     echo "<script>
@@ -1371,14 +1538,14 @@ echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex jus
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Periodo Actual (" . htmlspecialchars($anio_semestre) . ")',
+                        label: 'Actual (" . htmlspecialchars($anio_semestre) . ")',
                         data: profesoresActual,
                         backgroundColor: 'rgba(75, 192, 192, 0.7)',
                         borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 1
                     },
                     {
-                        label: 'Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")',
+                        label: 'Anterior (" . htmlspecialchars($periodo_anterior) . ")',
                         data: profesoresAnterior,
                         backgroundColor: 'rgba(153, 102, 255, 0.7)',
                         borderColor: 'rgba(153, 102, 255, 1)',
@@ -1427,14 +1594,14 @@ new Chart(ctxValorTipo, {
         labels: labels,
         datasets: [
             {
-                label: 'Periodo Actual (" . htmlspecialchars($anio_semestre) . ")',
+                label: 'Actual (" . htmlspecialchars($anio_semestre) . ")',
                 data: valorActual,
                 backgroundColor: 'rgba(255, 159, 64, 0.7)',
                 borderColor: 'rgba(255, 159, 64, 1)',
                 borderWidth: 1
             },
             {
-                label: 'Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")',
+                label: 'Anterior (" . htmlspecialchars($periodo_anterior) . ")',
                 data: valorAnterior,
                 backgroundColor: 'rgba(255, 99, 132, 0.7)',
                 borderColor: 'rgba(255, 99, 132, 1)',
@@ -1464,28 +1631,23 @@ new Chart(ctxValorTipo, {
                 }
             }
         },
-        plugins: {
-            datalabels: {
-                display: true,
-                color: '#333',
-                anchor: 'end',
-                align: 'end',
-                formatter: function(value) {
-                    return '$' + (value / 1000000).toFixed(2) + 'M';
-                }
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        // Opción 1: Mostrar en millones en tooltip
-                        return 'Valor: $' + (context.raw / 1000000).toFixed(2) + 'M';
-                        
-                        // Opción 2: Mantener valor completo en tooltip
-                        // return 'Valor: $' + context.raw.toLocaleString();
-                    }
-                }
-            }
-        }
+       plugins: {
+    datalabels: {
+        display: true,
+        color: 'black', // Color blanco para mejor contraste
+        anchor: 'center', // Anclaje al centro de la barra
+        align: 'top', // Alineación superior
+        offset: -10, // Ajuste vertical hacia arriba
+        formatter: function(value) {
+            return '$' + (value / 1000000).toFixed(1) + 'M'; // Formato acortado
+        },
+        font: {
+            size: 10,
+            weight: 'bold'
+        },
+        clip: false // Permite que las etiquetas salgan de la barra
+    }
+}
     }
 });
     });
@@ -1537,18 +1699,9 @@ echo "<style>
         grid-template-columns: 1fr 1fr;
         gap: 20px;
         margin: 30px 0;
-        max-width: 1200px;
+        max-width: 1400px;
         margin-left: auto;
         margin-right: auto;
-    }
-
-    .chart-box {
-        background: white;
-        border-radius: 8px;
-        padding: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        height: 500px;
-        position: relative;
     }
 
     .chart-wrapper {
@@ -1569,10 +1722,7 @@ echo "<style>
         .chart-container {
             grid-template-columns: 1fr;
         }
-        .chart-box {
-            height: 400px;
-        }
-    }
+     
 </style>";
 // Mostrar los gráficos solo si hay datos
 if (!empty($departamentos_data) || $facultad_seleccionada) {
@@ -1603,7 +1753,7 @@ if (!empty($departamentos_data) || $facultad_seleccionada) {
 
     echo "<div class='chart-grid'>";
     echo "<div class='chart-box'>";
-    echo "<h3 class='chart-title'>Cantidad de Profesores por Departamento</h3>";
+    echo "<h3 class='chart-title'>Profesores por Departamento</h3>";
     echo "<div class='chart-wrapper'>";
     echo "<canvas id='chartProfesoresDepto'></canvas>";
     echo "</div>";
@@ -1615,7 +1765,132 @@ if (!empty($departamentos_data) || $facultad_seleccionada) {
     echo "<canvas id='chartValorDepto'></canvas>";
     echo "</div>";
     echo "</div>";
-    echo "</div>";
+    
+    // --- INICIO DE LÓGICA PARA DETERMINAR QUÉ FACULTAD SE VA A MOSTRAR EN LOS GRÁFICOS DE COMPARACIÓN ---
+
+$faculty_id_for_display = null; // Inicializamos a null
+$nombre_facultad_seleccionada = null; // Inicializamos a null
+
+if ($tipo_usuario == 1) { // Si es un usuario administrador
+    // Los administradores pueden seleccionar una facultad vía GET.
+    // Si no seleccionan ninguna, esta variable permanecerá null,
+    // y se les pedirá que seleccionen una facultad.
+    if (isset($_GET['facultad_id']) && !empty($_GET['facultad_id'])) {
+        $faculty_id_for_display = (int)$_GET['facultad_id'];
+    }
+} elseif ($tipo_usuario == 2) { // Si es un usuario de tipo 2 (ej. Decano/Jefe de Facultad)
+    // Para este tipo de usuario, asumimos que su facultad_id está en la sesión
+    // o se obtiene de su perfil de usuario al iniciar sesión.
+
+        $faculty_id_for_display = $pk_fac;
+    // Si $faculty_id_for_display sigue siendo null aquí, significa que el usuario de tipo 2
+    // no tiene una facultad asignada en su sesión, y se le mostrará un mensaje de error.
+}
+
+// Una vez determinado $faculty_id_for_display, obtenemos el nombre y los datos
+if ($faculty_id_for_display !== null) {
+    $nombre_facultad_seleccionada = $facultades[$faculty_id_for_display] ?? null;
+
+    // Verificar si se encontró el nombre de la facultad y sus datos en $facultades_data
+    if ($nombre_facultad_seleccionada && isset($facultades_data[$nombre_facultad_seleccionada])) {
+        $selected_faculty_data = $facultades_data[$nombre_facultad_seleccionada];
+        
+        $selected_faculty_profesores_actual = $selected_faculty_data['total_profesores_actual'];
+        $selected_faculty_ajustado_actual = $selected_faculty_data['gran_total_ajustado_actual'];
+        
+        // Calcular porcentajes
+        $porcentaje_profesores = ($grand_total_profesores_global_actual > 0)
+            ? ($selected_faculty_profesores_actual / $grand_total_profesores_global_actual) * 100
+            : 0;
+        $porcentaje_valor = ($grand_total_ajustado_global_actual > 0)
+            ? ($selected_faculty_ajustado_actual / $grand_total_ajustado_global_actual) * 100
+            : 0;
+            
+        // Asegurarse de que el porcentaje no supere el 100% para la altura de la barra
+        $porcentaje_profesores_display = min(100, max(0, $porcentaje_profesores));
+        $porcentaje_valor_display = min(100, max(0, $porcentaje_valor));
+
+    echo "<div class='chart-box' style='background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
+    echo "<h3 class='chart-title' style='margin-top: 0; color: #2c3e50; text-align: center;'>Participación ".htmlspecialchars($nombre_facultad_seleccionada)." respecto al total de facultades (".$anio_semestre.")</h3>";
+
+if ($faculty_id_for_display !== null && $nombre_facultad_seleccionada && isset($facultades_data[$nombre_facultad_seleccionada])) {
+    // Cálculo de promedios (parte nueva que añade funcionalidad)
+    $promedio_facultad = $selected_faculty_ajustado_actual > 0 && $selected_faculty_profesores_actual > 0 
+        ? $selected_faculty_ajustado_actual / $selected_faculty_profesores_actual 
+        : 0;
+        
+    $promedio_global = $grand_total_ajustado_global_actual > 0 && $grand_total_profesores_global_actual > 0
+        ? $grand_total_ajustado_global_actual / $grand_total_profesores_global_actual
+        : 0;
+    ?>
+    
+    <!-- Diseño nuevo -->
+    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; margin: 20px 0;">
+        <!-- Tarjeta de Profesores -->
+        <div style="flex: 1; min-width: 150px; background: #f8fafc; border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <div style="width: 40px; height: 40px; background: #e3f2fd; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                    <span style="color: #1976d2; font-weight: bold;"><?= number_format($porcentaje_profesores, 1) ?>%</span>
+                </div>
+                <div>
+                    <div style="font-weight: 600; color: #2c3e50;">Profesores</div>
+                    <div style="font-size: 0.8rem; color: #7f8c8d;">
+                        <?= number_format($selected_faculty_profesores_actual, 0, ',', '.') ?> de <?= number_format($grand_total_profesores_global_actual, 0, ',', '.') ?>
+                    </div>
+                </div>
+            </div>
+            <div style="height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden;">
+                <div style="height: 100%; width: <?= $porcentaje_profesores_display ?>%; background: #1976d2;"></div>
+            </div>
+        </div>
+        
+        <!-- Tarjeta de Valor Proyectado -->
+        <div style="flex: 1; min-width: 150px; background: #f8fafc; border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <div style="width: 40px; height: 40px; background: #f3e5f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                    <span style="color: #8e24aa; font-weight: bold;"><?= number_format($porcentaje_valor, 1) ?>%</span>
+                </div>
+                <div>
+                    <div style="font-weight: 600; color: #2c3e50;">Valor Proyectado</div>
+                    <div style="font-size: 0.8rem; color: #7f8c8d;">
+                        $<?= number_format($selected_faculty_ajustado_actual, 0, ',', '.') ?> de $<?= number_format($grand_total_ajustado_global_actual, 0, ',', '.') ?>
+                    </div>
+                </div>
+            </div>
+            <div style="height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden;">
+                <div style="height: 100%; width: <?= $porcentaje_valor_display ?>%; background: #8e24aa;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sección de promedios (nueva funcionalidad) -->
+    <div style="margin-top: 25px; background: #f5f7fa; border-radius: 8px; padding: 15px;">
+        <h4 style="margin-top: 0; margin-bottom: 15px; text-align: center; color: #2c3e50; font-size: 1rem;">Valor promedio por profesor</h4>
+        
+        <div style="display: flex; justify-content: center; gap: 30px; text-align: center;">
+            <div>
+                <div style="font-size: 0.8rem; color: #7f8c8d; margin-bottom: 5px;">Esta facultad</div>
+                <div style="padding: 8px 15px; background: #fff; border-radius: 20px; font-weight: bold; color: #1976d2; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-block;">
+                    $<?= number_format($promedio_facultad, 2, ',', '.') ?>
+                </div>
+            </div>
+            
+            <div>
+                <div style="font-size: 0.8rem; color: #7f8c8d; margin-bottom: 5px;">Promedio general</div>
+                <div style="padding: 8px 15px; background: #fff; border-radius: 20px; font-weight: bold; color: #4caf50; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-block;">
+                    $<?= number_format($promedio_global, 2, ',', '.') ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <?php
+    } else {
+        // Mensaje si no se encuentran datos para la facultad (válida) seleccionada/asignada
+        echo "<div class='alert alert-info text-center' style='margin-top: 20px; padding: 15px;'>No se encontraron datos para la facultad seleccionada/asignada.</div>";
+    }
+    }}   echo "</div>"; // Cierre del div.chart-box
+     echo "</div>";
     
     echo "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>";
     echo "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0'></script>";
@@ -1701,108 +1976,133 @@ if (!empty($departamentos_data) || $facultad_seleccionada) {
             }
         };
         
-        // Gráfico de Profesores por Departamento
-        const ctxProfDepto = document.getElementById('chartProfesoresDepto');
-        if (ctxProfDepto) {
-            new Chart(ctxProfDepto, {
-                type: 'bar',
-                data: {
-                    labels: labelsDepto,
-                    datasets: [
-                        {
-                            label: 'Actual (' + anioSemestre + ')',
-                            data: profesoresActual,
-                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Anterior (' + anioSemestreAnterior + ')',
-                            data: profesoresAnterior,
-                            backgroundColor: 'rgba(255, 99, 132, 0.7)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 1
-                        }
-                    ]
+     // Gráfico de Profesores por Departamento
+const ctxProfDepto = document.getElementById('chartProfesoresDepto');
+if (ctxProfDepto) {
+    new Chart(ctxProfDepto, {
+        type: 'bar',
+        data: {
+            labels: labelsDepto,
+            datasets: [
+                {
+                    label: 'Actual (' + anioSemestre + ')',
+                    data: profesoresActual,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
                 },
-                options: {
-                    ...commonOptions,
-                    plugins: {
-                        ...commonOptions.plugins,
-                        datalabels: {
-                            ...commonOptions.plugins.datalabels,
-                            formatter: function(value) {
-                                return value.toLocaleString();
-                            }
-                        }
+                {
+                    label: 'Anterior (' + anioSemestreAnterior + ')',
+                    data: profesoresAnterior,
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                datalabels: {
+                    ...commonOptions.plugins.datalabels,
+                    color: '#6c757d', // Gris suave
+                    font: {
+                        size: 11,
+                        weight: 'normal' // Sin negrita
                     },
-                    scales: {
-                        ...commonOptions.scales,
-                        x: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Cantidad de Profesores'
-                            }
-                        }
+                    formatter: function(value) {
+                        return value.toLocaleString();
                     }
                 }
-            });
-        }
-        
-        // Gráfico de Valor Proyectado por Departamento
-        const ctxValorDepto = document.getElementById('chartValorDepto');
-        if (ctxValorDepto) {
-            new Chart(ctxValorDepto, {
-                type: 'bar',
-                data: {
-                    labels: labelsDepto,
-                    datasets: [
-                        {
-                            label: 'Actual (' + anioSemestre + ')',
-                            data: valorActual,
-                            backgroundColor: 'rgba(75, 192, 192, 0.7)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Anterior (' + anioSemestreAnterior + ')',
-                            data: valorAnterior,
-                            backgroundColor: 'rgba(153, 102, 255, 0.7)',
-                            borderColor: 'rgba(153, 102, 255, 1)',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    ...commonOptions,
-                    plugins: {
-                        ...commonOptions.plugins,
-                        datalabels: {
-                            ...commonOptions.plugins.datalabels,
-                            formatter: function(value) {
-                                return '$' + (value / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2}) + 'M';
-                            }
-                        }
+            },
+            scales: {
+                ...commonOptions.scales,
+                x: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cantidad de Profesores',
+                        color: '#6c757d' // Gris consistente
                     },
-                    scales: {
-                        ...commonOptions.scales,
-                        x: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Valor Proyectado (en millones)'
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + (value / 1000000).toFixed(1) + 'M';
-                                }
-                            }
-                        }
+                    ticks: {
+                        color: '#6c757d' // Color gris para los ticks
+                    }
+                },
+                y: {
+                    ticks: {
+                        color: '#6c757d' // Color gris para los ticks del eje Y
                     }
                 }
-            });
+            }
         }
+    });
+}
+     // Gráfico de Valor Proyectado por Departamento
+const ctxValorDepto = document.getElementById('chartValorDepto');
+if (ctxValorDepto) {
+    new Chart(ctxValorDepto, {
+        type: 'bar',
+        data: {
+            labels: labelsDepto,
+            datasets: [
+                {
+                    label: 'Actual (' + anioSemestre + ')',
+                    data: valorActual,
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Anterior (' + anioSemestreAnterior + ')',
+                    data: valorAnterior,
+                    backgroundColor: 'rgba(153, 102, 255, 0.7)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                datalabels: {
+                    ...commonOptions.plugins.datalabels,
+                    color: '#6c757d', // Gris suave similar a Bootstrap secondary
+                    font: {
+                        size: 11,
+                        weight: 'normal' // Quita la negrilla
+                    },
+                    formatter: function(value) {
+                        return '$' + (value / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2}) + 'M';
+                    }
+                }
+            },
+            scales: {
+                ...commonOptions.scales,
+                x: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Valor Proyectado (en millones)',
+                        color: '#6c757d' // Mismo gris para consistencia
+                    },
+                    ticks: {
+                        color: '#6c757d', // Color gris para los ticks
+                        callback: function(value) {
+                            return '$' + (value / 1000000).toFixed(1) + 'M';
+                        }
+                    }
+                },
+                y: {
+                    ticks: {
+                        color: '#6c757d' // Color gris para los ticks del eje Y
+                    }
+                }
+            }
+        }
+    });
+}
     });
     </script>";
 } else {

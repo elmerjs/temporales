@@ -34,6 +34,8 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
             // Establecer variables de sesión
             $_SESSION['loggedin'] = true;
             $_SESSION['name'] = $row['Name'];
+                        $_SESSION['fk_fac_user'] = $row['fk_fac_user'];
+
             $_SESSION['docusuario'] = $row['DocUsuario'];
             $_SESSION['start'] = time();
             $_SESSION['expire'] = $_SESSION['start'] + (5 * 3600); // 5 horas de sesión

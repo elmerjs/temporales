@@ -541,10 +541,16 @@ $conn->close();
                             <i class="fas fa-calendar-alt me-2"></i>Periodo: <?= htmlspecialchars($anio_semestre) ?>
                         </span>
                         
-                        <a href="gestion_vinculacion.php?tipo_usuario=<?= $tipo_usuario ?>&facultad_id=<?= $facultad_id ?>&anio_semestre=<?= $anio_semestre ?>"
-                           class="btn btn-unicauca">
-                            <i class="fas fa-sync-alt me-1"></i> Actualizar
-                        </a>
+                     <form id="regresarForm" action="report_depto_full.php" method="POST" style="display: none;">
+    <input type="hidden" name="anio_semestre" value="<?= htmlspecialchars($anio_semestre) ?>">
+    <input type="hidden" name="tipo_usuario" value="<?= htmlspecialchars($tipo_usuario) ?>">
+    <input type="hidden" name="facultad_id" value="<?= htmlspecialchars($facultad_id) ?>">
+    <input type="hidden" name="departamento_id" value="<?= htmlspecialchars($departamento_id) ?>">
+    </form>
+
+<button type="button" class="btn btn-unicauca" onclick="document.getElementById('regresarForm').submit();">
+    <i class="fas fa-arrow-left me-1"></i> Regresar
+</button>
                     </div>
                 </div>
             </div>

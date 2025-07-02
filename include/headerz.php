@@ -8,6 +8,8 @@ $currentYear = date("Y");
 require 'cn.php';
 if (isset($_SESSION['name'])) {
     $nombre_sesion = $_SESSION['name'];
+        $fk_fac_user = $_SESSION['fk_fac_user'];
+
 } else {
     $nombre_sesion = "elmer jurado";
 }

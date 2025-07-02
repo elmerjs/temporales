@@ -857,7 +857,8 @@ $devolucion_celda = "
         <form action='depto_comparativo.php' method='POST' class='d-inline'>
             <input type='hidden' name='departamento_id' value='" . htmlspecialchars($row['PK_DEPTO']) . "'>
             <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
-            <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($anio_semestre_anterior) . "'>
+            <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($anio_semestre_anterior) . "'>                    <input type='hidden' name='envia' value='report_depto_comparativo'>
+
             <button type='submit' 
                     class='departamento-link' 
                     style='background: none; 
