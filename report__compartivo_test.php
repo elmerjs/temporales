@@ -1405,7 +1405,8 @@ echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex jus
     echo "<canvas id='chartValorTipo' height='300'></canvas>";
     echo "</div>";
     echo "<div class='chart-box' style='display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;'>";
-   
+         if (isset($prof_actual)) {
+
     // Tarjeta de Profesores - Versión compacta
     echo "<div class='card' style='
         background: white;
@@ -1416,12 +1417,13 @@ echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex jus
     '>";
     
     echo "<div style='display: flex; align-items: center; margin-bottom: 12px;'>";
-    echo "<div style='width: 32px; height: 32px; background-color: #3498db20; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 10px;'>";
+    
+      
+echo "<div style='width: 32px; height: 32px; background-color: #3498db20; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 10px;'>";
     echo "<svg width='16' height='16' viewBox='0 0 24 24' fill='#3498db' xmlns='http://www.w3.org/2000/svg'><path d='M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z'/><path d='M12 14C7.58172 14 4 17.5817 4 22H20C20 17.5817 16.4183 14 12 14Z'/></svg>";
     echo "</div>";
     echo "<h4 style='margin: 0; color: #2c3e50; font-size: 1rem; font-weight: 600;'>Profesores</h4>";
     echo "</div>";
-    
     echo "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;'>";
     echo "<div>";
     echo "<div style='font-size: 0.75rem; color: #7f8c8d; margin-bottom: 4px;'>Actual</div>";
@@ -1495,7 +1497,7 @@ echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex jus
     echo "</div>";
     echo "</div>";
     echo "</div>"; // Cierra tarjeta Valor Proyectado
-    
+    }
 echo "</div>"; // Cierra chart-box
     echo "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>";
     echo "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0'></script>";
@@ -1631,23 +1633,24 @@ new Chart(ctxValorTipo, {
                 }
             }
         },
-       plugins: {
-    datalabels: {
-        display: true,
-        color: 'black', // Color blanco para mejor contraste
-        anchor: 'center', // Anclaje al centro de la barra
-        align: 'top', // Alineación superior
-        offset: -10, // Ajuste vertical hacia arriba
-        formatter: function(value) {
-            return '$' + (value / 1000000).toFixed(1) + 'M'; // Formato acortado
-        },
-        font: {
-            size: 10,
-            weight: 'bold'
-        },
-        clip: false // Permite que las etiquetas salgan de la barra
-    }
-}
+        plugins: {
+            datalabels: {
+                display: true,
+                // Cambiado a un tono de gris
+                color: '#6c757d', // Un gris suave
+                anchor: 'center',
+                align: 'top',
+                offset: -10,
+                formatter: function(value) {
+                    return '$' + (value / 1000000).toFixed(1) + 'M';
+                },
+                font: {
+                    size: 10,
+                    weight: 'bold'
+                },
+                clip: false
+            }
+        }
     }
 });
     });
@@ -1759,12 +1762,29 @@ if (!empty($departamentos_data) || $facultad_seleccionada) {
     echo "</div>";
     echo "</div>";
     
-    echo "<div class='chart-box'>";
-    echo "<h3 class='chart-title'>Valor Proyectado por Departamento</h3>";
-    echo "<div class='chart-wrapper'>";
-    echo "<canvas id='chartValorDepto'></canvas>";
-    echo "</div>";
-    echo "</div>";
+ echo "<div class='chart-box'>";
+echo "<div style='display: flex; justify-content: space-between; align-items: center;'>";
+echo "<h3 class='chart-title'>Proyectado por Departamento</h3>";
+echo "<button id='btnAmpliarValor' style='
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+'
+onmouseover='this.style.borderColor=\"#9ca3af\"; this.style.backgroundColor=\"#f9fafb\"' 
+onmouseout='this.style.borderColor=\"#d1d5db\"; this.style.backgroundColor=\"#ffffff\"'>
+Ampliar
+</button>";echo "</div>";
+echo "<div class='chart-wrapper'>";
+echo "<canvas id='chartValorDepto'></canvas>";
+echo "</div>";
+echo "</div>";
     
     // --- INICIO DE LÓGICA PARA DETERMINAR QUÉ FACULTAD SE VA A MOSTRAR EN LOS GRÁFICOS DE COMPARACIÓN ---
 
@@ -1890,7 +1910,16 @@ if ($faculty_id_for_display !== null && $nombre_facultad_seleccionada && isset($
         echo "<div class='alert alert-info text-center' style='margin-top: 20px; padding: 15px;'>No se encontraron datos para la facultad seleccionada/asignada.</div>";
     }
     }}   echo "</div>"; // Cierre del div.chart-box
-     echo "</div>";
+    
+    
+    // Contenedor para el gráfico ampliado (inicialmente oculto)
+echo "<div id='chartAmpliadoContainer' style='display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;'>";
+echo "<div style='background-color: white; padding: 20px; border-radius: 8px; max-width: 90%; max-height: 90%; overflow: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative;'>";
+echo "<button id='cerrarAmpliado' style='position: absolute; top: 15px; right: 15px; background: none; border: none; color: #6c757d; font-size: 1.5rem; cursor: pointer; padding: 5px; line-height: 1;' aria-label='Cerrar modal'>&times;</button>";echo "<h3 style='text-align: center; color: #2c3e50;'>Valor Proyectado por Departamento (Ampliado)</h3>";
+echo "<canvas id='chartValorDeptoAmpliado' style='max-width: 100%; max-height: 100%;'></canvas>";
+echo "</div>";
+echo "</div>"; //antesd echad grd se incluyo esto
+    echo "</div>";
     
     echo "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>";
     echo "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0'></script>";
@@ -2039,23 +2068,23 @@ if (ctxProfDepto) {
     });
 }
      // Gráfico de Valor Proyectado por Departamento
-const ctxValorDepto = document.getElementById('chartValorDepto');
-if (ctxValorDepto) {
-    new Chart(ctxValorDepto, {
+// --- Función para crear el gráfico de Valor Proyectado (reutilizable) ---
+function createValorChart(ctx, labels, actual, anterior, anio, anioAnt) {
+    return new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labelsDepto,
+            labels: labels,
             datasets: [
                 {
-                    label: 'Actual (' + anioSemestre + ')',
-                    data: valorActual,
+                    label: 'Actual (' + anio + ')',
+                    data: actual,
                     backgroundColor: 'rgba(75, 192, 192, 0.7)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1
                 },
                 {
-                    label: 'Anterior (' + anioSemestreAnterior + ')',
-                    data: valorAnterior,
+                    label: 'Anterior (' + anioAnt + ')',
+                    data: anterior,
                     backgroundColor: 'rgba(153, 102, 255, 0.7)',
                     borderColor: 'rgba(153, 102, 255, 1)',
                     borderWidth: 1
@@ -2068,10 +2097,10 @@ if (ctxValorDepto) {
                 ...commonOptions.plugins,
                 datalabels: {
                     ...commonOptions.plugins.datalabels,
-                    color: '#6c757d', // Gris suave similar a Bootstrap secondary
+                    color: '#6c757d',
                     font: {
                         size: 11,
-                        weight: 'normal' // Quita la negrilla
+                        weight: 'normal'
                     },
                     formatter: function(value) {
                         return '$' + (value / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2}) + 'M';
@@ -2085,10 +2114,10 @@ if (ctxValorDepto) {
                     title: {
                         display: true,
                         text: 'Valor Proyectado (en millones)',
-                        color: '#6c757d' // Mismo gris para consistencia
+                        color: '#6c757d'
                     },
                     ticks: {
-                        color: '#6c757d', // Color gris para los ticks
+                        color: '#6c757d',
                         callback: function(value) {
                             return '$' + (value / 1000000).toFixed(1) + 'M';
                         }
@@ -2096,9 +2125,73 @@ if (ctxValorDepto) {
                 },
                 y: {
                     ticks: {
-                        color: '#6c757d' // Color gris para los ticks del eje Y
+                        color: '#6c757d'
                     }
                 }
+            }
+        }
+    });
+}
+
+// Crear gráfico original de Valor Proyectado por Departamento
+const ctxValorDepto = document.getElementById('chartValorDepto');
+let chartValorDepto = null;
+if (ctxValorDepto) {
+    chartValorDepto = createValorChart(
+        ctxValorDepto,
+        labelsDepto,
+        valorActual,
+        valorAnterior,
+        anioSemestre,
+        anioSemestreAnterior
+    );
+}
+
+// --- Lógica para el botón de Ampliar y el gráfico ampliado ---
+const btnAmpliarValor = document.getElementById('btnAmpliarValor');
+const chartAmpliadoContainer = document.getElementById('chartAmpliadoContainer');
+const cerrarAmpliado = document.getElementById('cerrarAmpliado');
+const chartValorDeptoAmpliado = document.getElementById('chartValorDeptoAmpliado');
+let chartAmpliado = null; // Variable para almacenar la instancia del gráfico ampliado
+
+if (btnAmpliarValor && chartAmpliadoContainer && cerrarAmpliado && chartValorDeptoAmpliado) {
+    btnAmpliarValor.addEventListener('click', function() {
+        // Mostrar el contenedor del gráfico ampliado
+        chartAmpliadoContainer.style.display = 'flex';
+
+        // Destruir el gráfico ampliado anterior si existe
+        if (chartAmpliado) {
+            chartAmpliado.destroy();
+        }
+
+        // Crear el gráfico ampliado
+        chartAmpliado = createValorChart(
+            chartValorDeptoAmpliado,
+            labelsDepto,
+            valorActual,
+            valorAnterior,
+            anioSemestre,
+            anioSemestreAnterior
+        );
+    });
+
+    cerrarAmpliado.addEventListener('click', function() {
+        // Ocultar el contenedor del gráfico ampliado
+        chartAmpliadoContainer.style.display = 'none';
+        // Destruir el gráfico ampliado para liberar memoria
+        if (chartAmpliado) {
+            chartAmpliado.destroy();
+            chartAmpliado = null;
+        }
+    });
+
+    // Cerrar también al hacer clic fuera del contenido del modal
+    chartAmpliadoContainer.addEventListener('click', function(event) {
+        if (event.target === chartAmpliadoContainer) {
+            chartAmpliadoContainer.style.display = 'none';
+            if (chartAmpliado) {
+                chartAmpliado.destroy();
+                chartAmpliado = null;
             }
         }
     });

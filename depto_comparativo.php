@@ -923,7 +923,7 @@ function obtenerTRDDepartamento($departamento_id) {
    class="btn btn-sm d-flex align-items-center gap-1"
    style="background-color: #696FC7; border-color: #696FC7; color: white;"
    title="Ir a la sección de gráficos">
-    <i class="fas fa-chart-bar"></i> Ver Tablero  -  Gráficos
+    <i class="fas fa-chart-bar"></i> Gráficos -Departamento
 </a>
             </div>
     </div>
