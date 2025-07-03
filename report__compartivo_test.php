@@ -33,7 +33,7 @@ if (isset($_GET['anio_semestre_anterior'])) { // Use GET directly as your form u
     $anio_semestre_anterior = $_GET['anio_semestre_anterior'];
 } else {
     // If not provided in GET, use the default
-echo  "no sinistra  año anteiror";}
+echo  "no suministra  año anteiror";}
 
 
 // Capturar departamento_id si se envía (opcional)
@@ -171,6 +171,836 @@ $semanas_ocasional_ant = 0;
 $meses_ocasional_ant = 0;
 $valor_punto_ant = 0;
 $smlv_ant = 0;
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparativa de Periodos</title>
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
+    </head>
+<body>
+ <?php   
+echo "<link href='https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap' rel='stylesheet'>";
+
+// Custom Styles for the headers
+echo "<style>
+ .card-header-custom {
+    border-bottom: none;
+    padding: 0.6rem 1.25rem; /* Reducido el padding vertical (antes 1rem) y horizontal (antes 1.5rem) */
+    font-weight: 500; /* Un poco menos grueso que 600 */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+    font-family: 'Open Sans', sans-serif;
+    min-height: auto; /* Asegura que no tenga altura mínima forzada */
+}
+
+.card-header-custom h2 {
+    color: white;
+    margin-bottom: 0;
+    font-size: 1.25rem; /* Tamaño mediano (~20px) - ajustable */
+    line-height: 1.3; /* Menor interlineado para compactar */
+    font-weight: 600; /* Puedes mantener este peso para el título */
+}
+
+.bg-unicauca-blue-dark {
+    background-color: #003366 !important;
+    margin: 0 0 15px 0 !important; /* Reducido el margen inferior */
+}
+/* Contenedor para las dos tarjetas de cada facultad */
+.faculty-cards-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 30px;
+    width: 100%;
+    /* Aumenta el ancho máximo del contenedor para dar más espacio a las tarjetas */
+    max-width: 1600px; /* Incrementado de 900px para permitir tarjetas más anchas */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Ajustes para las tarjetas individuales */
+.card {
+    /* Mantén tus estilos actuales para la tarjeta */
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box; /* Crucial para que padding y border no aumenten el tamaño */
+    min-width: 350px; /* Aumenta el ancho mínimo para que no se compriman demasiado */
+
+    
+    flex: 1 1 calc(50% - 10px + 30%); /* O 1 1 585px;  Si el contenedor padre es 1200px y quieres 585px por tarjeta */
+ 
+    flex: 1 1 calc(49% - 10px); /* Esto las hará más anchas que el 45% anterior, aprovechando el nuevo max-width del padre */
+    max-width: calc(600px - 10px); /* Limita el ancho máximo para evitar que crezcan demasiado si solo hay una */
+
+   
+}
+
+/* Media query para pantallas más pequeñas (opcional, pero recomendado) */
+@media (max-width: 768px) {
+    .faculty-cards-row {
+        flex-direction: column; /* Apila las tarjetas verticalmente en pantallas pequeñas */
+        align-items: center; /* Centra las tarjetas cuando están apiladas */
+    }
+
+    .card {
+        width: 95%; /* Ocupa casi todo el ancho disponible en pantallas pequeñas */
+        max-width: 400px; /* Limita el ancho máximo para móviles */
+        flex: 0 0 95%; /* Asegura que la tarjeta tome casi todo el ancho en móviles */
+    }
+}
+</style>";
+
+echo '<style>
+    /* Estilos generales */
+    body {
+        font-family: "Segoe UI", "Roboto", sans-serif;
+        background-color: #f8fafc;
+        color: #333;
+        margin: 0;
+        padding: 15px;
+        font-size: 14px;
+    }
+
+
+    .unicauca-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 0;
+font-family: "Open Sans", sans-serif;
+    }
+
+    /* Encabezado premium */
+
+    h2 {
+        color: white;
+        font-size: 1.8rem;
+        margin-top: 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    h3 {
+        color: #0056b3;
+        font-size: 1.4rem;
+        margin: 25px 0 15px;
+    }
+
+ 
+
+
+
+   
+
+    /* Secciones de gráficos */
+    .chart-section {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+/* Estilos para cada caja de gráfica individual */
+.chart-box {
+    flex: 1; /* Permite que la caja crezca y ocupe el espacio disponible */
+    /* CAMBIO AQUI: Ajusta los anchos para acomodar 3 elementos en fila */
+    min-width: 30%; /* Para 3 elementos, aproximadamente 30% cada uno (30*3=90%) */
+    max-width: 32%; /* Un poco más de margen para el gap */
+    /* Si quieres que sean exactamente 3 en fila, podrías usar calc() */
+    /* width: calc(33.33% - 14px); /* (14px = 2/3 del gap de 20px para distribuir equitativamente) */
+    box-sizing: border-box; /* Incluye padding y borde en el cálculo del ancho */
+    padding: 15px; /* Espaciado interno */
+    background-color: #fff; /* Fondo blanco */
+    border: 1px solid #ddd; /* Borde suave */
+    border-radius: 8px; /* Bordes redondeados */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Sombra ligera */
+    text-align: center; /* Centra el título del gráfico */
+}
+
+/* Para pantallas más pequeñas, que las gráficas se apilen */
+@media (max-width: 992px) { /* Ajusta el breakpoint si lo deseas, 992px es un buen estándar para tabletas */
+    .chart-box {
+        min-width: 45%; /* En pantallas medianas, que se muestren 2 por fila */
+        max-width: 48%;
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-box {
+        min-width: 90%; /* En pantallas pequeñas, que cada gráfica ocupe casi todo el ancho */
+        max-width: 100%;
+    }
+}
+/* Estilos para el contenedor de las gráficas */
+.chart-grid {
+    display: flex;
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan a la siguiente línea si no caben */
+    justify-content: center; /* Centra las gráficas horizontalmente si el espacio lo permite */
+    gap: 20px; /* Espacio entre las gráficas */
+    width: 100%; /* Asegura que el contenedor ocupe todo el ancho disponible */
+    max-width: 1600px; /* Opcional: Define un ancho máximo para el contenedor si es muy grande */
+    margin: 20px auto; /* Centra el contenedor completo en la página y añade margen superior/inferior */
+}
+
+/* Estilos para cada caja de gráfica individual (CONSOLIDADO y AJUSTADO) */
+.chart-box {
+    /* Utiliza calc() para distribuir el ancho de forma precisa */
+    /* Para 3 columnas: (100% - 2 * gap) / 3 */
+    width: calc((100% - (2 * 20px)) / 3);
+    
+    /* Asegúrate de que flex-grow y flex-shrink permitan el ajuste */
+    flex-grow: 1; /* Permite que la caja crezca si hay espacio extra */
+    flex-shrink: 1; /* Permite que la caja se encoja si es necesario (pero el width es la prioridad) */
+    flex-basis: auto; 
+
+    box-sizing: border-box; /* Incluye padding y borde en el cálculo del ancho */
+    padding: 20px; /* Mantuve el padding de 20px que tenías en el segundo bloque */
+    background-color: #fff; /* Fondo blanco */
+    border: 1px solid #ddd; /* Borde suave */
+    border-radius: 8px; /* Bordes redondeados */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); /* Sombra ligera (mantuve la del segundo bloque) */
+    text-align: center; /* Centra el título del gráfico */
+    height: 450px; /* Altura fija para las gráficas */
+    position: relative; /* Si necesitas posicionar elementos internos de forma absoluta */
+}
+
+/* Media Query para pantallas medianas (ej. tabletas): 2 columnas */
+@media (max-width: 992px) { /* Puedes ajustar este breakpoint si es necesario */
+    .chart-box {
+        /* Para 2 columnas: (100% - 1 * gap) / 2 */
+        width: calc((100% - 20px) / 2);
+    }
+}
+
+/* Media Query para pantallas pequeñas (ej. móviles): 1 columna */
+@media (max-width: 768px) {
+    .chart-box {
+        width: 100%; /* Cada gráfica ocupa el ancho completo */
+    }
+}
+
+.chart-grid {
+    display: flex;
+    flex-wrap: wrap; /* Importante para que los elementos se envuelvan a la siguiente línea */
+    gap: 20px; /* Espacio entre los cuadros de los gráficos */
+    justify-content: center; /* O space-around, space-between, etc. */
+    align-items: flex-start; /* Alinea los elementos en la parte superior */
+}
+
+.chart-box {
+    flex: 1 1 calc(33.333% - 20px); /* Para 3 columnas con 20px de gap */
+    /* O si quieres que sean flexibles y se ajusten */
+    min-width: 300px; /* Ancho mínimo antes de que se envuelvan */
+    max-width: 400px; /* Ancho máximo */
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px; /* Espacio entre filas */
+}
+
+/* Estilos específicos para las tarjetas de participación dentro del chart-box */
+.chart-box div[style*="display: flex; justify-content: space-around;"] {
+    /* Puedes añadir estilos aquí si es necesario para el layout interno */
+}
+    .chart-title {
+        text-align: center;
+        font-weight: 600;
+        color: #004d99;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+    }
+ /* Contenedor principal para las tablas en línea */
+
+/* Estilo para cada periodo (caja) */
+.period-box {
+    flex: 1; /* Ocupa igual espacio */
+    min-width: 0; /* Permite que se ajuste correctamente */
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+}
+
+
+
+
+.info-label {
+    font-weight: 500;
+    color: #555;
+}
+
+
+
+
+/* Estilo para valores monetarios */
+.currency {
+    font-family: "Roboto Mono", monospace;
+    white-space: nowrap;
+}
+
+
+
+
+/* CONTENEDOR PRINCIPAL - TABLAS EN LÍNEA */
+
+
+.period-container {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start; /* Alinea al tope */
+}
+
+/* ESTILO COMPACTO PARA TABLAS */
+
+
+
+/* ENLACE DE DEPARTAMENTO - ESTILO CLARO */
+.departamento-link {
+    background: none;
+    border: none;
+    color: #1a73e8 !important; /* Azul destacado */
+    text-decoration: underline !important;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    padding: 0;
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.departamento-link:hover {
+    color: #0d62c9 !important;
+    text-decoration: none !important;
+    background-color: rgba(26, 115, 232, 0.05);
+}
+
+/* Indicador visual (manita + flecha) */
+.departamento-link:hover::after {
+    content: "→";
+    margin-left: 4px;
+    font-size: 0.9em;
+}
+
+/* PERIODO BOX - CONTENEDOR DE CADA TABLA */
+
+
+/* Cabecera de periodo */
+.period-header {
+    background-color: #f8f9fa;
+    padding: 8px 12px;
+    font-weight: 600;
+
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 1.1em;
+}
+
+
+/* TABLA CONTAINER - AJUSTE DE SCROLL */
+.table-container {
+    max-height: 400px; /* Altura máxima */
+    overflow-y: auto; /* Scroll vertical si es necesario */
+}
+
+/* INFO GRID COMPACTO */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 10px;
+    font-size: 0.82em;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+</style>';
+    echo "<style>
+/* Variables de color institucionales Unicauca */
+:root {
+  --unicauca-blue: #003366;
+  --unicauca-gold: #FFCC00;
+  --unicauca-blue-light: #1a4d80; /* Azul más claro, usado para hovers/focus */
+  --unicauca-gray-light: #f8f9fa; /* Fondo muy claro para elementos */
+  --unicauca-gray-medium: #e9ecef; /* Gris para bordes y separadores */
+  --unicauca-gray-dark: #dee2e6; /* Gris más oscuro para bordes */
+  --unicauca-text: #212529; /* Color de texto principal */
+  --unicauca-text-light: #6c757d; /* Color de texto secundario */
+  --unicauca-success: #28a745; /* Verde para estados positivos */
+  --unicauca-danger: #dc3545; /* Rojo para estados negativos */
+  --unicauca-warning: #ffc107; /* Amarillo para advertencias */
+}
+
+/* --- Contenedor principal del selector de facultad --- */
+/* Este div nuevo (selector-facultad-container) envuelve todo el formulario para darle espacio y sombra */
+.selector-facultad-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 12px 15px; /* Ajuste para un look más compacto y centrado */
+  margin: 15px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid var(--unicauca-gray-dark);
+  display: flex; /* Usamos flex para centrar el formulario dentro de este contenedor */
+  justify-content: center; /* Centra el formulario horizontalmente */
+  align-items: center;
+}
+
+/* --- Formulario del selector de facultad (donde están todos los elementos en línea) --- */
+.selector-facultad-form {
+  display: flex; /* Crucial para la alineación en línea */
+  align-items: center; /* Alinea verticalmente todos los elementos (label, select, button) */
+  flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas más pequeñas */
+  gap: 15px; /* Espacio entre los elementos */
+  justify-content: center; /* Centra los elementos cuando hay salto de línea */
+}
+
+
+.selector-facultad-form .selector-label {
+    font-weight: 600;
+    color: var(--unicauca-text);
+    font-size: 0.95em; /* Un poco más grande para mejor legibilidad */
+    /* No necesitamos márgenes adicionales si usamos 'gap' en el contenedor flex */
+}
+
+/* --- Selector de opciones (Dropdown) --- */
+.selector-facultad-form select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--unicauca-gray-medium);
+  font-size: 0.95em; /* Tamaño de fuente consistente */
+  min-width: 220px; /* Ajuste el ancho mínimo si es necesario */
+  max-width: 300px;
+  background-color: var(--unicauca-gray-light);
+  color: var(--unicauca-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  flex-grow: 1; /* Permite que el select ocupe espacio disponible */
+}
+
+.selector-facultad-form select:focus {
+  border-color: var(--unicauca-blue);
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.2);
+  outline: none;
+  background-color: white;
+}
+
+
+.selector-facultad-form button {
+  padding: 8px 18px; /* Ajuste para un botón más compacto */
+  background-color: var(--unicauca-blue);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95em; /* Tamaño de fuente consistente */
+  font-weight: 500;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.selector-facultad-form button:hover {
+  background-color: var(--unicauca-blue-light);
+  transform: translateY(-1px);
+}
+
+.selector-facultad-form button:active {
+  background-color: var(--unicauca-blue);
+  transform: translateY(0);
+}
+
+/* --- Headers (para el caso del usuario no-admin) --- */
+.card-header-custom {
+    padding: 0.75rem 1.25rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    color: white;
+    font-family: 'Open Sans', sans-serif; /* Fuente más legible */
+    margin-bottom: 16px;
+    border-radius: 6px; /* Bordes redondeados */
+    justify-content: center; /* Centra el texto del encabezado */
+    text-align: center; /* Alineación de texto si se rompe la línea */
+}
+
+.card-header-custom h2 {
+    margin: 0;
+    font-size: 1.2rem; /* Tamaño de fuente ligeramente más grande para el título */
+    font-weight: 600;
+    letter-spacing: 0.5px; /* Un poco de espaciado para mejor lectura */
+}
+
+/* Colores de fondo de Unicauca para headers */
+.bg-unicauca-blue-dark { background-color: var(--unicauca-blue); } /* Usando la variable */
+.bg-unicauca-blue-light { background-color: #006699; } /* Manteniendo este color específico si es distinto del blue-light general */
+
+
+/* --- Media Queries (Responsividad) --- */
+@media (max-width: 768px) {
+  /* Ajustes generales para pantallas más pequeñas */
+  .selector-facultad-form {
+    flex-direction: column; /* Apila los elementos en pantallas pequeñas */
+    align-items: stretch; /* Estira los elementos para ocupar todo el ancho */
+    gap: 10px; /* Reducir el espacio entre elementos apilados */
+  }
+  
+  .selector-facultad-form .selector-label {
+      width: 100%; /* La etiqueta ocupa todo el ancho */
+      text-align: center; /* Centra el texto de la etiqueta */
+      margin-bottom: 5px; /* Espacio debajo de la etiqueta */
+  }
+
+  .selector-facultad-form select,
+  .selector-facultad-form button {
+    min-width: 100%; /* Ocupa el 100% del ancho disponible */
+    max-width: 100%; /* Evita que crezcan demasiado */
+  }
+
+  /* Ajustes para headers en móviles */
+  .card-header-custom h2 {
+      font-size: 1rem; /* Reducir tamaño de fuente del título en móviles */
+  }
+}
+</style>";
+function get_previous_year_period($periodo) {
+    list($anio, $semestre) = explode('-', $periodo);
+    $anio_anterior = (int)$anio - 1;
+    return $anio_anterior . '-' . $semestre;
+}
+
+// Variables para manejar el estado del comparativo (original vs. espejo)
+$is_espejo_active = isset($_GET['espejo']) && $_GET['espejo'] == 'true'; // Verifica si el modo espejo está activo
+$original_anio_semestre_anterior = $periodo_anterior; // Guarda el periodo anterior original
+
+// Si el modo espejo está activo, el periodo anterior se recalcula
+if ($is_espejo_active) {
+    $periodo_anterior = get_previous_year_period($anio_semestre);
+}
+    
+echo "<div class='unicauca-container' id='secciongraf'>";
+
+// Define la URL base para los enlaces del botón "comparativo espejo/anterior"
+$base_url_params = [
+    'anio_semestre' => $anio_semestre,
+    'anio_semestre_anterior' => $original_anio_semestre_anterior // Siempre usa el original para alternar
+];
+if (isset($_GET['facultad_id'])) {
+    $base_url_params['facultad_id'] = htmlspecialchars($_GET['facultad_id']);
+}
+
+// Construye la URL para activar/desactivar el modo espejo
+$toggle_espejo_url_params = $base_url_params;
+if ($is_espejo_active) {
+    // Si está en espejo, el próximo clic desactiva el espejo
+    // No añadir 'espejo=true', o establecerlo a 'false' si se prefiere una URL más explícita
+    // Para simplificar, simplemente no incluimos el parámetro 'espejo'
+} else {
+    // Si no está en espejo, el próximo clic activa el espejo
+    $toggle_espejo_url_params['espejo'] = 'true';
+}
+
+$toggle_url = '?' . http_build_query($toggle_espejo_url_params);
+
+// Determina el texto del botón
+$button_text = $is_espejo_active ? "Comparativo Original" : "Comparativo Espejo";
+$button_class = $is_espejo_active ? "btn-switch-original" : "btn-switch-espejo";
+
+// Mostrar selector de facultad para admin (Tipo de Usuario 1)
+if ($tipo_usuario == 1) {
+    echo "<div class='selector-facultad-container'>";
+    echo "<form method='get' action='' class='selector-facultad-form'>";
+    echo "<input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>";
+    echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($original_anio_semestre_anterior) . "'>"; // Se mantiene el original aquí
+
+    // Si el modo espejo está activo para el admin, también lo envía en el formulario para persistencia
+    if ($is_espejo_active) {
+        echo "<input type='hidden' name='espejo' value='true'>";
+    }
+
+    echo "<label for='facultad_id' class='selector-label'>Seleccione una Facultad</label>";
+    echo "<select name='facultad_id' id='facultad_id'>";
+    echo "<option value=''>Ver General</option>";
+    foreach ($facultades as $id => $nombre) {
+        echo "<option value='$id'" . ($facultad_seleccionada == $id ? ' selected' : '') . ">" . htmlspecialchars($nombre) . "</option>";
+    }
+    echo "</select>";
+    echo "<button type='submit' class='btn-primary'>Ver Reporte</button>";
+    echo "</form>";
+
+    // Botón de comparativo espejo/anterior para admin
+    echo "<a href='" . htmlspecialchars($toggle_url) . "' class='btn-switch $button_class'>" . htmlspecialchars($button_text) . "</a>";
+
+    echo "</div>"; // Cierre del nuevo contenedor
+} else {
+    // Mostrar encabezado para usuario no-admin (Tipo de Usuario 2)
+    echo "<div id='secciongraf' class='comparison-header'>";
+    echo "<h2 class='comparison-title'>Comparativo " . htmlspecialchars($anio_semestre) . " - " . htmlspecialchars($periodo_anterior) . "</h2>";
+
+
+    echo "<a href='#vertablas' class='view-tables-btn'>";
+    echo "<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'>";
+    echo "<path d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'></path>";
+    echo "<polyline points='9 22 9 12 15 12 15 22'></polyline>";
+    echo "</svg> Ver tablas";
+    echo "</a>";
+    
+    // Botón de comparativo espejo/anterior para no-admin
+    echo "<a href='" . htmlspecialchars($toggle_url) . "' class='btn-switch $button_class'>" . htmlspecialchars($button_text) . "</a>";
+    echo "</div>";
+}
+echo "</div>"; // cierre unicauca-container
+
+echo "<style>
+ 
+/* Variables de color institucionales Unicauca */
+:root {
+  --unicauca-blue: #003366;
+  --unicauca-gold: #FFCC00;
+  --unicauca-blue-light: #1a4d80;
+  --unicauca-gray-light: #f8f9fa;
+  --unicauca-gray-medium: #e9ecef;
+  --unicauca-gray-dark: #dee2e6;
+  --unicauca-text: #212529;
+  --unicauca-text-light: #6c757d;
+  --unicauca-success: #28a745;
+  --unicauca-danger: #dc3545;
+  --unicauca-warning: #ffc107;
+}
+
+/* --- Selectores existentes (sin cambios significativos) --- */
+/* (Mantén aquí todos los estilos de compact-table, departamento-link, currency, diff-good/bad, table-container, etc.) */
+
+/* --- Contenedor principal del selector de facultad para admin --- */
+/* Este contenedor ahora alojará el formulario y el nuevo botón de alternancia */
+.selector-facultad-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin: 15px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid var(--unicauca-gray-dark);
+  display: flex;
+  flex-direction: column; /* Apila el formulario y el botón de alternancia */
+  gap: 15px; /* Espacio entre el formulario y el botón */
+  align-items: center; /* Centra los elementos horizontalmente */
+}
+
+/* --- Formulario del selector de facultad (para admin) --- */
+.selector-facultad-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+  width: 100%; /* Ocupa el 100% del ancho del contenedor padre */
+}
+
+/* --- Etiqueta del selector de facultad --- */
+.selector-facultad-form .selector-label {
+    font-weight: 600;
+    color: var(--unicauca-text);
+    font-size: 0.95em;
+    white-space: nowrap; /* Evita que el label se rompa en varias líneas */
+}
+
+/* --- Select y botón primario dentro del formulario --- */
+.selector-facultad-form select,
+.selector-facultad-form input[type='text'] {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--unicauca-gray-medium);
+  font-size: 0.95em;
+  min-width: 220px;
+  max-width: 300px;
+  background-color: var(--unicauca-gray-light);
+  color: var(--unicauca-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  flex-grow: 1;
+}
+
+.selector-facultad-form select:focus,
+.selector-facultad-form input[type='text']:focus {
+  border-color: var(--unicauca-blue);
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.2);
+  outline: none;
+  background-color: white;
+}
+
+.selector-facultad-form .btn-primary { /* Usamos una clase más genérica para el botón principal */
+  padding: 8px 18px;
+  background-color: var(--unicauca-blue);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95em;
+  font-weight: 500;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.selector-facultad-form .btn-primary:hover {
+  background-color: var(--unicauca-blue-light);
+  transform: translateY(-1px);
+}
+
+.selector-facultad-form .btn-primary:active {
+  background-color: var(--unicauca-blue);
+  transform: translateY(0);
+}
+
+/* --- Nuevo Botón de Alternancia (Comparativo Espejo/Original) --- */
+.btn-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center; /* Centra el texto dentro del botón */
+  gap: 5px;
+  padding: 8px 18px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.95em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 180px; /* Ancho mínimo para que el texto quepa bien */
+  
+}
+
+/* Estilos específicos para el botón Comparativo Espejo */
+.btn-switch-espejo {
+  background-color: var(--unicauca-gold); /* Dorado de Unicauca */
+  color: var(--unicauca-blue); /* Texto azul oscuro */
+  border: 1px solid var(--unicauca-gold); /* Borde sutil */
+}
+
+.btn-switch-espejo:hover {
+  background-color: #e6b800; /* Un dorado un poco más oscuro al hover */
+  border-color: #e6b800;
+  transform: translateY(-1px);
+}
+
+/* Estilos específicos para el botón Comparativo Original */
+.btn-switch-original {
+  background-color: var(--unicauca-danger); /* Azul más claro de Unicauca */
+  color: white;
+  border: 1px solid var(--unicauca-danger);
+}
+
+.btn-switch-original:hover {
+  background-color: var(--unicauca-blue); /* Azul oscuro al hover */
+  border-color: var(--unicauca-blue);
+  transform: translateY(-1px);
+}
+
+
+/* --- Encabezado mejorado con botón (para usuario no-admin) --- */
+.comparison-header {
+    background: linear-gradient(to right, #006699, #004d80); /* Mantiene tu gradiente original */
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Mueve el título y los botones a los extremos */
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan */
+    gap: 10px; /* Espacio entre los elementos */
+}
+
+.comparison-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    flex-grow: 1; /* Permite que el título ocupe el espacio disponible */
+}
+
+.view-tables-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.view-tables-btn:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.view-tables-btn svg {
+    margin-bottom: 1px;
+}
+
+/* --- Responsive para pantallas pequeñas --- */
+@media (max-width: 768px) {
+  /* Selector de Facultad (Admin) */
+  .selector-facultad-container {
+    flex-direction: column; /* Apila el formulario y el botón de alternancia */
+    gap: 10px;
+    padding: 10px; /* Padding reducido para móviles */
+  }
+
+  .selector-facultad-form {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .selector-facultad-form .selector-label {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 0; /* Ya tenemos gap */
+  }
+
+  .selector-facultad-form select,
+  .selector-facultad-form .btn-primary,
+  .btn-switch { /* Ahora el botón switch también es 100% en móvil */
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  /* Encabezado (No-Admin) */
+  .comparison-header {
+      flex-direction: column; /* Apila título y botones */
+      align-items: stretch; /* Estira elementos */
+      text-align: center;
+      padding: 0.8rem 1rem; /* Padding reducido */
+      gap: 10px;
+  }
+
+  .comparison-title {
+      font-size: 1rem;
+  }
+
+  .view-tables-btn,
+  .btn-switch {
+      width: 100%; /* Botones ocupan todo el ancho */
+      justify-content: center; /* Centra el texto dentro del botón */
+  }
+}</style>";
 
 if (!empty($periodo_anterior)) {
     $consultaperant = "SELECT * FROM periodo WHERE nombre_periodo = ?";
@@ -233,6 +1063,17 @@ WITH ProfessorFinancials AS (
         ? AS porcentaje_icbf_dyn,
         ? AS ajuste_catedra_dyn,
         ? AS ajuste_ocasional_dyn,
+-- NUEVA LÓGICA PARA total_horas_calculado
+        CASE
+            WHEN s.tipo_docente = 'Catedra' THEN (COALESCE(s.horas, 0) + COALESCE(s.horas_r, 0))
+            WHEN s.tipo_docente = 'Ocasional' THEN
+                CASE
+                    WHEN s.tipo_dedicacion = 'TC' OR s.tipo_dedicacion_r = 'TC' THEN 40
+                    WHEN s.tipo_dedicacion = 'MT' OR s.tipo_dedicacion_r = 'MT' THEN 20
+                    ELSE 0
+                END
+            ELSE 0
+        END AS horas_por_profesor_calc, -- Horas por cada profesor individual
 
         -- Paso 1: Calcular Asignacion_Mensual y Asignacion_Total por profesor
         CASE
@@ -372,10 +1213,13 @@ AggregatedTotals AS (
     SELECT
         f.nombre_fac_minb AS nombre_facultad,
         d.depto_nom_propio AS nombre_departamento,
-        d.PK_DEPTO,       -- ID del departamento
-        d.FK_FAC,          -- ID de la facultad (relación)
+        d.PK_DEPTO,
+        d.FK_FAC,
         df.tipo_docente,
         COUNT(DISTINCT df.cedula) AS total_profesores,
+        SUM(CASE WHEN df.tipo_docente = 'Ocasional' AND (df.tipo_dedicacion = 'TC' OR df.tipo_dedicacion_r = 'TC') THEN 1 ELSE 0 END) AS total_ocasional_tc,
+        SUM(CASE WHEN df.tipo_docente = 'Ocasional' AND (df.tipo_dedicacion = 'MT' OR df.tipo_dedicacion_r = 'MT') THEN 1 ELSE 0 END) AS total_ocasional_mt,
+        SUM(df.horas_por_profesor_calc) AS total_horas_agregadas, -- NUEVA COLUMNA AGREGADA
         SUM(df.asignacion_mes_calc) AS total_asignacion_mensual_agregada,
         SUM(df.asignacion_total_calc) AS total_asignacion_total_agregada,
         SUM(
@@ -407,12 +1251,15 @@ AggregatedTotals AS (
         df.ajuste_ocasional_dyn
 )
 SELECT
-    ata.nombre_facultad,
+     ata.nombre_facultad,
     ata.nombre_departamento,
-     ata.PK_DEPTO,       -- Asegúrate de incluir esto
-    ata.FK_FAC,         -- Asegúrate de incluir esto
+    ata.PK_DEPTO,
+    ata.FK_FAC,
     ata.tipo_docente,
+    ata.total_ocasional_tc,
+    ata.total_ocasional_mt,
     ata.total_profesores,
+    ata.total_horas_agregadas, -- NUEVA COLUMNA EN LA SELECCIÓN FINAL
     ata.total_asignacion_mensual_agregada,
     ata.total_asignacion_total_agregada,
     -- Aplicar el ajuste final al gran_total_sin_ajuste con los porcentajes corregidos
@@ -610,467 +1457,6 @@ foreach ($facultades_data_for_global_sum_anterior as $facultad_nombre => $data) 
 // --- CSS profesional estilo Unicauca ---
 
 // Include Google Fonts
-echo "<link href='https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap' rel='stylesheet'>";
-
-// Custom Styles for the headers
-echo "<style>
-    .card-header-custom { /* Using a custom class to avoid conflict with existing Bootstrap if any */
-        border-bottom: none;
-        padding: 1rem 1.5rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        color: white;
-        font-family: 'Open Sans', sans-serif;
-    }
-    .card-header-custom h2, .card-header-custom h3, .card-header-custom h5, .card-header-custom h6 {
-        color: white;
-        margin-bottom: 0;
-    }
-    .bg-unicauca-blue-dark {
-        background-color: #004d60 !important; /* A professional dark blue */
-    }
-/* Contenedor para las dos tarjetas de cada facultad */
-.faculty-cards-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
-    margin-bottom: 30px;
-    width: 100%;
-    /* Aumenta el ancho máximo del contenedor para dar más espacio a las tarjetas */
-    max-width: 1600px; /* Incrementado de 900px para permitir tarjetas más anchas */
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* Ajustes para las tarjetas individuales */
-.card {
-    /* Mantén tus estilos actuales para la tarjeta */
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-sizing: border-box; /* Crucial para que padding y border no aumenten el tamaño */
-    min-width: 350px; /* Aumenta el ancho mínimo para que no se compriman demasiado */
-
-    
-    flex: 1 1 calc(50% - 10px + 30%); /* O 1 1 585px;  Si el contenedor padre es 1200px y quieres 585px por tarjeta */
- 
-    flex: 1 1 calc(49% - 10px); /* Esto las hará más anchas que el 45% anterior, aprovechando el nuevo max-width del padre */
-    max-width: calc(600px - 10px); /* Limita el ancho máximo para evitar que crezcan demasiado si solo hay una */
-
-   
-}
-
-/* Media query para pantallas más pequeñas (opcional, pero recomendado) */
-@media (max-width: 768px) {
-    .faculty-cards-row {
-        flex-direction: column; /* Apila las tarjetas verticalmente en pantallas pequeñas */
-        align-items: center; /* Centra las tarjetas cuando están apiladas */
-    }
-
-    .card {
-        width: 95%; /* Ocupa casi todo el ancho disponible en pantallas pequeñas */
-        max-width: 400px; /* Limita el ancho máximo para móviles */
-        flex: 0 0 95%; /* Asegura que la tarjeta tome casi todo el ancho en móviles */
-    }
-}
-</style>";
-
-echo '<style>
-    /* Estilos generales */
-    body {
-        font-family: "Segoe UI", "Roboto", sans-serif;
-        background-color: #f8fafc;
-        color: #333;
-        margin: 0;
-        padding: 15px;
-        font-size: 14px;
-    }
-
-
-    .unicauca-container {
-        max-width: 1600px;
-        margin: 0 auto;
-        padding: 0;
-font-family: "Open Sans", sans-serif;
-    }
-
-    /* Encabezado premium */
-
-    h2 {
-        color: white;
-        font-size: 1.8rem;
-        margin-top: 0;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #e0e0e0;
-    }
-
-    h3 {
-        color: #0056b3;
-        font-size: 1.4rem;
-        margin: 25px 0 15px;
-    }
-
-    /* Tablas compactas profesionales */
-    .table-container {
-        overflow-x: auto;
-        margin-bottom: 25px;
-        border: 1px solid #dee2e6;
-        border-radius: 6px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    .compact-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 800px;
-    }
-
-    .compact-table th {
-        background-color: #004d99;
-        color: white;
-        font-weight: 600;
-        padding: 8px 10px;
-        text-align: left;
-        position: sticky;
-        top: 0;
-        font-size: 13px;
-    }
-
-    .compact-table td {
-        padding: 6px 10px;
-        border-bottom: 1px solid #eaeaea;
-        font-size: 13px;
-        vertical-align: top;
-    }
-
-    .compact-table tr:nth-child(even) {
-        background-color: #f8f9fa;
-    }
-
-    .compact-table tr:hover {
-        background-color: #e9f0f7;
-    }
-
-    /* Secciones de gráficos */
-    .chart-section {
-        background: white;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-/* Estilos para cada caja de gráfica individual */
-.chart-box {
-    flex: 1; /* Permite que la caja crezca y ocupe el espacio disponible */
-    /* CAMBIO AQUI: Ajusta los anchos para acomodar 3 elementos en fila */
-    min-width: 30%; /* Para 3 elementos, aproximadamente 30% cada uno (30*3=90%) */
-    max-width: 32%; /* Un poco más de margen para el gap */
-    /* Si quieres que sean exactamente 3 en fila, podrías usar calc() */
-    /* width: calc(33.33% - 14px); /* (14px = 2/3 del gap de 20px para distribuir equitativamente) */
-    box-sizing: border-box; /* Incluye padding y borde en el cálculo del ancho */
-    padding: 15px; /* Espaciado interno */
-    background-color: #fff; /* Fondo blanco */
-    border: 1px solid #ddd; /* Borde suave */
-    border-radius: 8px; /* Bordes redondeados */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Sombra ligera */
-    text-align: center; /* Centra el título del gráfico */
-}
-
-/* Para pantallas más pequeñas, que las gráficas se apilen */
-@media (max-width: 992px) { /* Ajusta el breakpoint si lo deseas, 992px es un buen estándar para tabletas */
-    .chart-box {
-        min-width: 45%; /* En pantallas medianas, que se muestren 2 por fila */
-        max-width: 48%;
-    }
-}
-
-@media (max-width: 768px) {
-    .chart-box {
-        min-width: 90%; /* En pantallas pequeñas, que cada gráfica ocupe casi todo el ancho */
-        max-width: 100%;
-    }
-}
-/* Estilos para el contenedor de las gráficas */
-.chart-grid {
-    display: flex;
-    flex-wrap: wrap; /* Permite que los elementos se envuelvan a la siguiente línea si no caben */
-    justify-content: center; /* Centra las gráficas horizontalmente si el espacio lo permite */
-    gap: 20px; /* Espacio entre las gráficas */
-    width: 100%; /* Asegura que el contenedor ocupe todo el ancho disponible */
-    max-width: 1600px; /* Opcional: Define un ancho máximo para el contenedor si es muy grande */
-    margin: 20px auto; /* Centra el contenedor completo en la página y añade margen superior/inferior */
-}
-
-/* Estilos para cada caja de gráfica individual (CONSOLIDADO y AJUSTADO) */
-.chart-box {
-    /* Utiliza calc() para distribuir el ancho de forma precisa */
-    /* Para 3 columnas: (100% - 2 * gap) / 3 */
-    width: calc((100% - (2 * 20px)) / 3);
-    
-    /* Asegúrate de que flex-grow y flex-shrink permitan el ajuste */
-    flex-grow: 1; /* Permite que la caja crezca si hay espacio extra */
-    flex-shrink: 1; /* Permite que la caja se encoja si es necesario (pero el width es la prioridad) */
-    flex-basis: auto; 
-
-    box-sizing: border-box; /* Incluye padding y borde en el cálculo del ancho */
-    padding: 20px; /* Mantuve el padding de 20px que tenías en el segundo bloque */
-    background-color: #fff; /* Fondo blanco */
-    border: 1px solid #ddd; /* Borde suave */
-    border-radius: 8px; /* Bordes redondeados */
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05); /* Sombra ligera (mantuve la del segundo bloque) */
-    text-align: center; /* Centra el título del gráfico */
-    height: 450px; /* Altura fija para las gráficas */
-    position: relative; /* Si necesitas posicionar elementos internos de forma absoluta */
-}
-
-/* Media Query para pantallas medianas (ej. tabletas): 2 columnas */
-@media (max-width: 992px) { /* Puedes ajustar este breakpoint si es necesario */
-    .chart-box {
-        /* Para 2 columnas: (100% - 1 * gap) / 2 */
-        width: calc((100% - 20px) / 2);
-    }
-}
-
-/* Media Query para pantallas pequeñas (ej. móviles): 1 columna */
-@media (max-width: 768px) {
-    .chart-box {
-        width: 100%; /* Cada gráfica ocupa el ancho completo */
-    }
-}
-
-.chart-grid {
-    display: flex;
-    flex-wrap: wrap; /* Importante para que los elementos se envuelvan a la siguiente línea */
-    gap: 20px; /* Espacio entre los cuadros de los gráficos */
-    justify-content: center; /* O space-around, space-between, etc. */
-    align-items: flex-start; /* Alinea los elementos en la parte superior */
-}
-
-.chart-box {
-    flex: 1 1 calc(33.333% - 20px); /* Para 3 columnas con 20px de gap */
-    /* O si quieres que sean flexibles y se ajusten */
-    min-width: 300px; /* Ancho mínimo antes de que se envuelvan */
-    max-width: 400px; /* Ancho máximo */
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-bottom: 20px; /* Espacio entre filas */
-}
-
-/* Estilos específicos para las tarjetas de participación dentro del chart-box */
-.chart-box div[style*="display: flex; justify-content: space-around;"] {
-    /* Puedes añadir estilos aquí si es necesario para el layout interno */
-}
-    .chart-title {
-        text-align: center;
-        font-weight: 600;
-        color: #004d99;
-        margin-bottom: 15px;
-        font-size: 1.1rem;
-    }
- /* Contenedor principal para las tablas en línea */
-.period-container {
-    display: flex;
-    gap: 20px; /* Espacio entre tablas */
-    margin-bottom: 30px;
-}
-
-/* Estilo para cada periodo (caja) */
-.period-box {
-    flex: 1; /* Ocupa igual espacio */
-    min-width: 0; /* Permite que se ajuste correctamente */
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    padding: 15px;
-    border: 1px solid #e0e0e0;
-}
-
-/* Cabecera de periodo */
-.period-header {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #eee;
-    font-size: 1.1em;
-}
-
-
-
-
-.info-label {
-    font-weight: 500;
-    color: #555;
-}
-
-/* Contenedor de tabla */
-.table-container {
-    overflow-x: auto;
-    margin-top: 15px;
-}
-
-/* Estilo para tablas */
-.compact-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9em;
-}
-
-.compact-table th {
-    background-color: #f5f5f5;
-    text-align: left;
-    padding: 8px 12px;
-    font-weight: 500;
-    color: #444;
-}
-
-.compact-table td {
-    padding: 8px 12px;
-    border-bottom: 1px solid #eee;
-    vertical-align: top;
-}
-
-/* Mensaje cuando no hay datos */
-.no-data {
-    color: #666;
-    font-style: italic;
-    padding: 15px 0;
-    text-align: center;
-}
-
-/* Estilo para valores monetarios */
-.currency {
-    font-family: "Roboto Mono", monospace;
-    white-space: nowrap;
-}
-
-
-
-
-/* CONTENEDOR PRINCIPAL - TABLAS EN LÍNEA */
-.period-container {
-    display: flex;
-    gap: 15px;
-    align-items: flex-start; /* Alinea al tope */
-}
-
-/* ESTILO COMPACTO PARA TABLAS */
-.compact-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85em; /* Texto más pequeño */
-}
-
-.compact-table th {
-    background-color: #f8f9fa;
-    padding: 6px 10px !important; /* Más compacto */
-    font-weight: 500;
-    border-bottom: 2px solid #dee2e6;
-}
-
-.compact-table td {
-    padding: 5px 10px !important; /* Más compacto */
-    border-bottom: 1px solid #eee;
-    line-height: 1.3; /* Reduce espacio entre líneas */
-}
-
-/* ENLACE DE DEPARTAMENTO - ESTILO CLARO */
-.departamento-link {
-    background: none;
-    border: none;
-    color: #1a73e8 !important; /* Azul destacado */
-    text-decoration: underline !important;
-    text-underline-offset: 3px;
-    cursor: pointer;
-    padding: 0;
-    font: inherit;
-    display: inline-flex;
-    align-items: center;
-    transition: all 0.2s;
-}
-
-.departamento-link:hover {
-    color: #0d62c9 !important;
-    text-decoration: none !important;
-    background-color: rgba(26, 115, 232, 0.05);
-}
-
-/* Indicador visual (manita + flecha) */
-.departamento-link:hover::after {
-    content: "→";
-    margin-left: 4px;
-    font-size: 0.9em;
-}
-
-/* PERIODO BOX - CONTENEDOR DE CADA TABLA */
-.period-box {
-    flex: 1;
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    overflow: hidden;
-}
-
-.period-header {
-    background-color: #f8f9fa;
-    padding: 8px 12px;
-    font-weight: 600;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-/* TABLA CONTAINER - AJUSTE DE SCROLL */
-.table-container {
-    max-height: 400px; /* Altura máxima */
-    overflow-y: auto; /* Scroll vertical si es necesario */
-}
-
-/* INFO GRID COMPACTO */
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    padding: 10px;
-    font-size: 0.82em;
-}
-
-.info-item {
-    display: flex;
-    justify-content: space-between;
-}
-
-</style>';
-echo "<style> /* [Mantener todos los estilos CSS existentes] */ .selector-facultad { background: white; border-radius: 8px; padding: 10px; margin: 1Ss0px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); } .selector-facultad select { padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 16px; min-width: 300px; } .selector-facultad button { padding: 10px 20px; background: #004d60; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px; } .selector-facultad button:hover { background: #003d50; } </style>";
-echo "<div class='unicauca-container'>";
-
-// Mostrar selector de facultad para admin
-if ($tipo_usuario == 1) {
-    echo "<div class='selector-facultad'>";
-    
-    echo "<h3>Seleccione una Facultad</h3>";
-    echo "<form method='get' action=''>";
-    echo "<input type='hidden' name='anio_semestre' value='$anio_semestre'>";
-        echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($anio_semestre_anterior) . "'>";
-
-    echo "<select name='facultad_id'>";
-    // Added "Ver General" option
-    echo "<option value=''>Ver General</option>"; // MODIFIED: Added general option
-    foreach ($facultades as $id => $nombre) {
-        // MODIFIED: Check for $facultad_seleccionada against the current $id
-        echo "<option value='$id'" . ($facultad_seleccionada == $id ? ' selected' : '') . ">$nombre</option>";
-    }
-    echo "</select>";
-    echo "<button type='submit'>Ver Reporte</button>";
-    echo "</form>";
-    echo "</div>";
-}
 
 // Logic for combining data for charts (MOVED UP FOR GENERAL COMPARATIVE)
 $facultades_data = [];
@@ -1355,9 +1741,100 @@ document.addEventListener('DOMContentLoaded', function() {
 } else if ($facultad_seleccionada || $tipo_usuario == 2 || $tipo_usuario == 3) { // Only show specific faculty/department report if a specific faculty is selected (or if not admin)
     // If it's a specific faculty report, show its header
 if ($tipo_usuario ==1) {    
-echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex justify-content-between align-items-center' style='margin: 0 0 20px 0;'>";
-    echo "<h2 class='mb-0'>Datos de Facultad: " . htmlspecialchars($facultades[$pk_fac] ?? '') . "</h2>"; // MODIFIED: Added N/A for safety
-    echo "</div>";
+echo "<div class='faculty-header'>";
+echo "<div class='faculty-title-container'>";
+echo "<h2 class='faculty-title'>Datos de Facultad: " 
+    . htmlspecialchars($facultades[$pk_fac] ?? 'No seleccionada') 
+    . " - " . htmlspecialchars($anio_semestre) 
+    . " - " . htmlspecialchars($periodo_anterior) 
+    . "</h2>";
+
+echo "</div>";
+echo "<a href='#vertablas' class='view-tables-btn'>";
+echo "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' class='table-icon'>";
+echo "<path d='M3 5H21V21H3V5Z' stroke='currentColor' stroke-width='2'/>";
+echo "<path d='M3 9H21M9 9V21' stroke='currentColor' stroke-width='2'/>";
+echo "</svg>";
+echo "Ver Tablas";
+echo "</a>";
+echo "</div>";
+
+echo "<style>
+/* Header moderno para facultad */
+.faculty-header {
+    background: linear-gradient(135deg, #003366 0%, #002244 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.2);
+}
+
+/* Contenedor del título */
+.faculty-title-container {
+    flex-grow: 1;
+}
+
+/* Estilo del título */
+.faculty-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Botón Ver Tablas */
+.view-tables-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.view-tables-btn:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.view-tables-btn:active {
+    transform: translateY(0);
+}
+
+/* Icono de tabla */
+.table-icon {
+    margin-bottom: 1px;
+    transition: transform 0.3s ease;
+}
+
+.view-tables-btn:hover .table-icon {
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .faculty-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .view-tables-btn {
+        align-self: flex-end;
+    }
+}
+</style>";
 }
 
     if (!empty($data_current_period)) {
@@ -1397,11 +1874,11 @@ echo "<div class='card-header-custom bg-unicauca-blue-dark text-white d-flex jus
 
     echo "<div class='chart-grid'>";
     echo "<div class='chart-box'>";
-    echo "<h4 class='chart-title'>Profesores por Tipo de Profesor</h4>";
+    echo "<h4 class='chart-title'>Profesores por vinculación</h4>";
     echo "<canvas id='chartProfesoresTipo' height='300'></canvas>";
     echo "</div>";
     echo "<div class='chart-box'>";
-    echo "<h4 class='chart-title'>Valor Proyectado por Tipo Profesores</h4>";
+    echo "<h4 class='chart-title'>Valor Proyectado por Vinculación</h4>";
     echo "<canvas id='chartValorTipo' height='300'></canvas>";
     echo "</div>";
     echo "<div class='chart-box' style='display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;'>";
@@ -1728,7 +2205,7 @@ echo "<style>
      
 </style>";
 // Mostrar los gráficos solo si hay datos
-if (!empty($departamentos_data) || $facultad_seleccionada) {
+if (!empty($departamentos_data) || $facultad_seleccionada ) {
     // Obtener IDs de departamentos y facultades
     $depto_labels = array_keys($departamentos_data);
     $depto_ids = [];
@@ -1755,12 +2232,30 @@ if (!empty($departamentos_data) || $facultad_seleccionada) {
     }
 
     echo "<div class='chart-grid'>";
-    echo "<div class='chart-box'>";
-    echo "<h3 class='chart-title'>Profesores por Departamento</h3>";
-    echo "<div class='chart-wrapper'>";
-    echo "<canvas id='chartProfesoresDepto'></canvas>";
-    echo "</div>";
-    echo "</div>";
+   echo "<div class='chart-box'>";
+        echo "<div style='display: flex; justify-content: space-between; align-items: center;'>";
+        echo "<h3 class='chart-title'>Profesores por Departamento</h3>";
+        echo "<button id='btnAmpliarProfesores' style='
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #374151;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        '
+        onmouseover='this.style.borderColor=\"#9ca3af\"; this.style.backgroundColor=\"#f9fafb\"' 
+        onmouseout='this.style.borderColor=\"#d1d5db\"; this.style.backgroundColor=\"#ffffff\"'>
+        Ampliar
+        </button>";
+echo "</div>";
+echo "<div class='chart-wrapper'>";
+echo "<canvas id='chartProfesoresDepto'></canvas>";
+echo "</div>";
+echo "</div>";
     
  echo "<div class='chart-box'>";
 echo "<div style='display: flex; justify-content: space-between; align-items: center;'>";
@@ -1916,9 +2411,21 @@ if ($faculty_id_for_display !== null && $nombre_facultad_seleccionada && isset($
 echo "<div id='chartAmpliadoContainer' style='display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;'>";
 echo "<div style='background-color: white; padding: 20px; border-radius: 8px; max-width: 90%; max-height: 90%; overflow: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative;'>";
 echo "<button id='cerrarAmpliado' style='position: absolute; top: 15px; right: 15px; background: none; border: none; color: #6c757d; font-size: 1.5rem; cursor: pointer; padding: 5px; line-height: 1;' aria-label='Cerrar modal'>&times;</button>";echo "<h3 style='text-align: center; color: #2c3e50;'>Valor Proyectado por Departamento (Ampliado)</h3>";
-echo "<canvas id='chartValorDeptoAmpliado' style='max-width: 100%; max-height: 100%;'></canvas>";
+echo "<canvas id='chartValorDeptoAmpliado' width='1200' height='600' style='max-width: 100%; max-height: 100%;'></canvas>";
 echo "</div>";
 echo "</div>"; //antesd echad grd se incluyo esto
+    
+   //y este es elotro para depto
+// Modal para gráfico de Profesores ampliado
+echo "<div id='profesoresAmpliadoContainer' style='display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;'>";
+echo "<div style='background-color: white; padding: 20px; border-radius: 8px; width: 95%; max-width: 1200px; max-height: 90%; overflow: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative;'>";
+echo "<button id='cerrarProfesoresAmpliado' style='position: absolute; top: 10px; right: 10px; background: none; border: none; color: #6c757d; font-size: 1.5rem; cursor: pointer; padding: 5px; line-height: 1;' aria-label='Cerrar modal'>&times;</button>";
+echo "<h3 style='text-align: center; color: #2c3e50;'>Profesores por Departamento (Ampliado)</h3>";
+echo "<canvas id='chartProfesoresDeptoAmpliado' style='max-width: 100%; max-height: 100%;'></canvas>";
+echo "</div>";
+echo "</div>"; 
+    
+    
     echo "</div>";
     
     echo "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>";
@@ -2006,23 +2513,23 @@ echo "</div>"; //antesd echad grd se incluyo esto
         };
         
      // Gráfico de Profesores por Departamento
-const ctxProfDepto = document.getElementById('chartProfesoresDepto');
-if (ctxProfDepto) {
-    new Chart(ctxProfDepto, {
+// --- Función para crear el gráfico de Profesores (reutilizable) ---
+function createProfesoresChart(ctx, labels, actual, anterior, anio, anioAnt) {
+    return new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labelsDepto,
+            labels: labels,
             datasets: [
                 {
-                    label: 'Actual (' + anioSemestre + ')',
-                    data: profesoresActual,
+                    label: 'Actual (' + anio + ')',
+                    data: actual,
                     backgroundColor: 'rgba(54, 162, 235, 0.7)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1
                 },
                 {
-                    label: 'Anterior (' + anioSemestreAnterior + ')',
-                    data: profesoresAnterior,
+                    label: 'Anterior (' + anioAnt + ')',
+                    data: anterior,
                     backgroundColor: 'rgba(255, 99, 132, 0.7)',
                     borderColor: 'rgba(255, 99, 132, 1)',
                     borderWidth: 1
@@ -2035,10 +2542,10 @@ if (ctxProfDepto) {
                 ...commonOptions.plugins,
                 datalabels: {
                     ...commonOptions.plugins.datalabels,
-                    color: '#6c757d', // Gris suave
+                    color: '#6c757d',
                     font: {
                         size: 11,
-                        weight: 'normal' // Sin negrita
+                        weight: 'normal'
                     },
                     formatter: function(value) {
                         return value.toLocaleString();
@@ -2052,17 +2559,81 @@ if (ctxProfDepto) {
                     title: {
                         display: true,
                         text: 'Cantidad de Profesores',
-                        color: '#6c757d' // Gris consistente
+                        color: '#6c757d'
                     },
                     ticks: {
-                        color: '#6c757d' // Color gris para los ticks
+                        color: '#6c757d'
                     }
                 },
                 y: {
                     ticks: {
-                        color: '#6c757d' // Color gris para los ticks del eje Y
+                        color: '#6c757d'
                     }
                 }
+            }
+        }
+    });
+}
+
+// Crear gráfico original de Profesores por Departamento
+const ctxProfDepto = document.getElementById('chartProfesoresDepto');
+let chartProfesoresDepto = null;
+if (ctxProfDepto) {
+    chartProfesoresDepto = createProfesoresChart(
+        ctxProfDepto,
+        labelsDepto,
+        profesoresActual,
+        profesoresAnterior,
+        anioSemestre,
+        anioSemestreAnterior
+    );
+}
+// --- Lógica para el botón de Ampliar del gráfico de Profesores ---
+const btnAmpliarProfesores = document.getElementById('btnAmpliarProfesores');
+const profesoresAmpliadoContainer = document.getElementById('profesoresAmpliadoContainer');
+const cerrarProfesoresAmpliado = document.getElementById('cerrarProfesoresAmpliado');
+const chartProfesoresDeptoAmpliado = document.getElementById('chartProfesoresDeptoAmpliado');
+let chartProfesoresAmpliado = null;
+
+if (btnAmpliarProfesores && profesoresAmpliadoContainer && cerrarProfesoresAmpliado && chartProfesoresDeptoAmpliado) {
+    btnAmpliarProfesores.addEventListener('click', function() {
+        // Mostrar el contenedor del gráfico ampliado
+        profesoresAmpliadoContainer.style.display = 'flex';
+        
+        // Configurar dimensiones del canvas
+        chartProfesoresDeptoAmpliado.width = chartProfesoresDeptoAmpliado.offsetWidth;
+        chartProfesoresDeptoAmpliado.height = chartProfesoresDeptoAmpliado.offsetHeight;
+        
+        // Destruir gráfico anterior si existe
+        if (chartProfesoresAmpliado) {
+            chartProfesoresAmpliado.destroy();
+        }
+
+        // Crear nuevo gráfico ampliado
+        chartProfesoresAmpliado = createProfesoresChart(
+            chartProfesoresDeptoAmpliado,
+            labelsDepto,
+            profesoresActual,
+            profesoresAnterior,
+            anioSemestre,
+            anioSemestreAnterior
+        );
+    });
+
+    cerrarProfesoresAmpliado.addEventListener('click', function() {
+        profesoresAmpliadoContainer.style.display = 'none';
+        if (chartProfesoresAmpliado) {
+            chartProfesoresAmpliado.destroy();
+            chartProfesoresAmpliado = null;
+        }
+    });
+
+    profesoresAmpliadoContainer.addEventListener('click', function(event) {
+        if (event.target === profesoresAmpliadoContainer) {
+            profesoresAmpliadoContainer.style.display = 'none';
+            if (chartProfesoresAmpliado) {
+                chartProfesoresAmpliado.destroy();
+                chartProfesoresAmpliado = null;
             }
         }
     });
@@ -2201,120 +2772,601 @@ if (btnAmpliarValor && chartAmpliadoContainer && cerrarAmpliado && chartValorDep
 } else {
     echo "<div class='alert alert-info'>No hay datos de departamentos para mostrar gráficos</div>";
 }
-echo "<div class='period-container'>";
-          
-// Sección de Periodo Actual
-echo "<div class='period-box'>";
-            echo "<div class='period-header'>Periodo Actual: " . htmlspecialchars($anio_semestre) . "</div>";
-           /* echo "<div class='info-grid'>";
-            echo "<div class='info-item'><span class='info-label'>Días Cátedra:</span> " . number_format($dias_catedra, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>Semanas Cátedra:</span> " . number_format($semanas_catedra, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>Días Ocasional:</span> " . number_format($dias_ocasional, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>Semanas Ocasional:</span> " . number_format($semanas_ocasional, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>Meses Ocasional:</span> " . number_format($meses_ocasional, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>Valor Punto:</span> $" . number_format($valor_punto, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>SMLV:</span> $" . number_format($smlv, 0, ',', '.') . "</div>";
-            echo "</div>"; // cierre info-grid
-*/
-         if (!empty($data_current_period)) {
-    echo "<div class='table-container'>";
-    echo "<table class='compact-table'>";
-    echo "<thead><tr>
-            <th>Facultad</th>
-            <th>Departamento</th>
-            <th>Tipo</th>
-            <th>Profesores</th>
-            <th>Total Proyectado</th>
-          </tr></thead>";
-    echo "<tbody>";
+
+$combined_data = [];
+
+// Procesar datos del Periodo Actual
+foreach ($data_current_period as $row) {
+    $key = $row['nombre_facultad'] . '|' . $row['nombre_departamento'] . '|' . $row['tipo_docente'];
+    if (!isset($combined_data[$key])) {
+        $combined_data[$key] = [
+            'nombre_facultad' => $row['nombre_facultad'],
+            'nombre_departamento' => $row['nombre_departamento'],
+            'PK_DEPTO' => $row['PK_DEPTO'],
+            'FK_FAC' => $row['FK_FAC'],
+            'tipo_docente' => $row['tipo_docente'],
+            'current_period' => [], // Aquí guardaremos los datos del periodo actual
+            'previous_period' => []  // Aquí guardaremos los datos del periodo anterior
+        ];
+    }
+    $combined_data[$key]['current_period'] = [
+        'total_profesores' => $row['total_profesores'],
+        'total_ocasional_tc' => $row['total_ocasional_tc'],
+        'total_ocasional_mt' => $row['total_ocasional_mt'],
+        'total_horas_agregadas' => $row['total_horas_agregadas'],
+        'gran_total_ajustado' => $row['gran_total_ajustado'] // ¡Aseguramos que esté aquí!
+    ];
+}
+
+// Procesar datos del Periodo Anterior
+foreach ($data_previous_period as $row) {
+    $key = $row['nombre_facultad'] . '|' . $row['nombre_departamento'] . '|' . $row['tipo_docente'];
+    if (!isset($combined_data[$key])) {
+        // Si no existe en el periodo actual, lo creamos para el anterior
+        $combined_data[$key] = [
+            'nombre_facultad' => $row['nombre_facultad'],
+            'nombre_departamento' => $row['nombre_departamento'],
+            'PK_DEPTO' => $row['PK_DEPTO'],
+            'FK_FAC' => $row['FK_FAC'],
+            'tipo_docente' => $row['tipo_docente'],
+            'current_period' => [],
+            'previous_period' => []
+        ];
+    }
+    $combined_data[$key]['previous_period'] = [
+        'total_profesores' => $row['total_profesores'],
+        'total_ocasional_tc' => $row['total_ocasional_tc'],
+        'total_ocasional_mt' => $row['total_ocasional_mt'],
+        'total_horas_agregadas' => $row['total_horas_agregadas'],
+        'gran_total_ajustado' => $row['gran_total_ajustado'] // ¡Aseguramos que esté aquí!
+    ];
+}
+
+// Opcional: Ordenar los datos combinados por Facultad, Departamento, Tipo Docente
+// Esto asegura que la tabla se vea ordenada consistentemente
+ksort($combined_data); // Ordena por la clave, que incluye facultad, depto, tipo
+
+
+$combined_data = [];
+
+// Procesar datos del Periodo Actual
+foreach ($data_current_period as $row) {
+    $key = $row['nombre_facultad'] . '|' . $row['nombre_departamento'] . '|' . $row['tipo_docente'];
+    if (!isset($combined_data[$key])) {
+        $combined_data[$key] = [
+            'nombre_facultad' => $row['nombre_facultad'],
+            'nombre_departamento' => $row['nombre_departamento'],
+            'PK_DEPTO' => $row['PK_DEPTO'],
+            'FK_FAC' => $row['FK_FAC'],
+            'tipo_docente' => $row['tipo_docente'],
+            'current_period' => [], // Aquí guardaremos los datos del periodo actual
+            'previous_period' => []  // Aquí guardaremos los datos del periodo anterior
+        ];
+    }
+    $combined_data[$key]['current_period'] = [
+        'total_profesores' => $row['total_profesores'],
+        'total_ocasional_tc' => $row['total_ocasional_tc'],
+        'total_ocasional_mt' => $row['total_ocasional_mt'],
+        'total_horas_agregadas' => $row['total_horas_agregadas'],
+        'gran_total_ajustado' => $row['gran_total_ajustado']
+    ];
+}
+
+// Procesar datos del Periodo Anterior
+foreach ($data_previous_period as $row) {
+    $key = $row['nombre_facultad'] . '|' . $row['nombre_departamento'] . '|' . $row['tipo_docente'];
+    if (!isset($combined_data[$key])) {
+        $combined_data[$key] = [
+            'nombre_facultad' => $row['nombre_facultad'],
+            'nombre_departamento' => $row['nombre_departamento'],
+            'PK_DEPTO' => $row['PK_DEPTO'],
+            'FK_FAC' => $row['FK_FAC'],
+            'tipo_docente' => $row['tipo_docente'],
+            'current_period' => [],
+            'previous_period' => []
+        ];
+    }
+    $combined_data[$key]['previous_period'] = [
+        'total_profesores' => $row['total_profesores'],
+        'total_ocasional_tc' => $row['total_ocasional_tc'],
+        'total_ocasional_mt' => $row['total_ocasional_mt'],
+        'total_horas_agregadas' => $row['total_horas_agregadas'],
+        'gran_total_ajustado' => $row['gran_total_ajustado']
+    ];
+}
+
+ksort($combined_data);
+
+echo "<div class='period-container' id='vertablas'>";
+echo "<div class='period-box full-width-table'>";
+echo "<div class='period-comparison-header'>
+        <div class='period-comparison-title'>
+            Tablas Comparativas de Periodos: " . htmlspecialchars($anio_semestre) . " vs " . htmlspecialchars($periodo_anterior) . "
+        </div>
+        <a href='#secciongraf' class='back-to-top-button'>
+            <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' class='back-to-top-icon'>
+                <path d='M12 19V5M5 12l7-7 7 7'/>
+            </svg>
+            Volver arriba
+        </a>
+    </div>";
+
+echo "<style>
+    /* Estilos para el header de comparación */
+ .period-comparison-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* Colores y gradiente de .comparison-header */
+    background: linear-gradient(to right, #006699, #004d80); /* Gradiente de Unicauca */
+    color: white;
+    padding: 0.8rem 1.5rem; /* Padding ajustado */
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); /* Sombra más sutil */
     
-    foreach ($data_current_period as $row) {
+    /* Propiedades flex adicionales de .comparison-header para mejor responsividad */
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan */
+    gap: 10px; /* Espacio entre los elementos */
+}
+
+/* Puedes mantener .comparison-header tal cual si lo usas en otros lugares */
+.comparison-header {
+    background: linear-gradient(to right, #006699, #004d80); /* Mantiene tu gradiente original */
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Mueve el título y los botones a los extremos */
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan */
+    gap: 10px; /* Espacio entre los elementos */
+}
+
+    .period-comparison-title {
+        font-size: 1.1rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+    }
+
+    /* Estilos para el botón de volver arriba */
+    .back-to-top-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: rgba(255, 255, 255, 0.15);
+        color: white;
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .back-to-top-button:hover {
+        background-color: rgba(255, 255, 255, 0.25);
+        transform: translateY(-1px);
+    }
+
+    .back-to-top-button:active {
+        transform: translateY(0);
+    }
+
+    .back-to-top-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .back-to-top-button:hover .back-to-top-icon {
+        transform: translateY(-2px);
+    }
+</style>";
+if (!empty($combined_data)) {
+    echo "<div class='table-container'>";
+    echo "<table id='comparativeTable' class='compact-table comparative-table'>"; 
+    echo "<thead>";
+    echo "<tr>";
+    echo "<th rowspan='2'>Facultad</th>";
+    echo "<th rowspan='2'>Departamento</th>";
+    echo "<th rowspan='2'>Tipo</th>";
+    echo "<th colspan='5'>Periodo Actual (" . htmlspecialchars($anio_semestre) . ")</th>";
+    echo "<th colspan='5'>Periodo Anterior (" . htmlspecialchars($periodo_anterior) . ")</th>";
+    // Colspan ahora es 4 para las diferencias (Prof, Hrs, Proy, %)
+    echo "<th colspan='4'>Diferencia</th>";
+    echo "</tr>";
+    echo "<tr>";
+    echo "<th>TC</th>";
+    echo "<th>MT</th>";
+    echo "<th>Prof.</th>";
+    echo "<th>Total Hrs.</th>";
+    echo "<th>Proyectado</th>";
+    echo "<th>TC</th>";
+    echo "<th>MT</th>";
+    echo "<th>Prof.</th>";
+    echo "<th>Total Hrs.</th>";
+    echo "<th>Proyectado</th>";
+    echo "<th>Prof.</th>";
+    echo "<th>Hrs.</th>";
+    echo "<th>Proy.</th>";
+    echo "<th>%</th>"; // ¡NUEVO ENCABEZADO!
+    echo "</tr>";
+    echo "</thead>";
+    echo "<tbody>";
+
+    foreach ($combined_data as $key => $data) {
+        $current = $data['current_period'];
+        $previous = $data['previous_period'];
+
+        $current_prof = isset($current['total_profesores']) ? $current['total_profesores'] : 0;
+        $current_horas = isset($current['total_horas_agregadas']) ? $current['total_horas_agregadas'] : 0;
+        $current_proy = isset($current['gran_total_ajustado']) ? $current['gran_total_ajustado'] : 0;
+
+        $previous_prof = isset($previous['total_profesores']) ? $previous['total_profesores'] : 0;
+        $previous_horas = isset($previous['total_horas_agregadas']) ? $previous['total_horas_agregadas'] : 0;
+        $previous_proy = isset($previous['gran_total_ajustado']) ? $previous['gran_total_ajustado'] : 0;
+
+        $diff_prof = $current_prof - $previous_prof;
+        $diff_horas = $current_horas - $previous_horas;
+        $diff_proy = $current_proy - $previous_proy;
+
+        // Cálculo del Porcentaje de Cambio
+        $percentage_change = null; // Usamos null para indicar que no hay cambio o no es aplicable
+        if ($previous_proy !== 0) { // Evitar división por cero
+            $percentage_change = ($diff_proy / $previous_proy) * 100;
+        } elseif ($diff_proy !== 0) {
+            // Si el anterior es 0 pero el actual no, indica un crecimiento "infinito" o muy grande
+            $percentage_change = 100; // Podrías usar otro valor como null o "N/A"
+        }
+
+        // Lógica para determinar el icono y la clase CSS (color)
+        $arrow_prof = '';
+        $class_prof = '';
+        if ($diff_prof > 0) {
+            $arrow_prof = '&#x25B2;'; // Flecha arriba
+            $class_prof = 'diff-bad'; // ROJO: Más profesores es MALO
+        } elseif ($diff_prof < 0) {
+            $arrow_prof = '&#x25BC;'; // Flecha abajo
+            $class_prof = 'diff-good'; // VERDE: Menos profesores es BUENO
+        }
+
+        $arrow_horas = '';
+        $class_horas = '';
+        if ($diff_horas > 0) {
+            $arrow_horas = '&#x25B2;'; // Flecha arriba
+            $class_horas = 'diff-bad'; // ROJO: Más horas es MALO
+        } elseif ($diff_horas < 0) {
+            $arrow_horas = '&#x25BC;'; // Flecha abajo
+            $class_horas = 'diff-good'; // VERDE: Menos horas es BUENO
+        }
+
+        $arrow_proy = '';
+        $class_proy = '';
+        if ($diff_proy < 0) { // Menos costo es bueno
+            $arrow_proy = '&#x25BC;'; // Flecha abajo
+            $class_proy = 'diff-good'; // VERDE
+        } elseif ($diff_proy > 0) { // Más costo es malo
+            $arrow_proy = '&#x25B2;'; // Flecha arriba
+            $class_proy = 'diff-bad'; // ROJO
+        }
+
         echo "<tr>";
-        echo "<td>" . htmlspecialchars($row['nombre_facultad']) . "</td>";
-        
-        // Celda con enlace al departamento (usa PK_DEPTO y FK_FAC)
-        echo "<td>";
-echo "<form action='depto_comparativo.php' method='POST' style='display: inline;'>";
-        echo "<input type='hidden' name='departamento_id' value='" . htmlspecialchars($row['PK_DEPTO']) . "'>";
-        echo "<input type='hidden' name='facultad_id' value='" . htmlspecialchars($row['FK_FAC']) . "'>";
-        echo "<input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>";
-        echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>";
-    echo "<button type='submit' class='departamento-link'>";
-echo htmlspecialchars($row['nombre_departamento']);
-echo "</button>";
-        echo "</form>";
+        echo "<td>" . htmlspecialchars($data['nombre_facultad']) . "</td>";
+                  echo "<td>"; // Celda del departamento
+            // Añade data-order para que DataTables lo use para ordenar por el nombre completo
+            echo "<span data-order='" . htmlspecialchars($data['nombre_departamento']) . "'>";
+            echo "<form action='depto_comparativo.php' method='POST' style='display: inline;'>";
+            echo "<input type='hidden' name='departamento_id' value='" . htmlspecialchars($data['PK_DEPTO']) . "'>";
+            echo "<input type='hidden' name='facultad_id' value='" . htmlspecialchars($data['FK_FAC']) . "'>";
+            echo "<input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>";
+            echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>";
+            echo "<button type='submit' class='departamento-link no-wrap-content'>"; // Añadimos una nueva clase aquí
+            echo htmlspecialchars($data['nombre_departamento']);
+            echo "</button>";
+            echo "</form>";
+            echo "</span>";
+            echo "</td>";
+        echo "<td>" . htmlspecialchars($data['tipo_docente']) . "</td>";
+
+        // Datos del Periodo Actual
+        if ($data['tipo_docente'] !== 'Catedra') {
+            echo "<td>" . (isset($current['total_ocasional_tc']) && $current['total_ocasional_tc'] > 0 ? htmlspecialchars($current['total_ocasional_tc']) : '') . "</td>";
+            echo "<td>" . (isset($current['total_ocasional_mt']) && $current['total_ocasional_mt'] > 0 ? htmlspecialchars($current['total_ocasional_mt']) : '') . "</td>";
+        } else {
+            echo "<td></td>";
+            echo "<td></td>";
+        }
+        echo "<td>" . ($current_prof !== 0 ? htmlspecialchars($current_prof) : '') . "</td>";
+        echo "<td>" . ($current_horas !== 0 ? number_format($current_horas, 0, ',', '.') : '') . "</td>";
+        echo "<td class='currency'>$" . ($current_proy !== 0 ? number_format($current_proy / 1000000, 2, ',', '.') . "M" : '') . "</td>";
+
+        // Datos del Periodo Anterior
+        if ($data['tipo_docente'] !== 'Catedra') {
+            echo "<td>" . (isset($previous['total_ocasional_tc']) && $previous['total_ocasional_tc'] > 0 ? htmlspecialchars($previous['total_ocasional_tc']) : '') . "</td>";
+            echo "<td>" . (isset($previous['total_ocasional_mt']) && $previous['total_ocasional_mt'] > 0 ? htmlspecialchars($previous['total_ocasional_mt']) : '') . "</td>";
+        } else {
+            echo "<td></td>";
+            echo "<td></td>";
+        }
+        echo "<td>" . ($previous_prof !== 0 ? htmlspecialchars($previous_prof) : '') . "</td>";
+        echo "<td>" . ($previous_horas !== 0 ? number_format($previous_horas, 0, ',', '.') : '') . "</td>";
+        echo "<td class='currency'>$" . ($previous_proy !== 0 ? number_format($previous_proy / 1000000, 2, ',', '.') . "M" : '') . "</td>";
+
+        // Celdas de Diferencias (Prof, Hrs, Proy, %)
+        echo "<td class='" . $class_prof . "'>" . ($diff_prof !== 0 ? htmlspecialchars($diff_prof) . " " . $arrow_prof : '') . "</td>";
+        echo "<td class='" . $class_horas . "'>" . ($diff_horas !== 0 ? number_format($diff_horas, 0, ',', '.') . " " . $arrow_horas : '') . "</td>";
+        echo "<td class='currency " . $class_proy . "'>$" . ($diff_proy !== 0 ? number_format($diff_proy / 1000000, 2, ',', '.') . "M" . " " . $arrow_proy : '') . "</td>";
+        // ¡NUEVA CELDA: Porcentaje de Cambio!
+        echo "<td class='" . $class_proy . "'>"; // Reutilizamos la clase de color de proy.
+        if ($percentage_change !== null && $diff_proy !== 0) { // Mostrar solo si hay un cambio y es calculable
+            echo number_format($percentage_change, 1, ',', '.') . "%";
+        }
         echo "</td>";
-        
-        echo "<td>" . htmlspecialchars($row['tipo_docente']) . "</td>";
-        echo "<td>" . htmlspecialchars($row['total_profesores']) . "</td>";
-        echo "<td class='currency'>$" . number_format($row['gran_total_ajustado'], 0, ',', '.') . "</td>";
+
         echo "</tr>";
     }
-    
+
     echo "</tbody></table>";
     echo "</div>";
 } else {
-                echo "<div class='no-data'>No hay datos disponibles para el periodo actual</div>";
-            }
-            echo "</div>"; // cierre period-box
+    echo "<div class='no-data'>No hay datos disponibles para la comparativa de periodos</div>";
+}
+echo "</div>";
+echo "</div>";
 
-            // Sección de Periodo Anterior
-            echo "<div class='period-box'>";
-            echo "<div class='period-header'>Periodo Anterior: " . htmlspecialchars($periodo_anterior) . "</div>";
-          /*  echo "<div class='info-grid'>";
-            echo "<div class='info-item'><span class='info-label'>Días Cátedra:</span> " . number_format($dias_catedra_ant, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>Semanas Cátedra:</span> " . number_format($semanas_catedra_ant, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>Días Ocasional:</span> " . number_format($dias_ocasional_ant, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>Semanas Ocasional:</span> " . number_format($semanas_ocasional_ant, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>Meses Ocasional:</span> " . number_format($meses_ocasional_ant, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>Valor Punto:</span> $" . number_format($valor_punto_ant, 0, ',', '.') . "</div>";
-            echo "<div class='info-item'><span class='info-label'>SMLV:</span> $" . number_format($smlv_ant, 0, ',', '.') . "</div>";
-            echo "</div>"; // cierre info-grid
-            */
-if (!empty($data_previous_period)) {
-    echo "<div class='table-container'>";
-    echo "<table class='compact-table'>";
-    echo "<thead><tr>
-            <th>Facultad</th>
-            <th>Departamento</th>
-            <th>Tipo</th>
-            <th>Profesores</th>
-            <th>Total Proyectado</th>
-          </tr></thead>";
-    echo "<tbody>";
-    
-    foreach ($data_previous_period as $row) {
-        echo "<tr>";
-        echo "<td>" . htmlspecialchars($row['nombre_facultad']) . "</td>";
-        
-        // Celda con enlace al departamento (usando PK_DEPTO y FK_FAC)
-        echo "<td>";
-echo "<form action='depto_comparativo.php' method='POST' style='display: inline;'>";
-        echo "<input type='hidden' name='departamento_id' value='" . htmlspecialchars($row['PK_DEPTO']) . "'>";
-        echo "<input type='hidden' name='facultad_id' value='" . htmlspecialchars($row['FK_FAC']) . "'>";
-        echo "<input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>";
-        echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>";
-     echo "<button type='submit' class='departamento-link'>";
-echo htmlspecialchars($row['nombre_departamento']);
-echo "</button>";
-        echo "</form>";
-        echo "</td>";
-        
-        echo "<td>" . htmlspecialchars($row['tipo_docente']) . "</td>";
-        echo "<td>" . htmlspecialchars($row['total_profesores']) . "</td>";
-        echo "<td class='currency'>$" . number_format($row['gran_total_ajustado'], 0, ',', '.') . "</td>";
-        echo "</tr>";
-    }
-    
-    echo "</tbody></table>";
-    echo "</div>"; // cierre table-container
-} else {
-                echo "<div class='no-data'>No hay datos disponibles para el periodo anterior</div>";
-            }
-            echo "</div>"; // cierre period-box
-            echo "</div>"; // cierre period-container
-echo "</div>"; // cierre period-container
-
-   
 echo "</div>"; // cierre unicauca-container
 ?>
+    
+    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Inicializa DataTables en tu tabla.
+            // Asegúrate de que el ID de la tabla coincida con el que generas en PHP.
+            $('#comparativeTable').DataTable({
+                // Opciones adicionales si las necesitas, por ejemplo:
+                // "paging": true, // Habilitar paginación
+                // "searching": true // Habilitar búsqueda
+            });
+        });
+    </script>
+
+<style>
+/* Variables de color institucionales Unicauca */
+:root {
+  --unicauca-blue: #003366;
+  --unicauca-gold: #FFCC00;
+  --unicauca-blue-light: #1a4d80;
+  --unicauca-gray-light: #f8f9fa;
+  --unicauca-gray-medium: #e9ecef;
+  --unicauca-gray-dark: #dee2e6;
+  --unicauca-text: #212529;
+  --unicauca-text-light: #6c757d;
+  --unicauca-success: #28a745;
+  --unicauca-danger: #dc3545;
+  --unicauca-warning: #ffc107;
+}
+
+/* Contenedor principal de tablas (si lo usas) */
+.period-container {
+  display: flex;
+  gap: 20px; /* Espacio entre las tablas si hay varias */
+  flex-wrap: wrap; /* Permite que las tablas se ajusten en pantallas pequeñas */
+  justify-content: center; /* Centra las tablas si el espacio lo permite */
+  padding: 15px; /* Pequeño padding alrededor del contenedor principal */
+}
+
+/* Estilo profesional para tablas - UX Mejorado */
+.compact-table {
+  width: 100%;
+  border-collapse: separate; /* Permite border-spacing y border-radius */
+  border-spacing: 0; /* Elimina espacio entre bordes de celda */
+  font-size: 0.85em;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: var(--unicauca-text);
+  margin: 1rem 0; /* Espacio superior e inferior */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Sombra sutil para profundidad */
+  border-radius: 8px; /* Bordes ligeramente redondeados para la tabla completa */
+  overflow: hidden; /* Importante para que el border-radius se aplique bien */
+}
+
+/* Encabezados con estilo moderno */
+.compact-table thead th {
+  background-color: var(--unicauca-blue);
+  color: white;
+  font-weight: 600;
+  padding: 12px 15px;
+  text-align: center;
+  position: sticky; /* Encabezado fijo al hacer scroll */
+  top: 0;
+  z-index: 10; /* Asegura que el encabezado esté por encima del contenido */
+  border: none; /* Elimina bordes individuales de los th */
+  white-space: nowrap; /* Mantiene el texto del encabezado en una sola línea */
+}
+
+/* Bordes inferiores específicos para los encabezados */
+.compact-table thead tr:first-child th {
+  border-bottom: 2px solid var(--unicauca-blue-light);
+}
+
+.compact-table thead tr:last-child th {
+  border-bottom: none;
+}
+
+/* Celdas con mejor espaciado y jerarquía visual */
+.compact-table td {
+  padding: 10px 15px !important; /* Más padding para que el contenido respire */
+  border-bottom: 1px solid var(--unicauca-gray-dark); /* Línea divisoria suave */
+  vertical-align: middle; /* Alineación vertical central */
+  line-height: 1.4; /* Espaciado entre líneas para mejor lectura */
+  white-space: nowrap; /* FUERZA EL CONTENIDO DE LAS CELDAS A UNA SOLA LÍNEA */
+}
+
+/* Efecto hover sutil en filas del cuerpo de la tabla */
+.compact-table tbody tr:hover {
+  background-color: rgba(0, 51, 102, 0.03); /* Ligero azul de Unicauca al pasar el ratón */
+}
+
+/* Filas alternas con contraste suave */
+.compact-table tbody tr:nth-child(even) {
+  background-color: var(--unicauca-gray-light);
+}
+
+/* Estilo para enlaces de departamento */
+.departamento-link {
+  background: none;
+  border: none;
+  color: var(--unicauca-blue);
+  text-decoration: none; /* Sin subrayado por defecto */
+  cursor: pointer;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease; /* Transiciones suaves para hover */
+  display: inline-flex; /* Permite alinear texto y flecha */
+  align-items: center;
+}
+
+.departamento-link:hover {
+  background-color: rgba(0, 51, 102, 0.08); /* Fondo sutil al hover */
+  color: var(--unicauca-blue-light);
+}
+
+.departamento-link:hover::after {
+  content: "→"; /* Flecha de dirección */
+  margin-left: 5px;
+  font-size: 0.9em;
+  transition: margin 0.2s ease;
+}
+
+/* Estilos para valores monetarios */
+.currency {
+  font-family: 'Roboto Mono', monospace, sans-serif; /* Fuente monoespaciada para alinear números */
+  font-weight: 500;
+  text-align: right;
+  color: var(--unicauca-text);
+  white-space: nowrap; /* Asegura que la cifra monetaria no se rompa */
+}
+
+/* Indicadores de diferencia mejorados (flechas y colores) */
+.diff-good {
+  color: var(--unicauca-success);
+  font-weight: 600;
+  position: relative; /* Para posicionar la flecha */
+  padding-left: 18px; /* Espacio para la flecha */
+  white-space: nowrap; /* Mantiene la diferencia en una línea */
+}
+
+.diff-good::before {
+  content: "↑"; /* Flecha hacia arriba */
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1em;
+}
+
+.diff-bad {
+  color: var(--unicauca-danger);
+  font-weight: 600;
+  position: relative;
+  padding-left: 18px;
+  white-space: nowrap; /* Mantiene la diferencia en una línea */
+}
+
+.diff-bad::before {
+  content: "↓"; /* Flecha hacia abajo */
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1em;
+}
+
+.diff-neutral {
+  color: var(--unicauca-text-light);
+  font-weight: 400;
+  white-space: nowrap; /* Mantiene la diferencia en una línea */
+}
+
+/* Contenedor de tabla con scroll horizontal y vertical */
+.table-container {
+  max-height: 600px; /* Altura máxima antes de activar el scroll vertical */
+  overflow-y: auto; /* Scroll vertical */
+  overflow-x: auto; /* Scroll horizontal crucial para nowrap */
+  position: relative;
+  border: 1px solid var(--unicauca-gray-dark);
+  border-radius: 6px;
+  margin: 1rem 0;
+}
+
+/* Estilo para la primera columna (Facultad), para que destaque */
+.compact-table td:first-child {
+  font-weight: 500;
+  color: var(--unicauca-blue);
+}
+
+/* Efecto visual para celdas importantes (si se aplica esta clase en el HTML) */
+.highlight-cell {
+  background-color: rgba(255, 204, 0, 0.1); /* Ligero fondo dorado */
+  font-weight: 600;
+}
+
+/* Scrollbar personalizada para navegadores Webkit (Chrome, Safari, Edge) */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: var(--unicauca-gray-medium);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: var(--unicauca-blue);
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--unicauca-blue-light);
+}
+
+/* Efecto de sombra al hacer scroll (requiere JS para añadir/quitar la clase 'scrolling') */
+.table-container.scrolling::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.9));
+  pointer-events: none;
+}
+
+/* Media queries para Responsividad en pantallas pequeñas */
+@media (max-width: 768px) {
+  .compact-table {
+    font-size: 0.8em; /* Tamaño de fuente ligeramente más pequeño */
+  }
+  
+  .compact-table th, 
+  .compact-table td {
+    padding: 8px 10px; /* Reducir padding en celdas */
+  }
+
+  /* Considera permitir el salto de línea en columnas de texto si es crítico para móviles */
+  /*
+  .compact-table td:first-child,
+  .compact-table td:nth-child(2),
+  .compact-table td:nth-child(3) { // Para Facultad, Departamento, Tipo
+      white-space: normal;
+  }
+  */
+}
+</style>
+    </body>
+</html>

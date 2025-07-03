@@ -665,7 +665,7 @@ echo '<i class="fas fa-copy mr-2"></i>Comparativo Espejo';
 echo '</button>';
 echo '</form>';
 
-if ($tipo_usuario != '3') {
+if ($tipo_usuario != '4') {
     // Botón Puntos y Costos
   /*  echo '<form action="report_depto_comparativo_costos.php" method="GET" class="mb-0">';
     echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
