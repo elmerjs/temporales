@@ -2966,6 +2966,42 @@ echo "<style>
     }
 </style>";
 if (!empty($combined_data)) {
+    echo "<div class='data-summary-container'>";
+    
+    // Encabezado informativo
+
+    // Contenedor de tarjetas
+    echo "<div class='data-cards-container'>";
+    
+    // Tarjeta para Semanas Cátedra
+    echo "<div class='data-card'>";
+    echo "<div class='card-header'>Semanas Cátedra ".$anio_semestre."</div>";
+    echo "<div class='card-content'>";
+    echo "<div class='current-value'>" . number_format($semanas_catedra, 0, ',', '.') . "</div>";
+    echo "<div class='previous-value'>Anterior (".$periodo_anterior."): " . number_format($semanas_catedra_ant, 0, ',', '.') . "</div>";
+    echo "</div>";
+    echo "</div>";
+    
+    // Tarjeta para Semanas Ocasional
+    echo "<div class='data-card'>";
+    echo "<div class='card-header'>Semanas Ocasional ".$anio_semestre."</div>";
+    echo "<div class='card-content'>";
+    echo "<div class='current-value'>" . number_format($semanas_ocasional, 0, ',', '.') . "</div>";
+    echo "<div class='previous-value'>Anterior(".$periodo_anterior."): " . number_format($semanas_ocasional_ant, 0, ',', '.') . "</div>";
+    echo "</div>";
+    echo "</div>";
+    
+    // Tarjeta para Valor Punto
+    echo "<div class='data-card'>";
+    echo "<div class='card-header'>Valor Punto ".$anio_semestre."</div>";
+    echo "<div class='card-content'>";
+    echo "<div class='current-value'>$" . number_format($valor_punto, 0, ',', '.') . "</div>";
+    echo "<div class='previous-value'>Anterior (".$periodo_anterior."): $" . number_format($valor_punto_ant, 0, ',', '.') . "</div>";
+    echo "</div>";
+    echo "</div>";
+    
+    echo "</div>"; // cierre data-cards-container
+    echo "</div>"; // cierre data-summary-container
     echo "<div class='table-container'>";
     echo "<table id='comparativeTable' class='compact-table comparative-table'>"; 
     echo "<thead>";
@@ -3134,7 +3170,6 @@ echo "</div>"; // cierre unicauca-container
             });
         });
     </script>
-
 <style>
 /* Variables de color institucionales Unicauca */
 :root {
@@ -3149,6 +3184,20 @@ echo "</div>"; // cierre unicauca-container
   --unicauca-success: #28a745;
   --unicauca-danger: #dc3545;
   --unicauca-warning: #ffc107;
+
+  /* Colores para las tarjetas de resumen */
+  --summary-text-dark: #2c3e50;
+  --summary-text-light: #6c757d;
+  --summary-period-current: #3498db;
+  --summary-period-previous: #95a5a6;
+  --summary-border-light: #e0e0e0;
+  --summary-card-border: #3498db; /* Borde izquierdo de la tarjeta */
+  --summary-change-positive-bg: rgba(46, 204, 113, 0.1);
+  --summary-change-positive-color: #2ecc71;
+  --summary-change-negative-bg: rgba(231, 76, 60, 0.1);
+  --summary-change-negative-color: #e74c3c;
+  --summary-change-neutral-bg: rgba(149, 165, 166, 0.1);
+  --summary-change-neutral-color: #95a5a6;
 }
 
 /* Contenedor principal de tablas (si lo usas) */
@@ -3347,25 +3396,330 @@ echo "</div>"; // cierre unicauca-container
   pointer-events: none;
 }
 
+/* Encabezado General para comparativos (ya estaba definido y es lo que querías estandarizar) */
+.comparison-header,
+.period-comparison-header { /* Aplicamos los mismos estilos a ambos */
+    background: linear-gradient(to right, #006699, #004d80);
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Contenedor principal del selector de facultad para admin */
+.selector-facultad-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin: 15px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid var(--unicauca-gray-dark);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+}
+
+/* Formulario del selector de facultad (para admin) */
+.selector-facultad-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Etiqueta del selector de facultad */
+.selector-facultad-form .selector-label {
+    font-weight: 600;
+    color: var(--unicauca-text);
+    font-size: 0.95em;
+    white-space: nowrap;
+}
+
+/* Select y botón primario dentro del formulario */
+.selector-facultad-form select,
+.selector-facultad-form input[type="text"] {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--unicauca-gray-medium);
+  font-size: 0.95em;
+  min-width: 220px;
+  max-width: 300px;
+  background-color: var(--unicauca-gray-light);
+  color: var(--unicauca-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  flex-grow: 1;
+}
+
+.selector-facultad-form select:focus,
+.selector-facultad-form input[type="text"]:focus {
+  border-color: var(--unicauca-blue);
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.2);
+  outline: none;
+  background-color: white;
+}
+
+/* Botón principal (ej. "Ver Reporte") */
+.selector-facultad-form .btn-primary {
+  padding: 8px 18px;
+  background-color: var(--unicauca-blue);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95em;
+  font-weight: 500;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.selector-facultad-form .btn-primary:hover {
+  background-color: var(--unicauca-blue-light);
+  transform: translateY(-1px);
+}
+
+.selector-facultad-form .btn-primary:active {
+  background-color: var(--unicauca-blue);
+  transform: translateY(0);
+}
+
+/* Nuevo Botón de Alternancia (Comparativo Espejo/Original) */
+.btn-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 18px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.95em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 180px;
+}
+
+/* Estilos específicos para el botón "Comparativo Espejo" */
+.btn-switch-espejo {
+  background-color: var(--unicauca-gold);
+  color: var(--unicauca-blue);
+  border: 1px solid var(--unicauca-gold);
+}
+
+.btn-switch-espejo:hover {
+  background-color: #e6b800;
+  border-color: #e6b800;
+  transform: translateY(-1px);
+}
+
+/* Estilos específicos para el botón "Comparativo Original" */
+.btn-switch-original {
+  background-color: var(--unicauca-blue-light);
+  color: white;
+  border: 1px solid var(--unicauca-blue-light);
+}
+
+.btn-switch-original:hover {
+  background-color: var(--unicauca-blue);
+  border-color: var(--unicauca-blue);
+  transform: translateY(-1px);
+}
+
+/* Botón "Ver Tablas" */
+.view-tables-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.view-tables-btn:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.view-tables-btn svg {
+    margin-bottom: 1px;
+}
+
+/* Contenedor principal para el resumen de datos (tarjetas) */
+.data-summary-container {
+    background-color: var(--unicauca-gray-light);
+    border-radius: 8px;
+    padding: 15px; /* Reducido de 20px a 15px */
+    margin-bottom: 20px; /* Reducido de 30px a 20px */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Encabezado del resumen */
+.summary-header {
+    margin-bottom: 10px; /* Reducido de 20px a 10px */
+    border-bottom: 1px solid var(--summary-border-light);
+    padding-bottom: 10px; /* Reducido de 15px a 10px */
+}
+
+.summary-header h3 {
+    color: var(--summary-text-dark);
+    margin: 0 0 5px 0; /* Reducido de 10px a 5px */
+    font-size: 1.3rem; /* Ligeramente reducido de 1.4rem a 1.3rem */
+}
+
+.period-info {
+    display: flex;
+    gap: 15px; /* Reducido de 20px a 15px */
+    font-size: 0.85rem; /* Ligeramente reducido de 0.9rem a 0.85rem */
+    color: var(--summary-text-light);
+}
+
+.current-period {
+    color: var(--summary-period-current);
+    font-weight: 500;
+}
+
+.previous-period {
+    color: var(--summary-period-previous);
+}
+
+/* Contenedor de tarjetas */
+.data-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Min-width reducido para más columnas en pantallas grandes */
+    gap: 10px; /* Reducido de 15px a 10px */
+}
+
+/* Tarjetas individuales */
+.data-card {
+    background: white;
+    border-radius: 8px;
+    padding: 12px; /* Reducido de 15px a 12px */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-left: 4px solid var(--summary-card-border);
+}
+
+.card-header {
+    font-weight: 600;
+    color: var(--summary-text-dark);
+    margin-bottom: 5px; /* Reducido de 10px a 5px */
+    font-size: 0.95rem; /* Ligeramente reducido de 1rem a 0.95rem */
+}
+
+.card-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.current-value {
+    font-size: 1.4rem; /* Reducido de 1.5rem a 1.4rem */
+    font-weight: 700;
+    color: var(--summary-text-dark);
+    margin-bottom: 3px; /* Reducido de 5px a 3px */
+}
+
+.previous-value {
+    font-size: 0.8rem; /* Reducido de 0.85rem a 0.8rem */
+    color: var(--summary-period-previous);
+    display: flex;
+    align-items: center;
+}
+
+/* Indicadores de cambio */
+.change-indicator {
+    margin-left: 6px; /* Ligeramente reducido de 8px a 6px */
+    font-size: 0.75rem; /* Ligeramente reducido de 0.8rem a 0.75rem */
+    padding: 1px 5px; /* Reducido de 2px 6px a 1px 5px */
+    border-radius: 10px; /* Ligeramente reducido de 12px a 10px */
+}
+
+.change-positive {
+    background-color: var(--summary-change-positive-bg);
+    color: var(--summary-change-positive-color);
+}
+
+.change-negative {
+    background-color: var(--summary-change-negative-bg);
+    color: var(--summary-change-negative-color);
+}
+
+.change-neutral {
+    background-color: var(--summary-change-neutral-bg);
+    color: var(--summary-change-neutral-color);
+}
+
 /* Media queries para Responsividad en pantallas pequeñas */
 @media (max-width: 768px) {
   .compact-table {
-    font-size: 0.8em; /* Tamaño de fuente ligeramente más pequeño */
+    font-size: 0.8em;
   }
   
   .compact-table th, 
   .compact-table td {
-    padding: 8px 10px; /* Reducir padding en celdas */
+    padding: 8px 10px;
   }
 
-  /* Considera permitir el salto de línea en columnas de texto si es crítico para móviles */
-  /*
-  .compact-table td:first-child,
-  .compact-table td:nth-child(2),
-  .compact-table td:nth-child(3) { // Para Facultad, Departamento, Tipo
-      white-space: normal;
+  .data-cards-container {
+      grid-template-columns: 1fr; /* Una columna en móviles */
+      gap: 10px; /* Mantiene el gap reducido */
   }
-  */
+
+  /* Selector de Facultad (Admin) */
+  .selector-facultad-container {
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .selector-facultad-form {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .selector-facultad-form .selector-label {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 0;
+  }
+
+  .selector-facultad-form select,
+  .selector-facultad-form .btn-primary,
+  .btn-switch {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  /* Encabezado (No-Admin y Period Comparison Header) */
+  .comparison-header,
+  .period-comparison-header {
+      flex-direction: column;
+      align-items: stretch;
+      text-align: center;
+      padding: 0.8rem 1rem;
+      gap: 10px;
+  }
+
+  .comparison-title {
+      font-size: 1rem;
+  }
+
+  .view-tables-btn,
+  .btn-switch {
+      width: 100%;
+      justify-content: center;
+  }
 }
 </style>
     </body>
