@@ -2012,22 +2012,22 @@ echo "</div>"; // Cierra chart-box
             type: 'bar',
             data: {
                 labels: labels,
-                datasets: [
-                    {
-                        label: 'Actual (" . htmlspecialchars($anio_semestre) . ")',
-                        data: profesoresActual,
-                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Anterior (" . htmlspecialchars($periodo_anterior) . ")',
-                        data: profesoresAnterior,
-                        backgroundColor: 'rgba(153, 102, 255, 0.7)',
-                        borderColor: 'rgba(153, 102, 255, 1)',
-                        borderWidth: 1
-                    }
-                ]
+               datasets: [
+                {
+                    label: 'Actual (" . htmlspecialchars($anio_semestre) . ")',
+                    data: profesoresActual,
+                    backgroundColor: 'rgba(75, 192, 192, 1)', // Cambiado a 1
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Anterior (" . htmlspecialchars($periodo_anterior) . ")',
+                    data: profesoresAnterior,
+                    backgroundColor: 'rgba(153, 102, 255, 1)', // Cambiado a 1
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }
+            ]
             },
             options: {
                 responsive: true,
@@ -2068,22 +2068,22 @@ new Chart(ctxValorTipo, {
     type: 'bar',
     data: {
         labels: labels,
-        datasets: [
-            {
-                label: 'Actual (" . htmlspecialchars($anio_semestre) . ")',
-                data: valorActual,
-                backgroundColor: 'rgba(255, 159, 64, 0.7)',
-                borderColor: 'rgba(255, 159, 64, 1)',
-                borderWidth: 1
-            },
-            {
-                label: 'Anterior (" . htmlspecialchars($periodo_anterior) . ")',
-                data: valorAnterior,
-                backgroundColor: 'rgba(255, 99, 132, 0.7)',
-                borderColor: 'rgba(255, 99, 132, 1)',
-                borderWidth: 1
-            }
-        ]
+     datasets: [
+                {
+                    label: 'Actual (" . htmlspecialchars($anio_semestre) . ")',
+                    data: valorActual,
+                    backgroundColor: 'rgba(255, 159, 64, 1)', // Cambiado a 1
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Anterior (" . htmlspecialchars($periodo_anterior) . ")',
+                    data: valorAnterior,
+                    backgroundColor: 'rgba(255, 99, 132, 1)', // Cambiado a 1
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
     },
     options: {
         responsive: true,
@@ -2517,22 +2517,22 @@ function createProfesoresChart(ctx, labels, actual, anterior, anio, anioAnt) {
         type: 'bar',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    label: 'Actual (' + anio + ')',
-                    data: actual,
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Anterior (' + anioAnt + ')',
-                    data: anterior,
-                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1
-                }
-            ]
+           datasets: [
+                    {
+                        label: 'Actual (' + anio + ')',
+                        data: actual,
+                        backgroundColor: 'rgba(54, 162, 235, 1)', // Cambiado a 1
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Anterior (' + anioAnt + ')',
+                        data: anterior,
+                        backgroundColor: 'rgba(255, 99, 132, 1)', // Cambiado a 1
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
         },
         options: {
             ...commonOptions,
@@ -2643,22 +2643,23 @@ function createValorChart(ctx, labels, actual, anterior, anio, anioAnt) {
         type: 'bar',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    label: 'Actual (' + anio + ')',
-                    data: actual,
-                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Anterior (' + anioAnt + ')',
-                    data: anterior,
-                    backgroundColor: 'rgba(153, 102, 255, 0.7)',
-                    borderColor: 'rgba(153, 102, 255, 1)',
-                    borderWidth: 1
-                }
-            ]
+          datasets: [
+                    {
+                        label: 'Actual (' + anio + ')',
+                        data: actual,
+                        backgroundColor: 'rgba(75, 192, 192, 1)', // Cambiado a 1
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Anterior (' + anioAnt + ')',
+                        data: anterior,
+                        backgroundColor: 'rgba(153, 102, 255, 1)', // Cambiado a 1
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 1
+                    }
+                ]
+     
         },
         options: {
             ...commonOptions,
@@ -3224,7 +3225,7 @@ echo "</div>"; // cierre unicauca-container
 
 /* Encabezados con estilo moderno */
 .compact-table thead th {
-  background-color:#9D0311;
+  background-color:#003366;
   color: white;
   font-weight: 600;
   padding: 12px 15px;
