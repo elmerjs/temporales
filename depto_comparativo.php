@@ -890,8 +890,16 @@ function obtenerTRDDepartamento($departamento_id) {
     border-radius: 10rem; // Cubierto por .semanas-badge
 }
 */
+         .card-plazo {
+    max-width: 1800px;/*ece el ancho máximo para el contenedor de tarjetas */
+    margin: 0 auto;    /* Centra el contenedor de tarjetas */
+    gap: 20px; /* Mantén el espacio entre las tarjetas */
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    width: 100%; /* Asegura que ocupe todo el ancho disponible hasta el max-width */
+}
     </style>
-<div class="card card-plazo mb-4" >
+<div class="card-plazo mb-4" >
     <div class="navigation-header">
      <div>
                 <?php if (isset($_POST['envia']) && $_POST['envia'] === 'consulta_todo_depto'): ?>
@@ -987,6 +995,8 @@ function obtenerTRDDepartamento($departamento_id) {
         $contadorVerdesCa = 0;
         $totalProfesoresOcasional = 0;
         $totalProfesoresCatedra = 0;
+        $totalhorasOcasional = 0;
+        $totalhorasCatedra = 0;
         $totalProyectadoOcasional = 0;
         $totalProyectadoCatedra = 0;
         
@@ -1006,7 +1016,12 @@ function obtenerTRDDepartamento($departamento_id) {
         $totalProfesoresCatedraAnterior = 0;
         $totalProyectadoOcasionalAnterior = 0;
         $totalProyectadoCatedraAnterior = 0;          
-        $total_cosolidado_ant = 0;
+        $totalhorasOcasionalAnterior = 0;
+        $totalhorasCatedraAnterior = 0;
+       
+                
+                
+                $total_cosolidado_ant = 0;
         $contadorRojos = 0;
         $contadorRojosOc = 0;
         $contadorRojosCa = 0;
@@ -1135,15 +1150,42 @@ echo "</div>"; // Cierre periodo-info-container
 echo '</div>'; // Cierre grid-col
             
             // Obtener el conteo de profesores para este tipo_docente
-            $sqlCount = "SELECT COUNT(*) as count FROM solicitudes WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
-            $resultCount = $conn->query($sqlCount);
-            $count = $resultCount->fetch_assoc()['count'];
-            if ($tipo_docente == 'Ocasional') {
-                $totalProfesoresOcasional += $count;
-            } elseif ($tipo_docente == 'Catedra') {
-                $totalProfesoresCatedra += $count;
-            }
+            $sqlCount = "SELECT 
+                COUNT(*) AS count,
+                SUM(
+                    CASE 
+                        WHEN tipo_docente = 'Ocasional' THEN 
+                            CASE 
+                                WHEN tipo_dedicacion = 'TC' OR tipo_dedicacion_r = 'TC' THEN 40
+                                WHEN tipo_dedicacion = 'MT' OR tipo_dedicacion_r = 'MT' THEN 20
+                                ELSE 0
+                            END
+                        WHEN tipo_docente = 'Catedra' THEN IFNULL(horas, 0) + IFNULL(horas_r, 0)
+                        ELSE 0
+                    END
+                ) AS horas
+            FROM solicitudes
+            WHERE 
+                facultad_id = '$facultad_id' AND 
+                departamento_id = '$departamento_id' AND 
+                anio_semestre = '$anio_semestre' AND 
+                tipo_docente = '$tipo_docente' AND 
+                (estado <> 'an' OR estado IS NULL)
+";
+           $resultCount = $conn->query($sqlCount);
+$row = $resultCount->fetch_assoc();
 
+$count = $row['count'];
+$horas = $row['horas']; // este ya viene calculado en SQL
+
+if ($tipo_docente == 'Ocasional') {
+    $totalProfesoresOcasional += $count;
+    $totalhorasOcasional += $horas;
+
+} elseif ($tipo_docente == 'Catedra') {
+    $totalProfesoresCatedra += $count;
+    $totalhorasCatedra += $horas;
+}
                 // --- TABLE STRUCTURE AND HEADERS ---
                 if ($result && $result->num_rows > 0) {
                     echo "<table border='1'>
@@ -1495,12 +1537,19 @@ echo '</div>'; // Cierre grid-col
             echo '<div class="grid-col">';
             
             // --- MAIN QUERY TO GET PROFESSORS FOR THE PREVIOUS PERIOD ---
-            $sql = "SELECT solicitudes.*, facultad.nombre_fac_minb AS nombre_facultad, deparmanentos.depto_nom_propio AS nombre_departamento 
-                    FROM solicitudes 
-                    JOIN deparmanentos ON (deparmanentos.PK_DEPTO = solicitudes.departamento_id)
-                    JOIN facultad ON (facultad.PK_FAC = solicitudes.facultad_id)
-                    WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$periodo_anterior' and tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL) 
-                    ORDER BY solicitudes.nombre ASC";
+          $sql = "SELECT solicitudes.*, 
+               facultad.nombre_fac_minb AS nombre_facultad, 
+               deparmanentos.depto_nom_propio AS nombre_departamento 
+        FROM solicitudes 
+        JOIN deparmanentos ON deparmanentos.PK_DEPTO = solicitudes.departamento_id
+        JOIN facultad ON facultad.PK_FAC = solicitudes.facultad_id
+        WHERE facultad_id = '$facultad_id' 
+          AND departamento_id = '$departamento_id' 
+          AND anio_semestre = '$periodo_anterior' 
+          AND tipo_docente = '$tipo_docente' 
+          AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)
+        ORDER BY solicitudes.nombre ASC";
+
             
             $result = $conn->query($sql);
             
@@ -1513,7 +1562,48 @@ echo '</div>'; // Cierre grid-col
                     $totalProfesoresCatedraAnterior += $countAnterior;
                 }
             }
-            
+            // --- NEW QUERY TO CALCULATE HOURS FOR THE PREVIOUS PERIOD ---
+// Necesitamos las mismas condiciones, pero ahora nos enfocamos en las columnas de horas/dedicación
+$sql_horas = "SELECT tipo_docente, tipo_dedicacion, tipo_dedicacion_r, horas, horas_r 
+              FROM solicitudes 
+              WHERE facultad_id = '$facultad_id' 
+                AND departamento_id = '$departamento_id' 
+                AND anio_semestre = '$periodo_anterior' 
+                AND tipo_docente = '$tipo_docente' 
+                AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
+
+$result_horas = $conn->query($sql_horas);
+
+// Si hay resultados para este tipo de docente en el periodo anterior, sumar las horas
+if ($result_horas) {
+    $totalHorasPeriodoAnterior = 0; // Inicializar acumulador de horas para esta consulta
+    
+    while ($row_horas = $result_horas->fetch_assoc()) {
+        if ($tipo_docente == 'Ocasional') {
+            // Lógica para Ocasional
+            if ($row_horas['tipo_dedicacion'] == 'MT' || $row_horas['tipo_dedicacion_r'] == 'MT') {
+                $totalHorasPeriodoAnterior += 20;
+            } elseif ($row_horas['tipo_dedicacion'] == 'TC' || $row_horas['tipo_dedicacion_r'] == 'TC') {
+                $totalHorasPeriodoAnterior += 40;
+            }
+        } elseif ($tipo_docente == 'Catedra') {
+            // Lógica para Cátedra: horas_r + horas
+            // Aseguramos que los valores sean numéricos antes de sumar
+            $horas_calculadas = (int)$row_horas['horas_r'] + (int)$row_horas['horas'];
+            $totalHorasPeriodoAnterior += $horas_calculadas;
+        }
+    }
+    
+    // Asignar los totales de horas según el tipo de docente
+    if ($tipo_docente == 'Ocasional') {
+        $totalhorasOcasionalAnterior += $totalHorasPeriodoAnterior;
+    } elseif ($tipo_docente == 'Catedra') {
+        $totalhorasCatedraAnterior += $totalHorasPeriodoAnterior;
+    }
+    
+    // Liberar el resultado de la consulta de horas
+    $result_horas->free();
+}
             echo "<div class='box-gray'>";
 // ================= COLUMNA PERIODO ANTERIOR =================
 echo '<div class="grid-col">';
@@ -1983,20 +2073,27 @@ echo "<div>
 </h2>
 
 <div class="card-container">
-    <div class="card">
+  <div class="card">
+    <div class="card-top-section">
         <?php
         $diffOcasional = $totalProfesoresOcasional - $totalProfesoresOcasionalAnterior;
-        $percentageOcasional = ($totalProfesoresOcasionalAnterior != 0) ? ($diffOcasional / $totalProfesoresOcasionalAnterior) * 100 : 0;
-        $classOcasional = ($diffOcasional >= 0) ? 'positive-alert' : 'negative-favorable';
+        $diffOcasionalh = $totalhorasOcasional - $totalhorasOcasionalAnterior;
 
-        // Calcula la discrepancia para Ocasional
-        // Esto representa la cantidad de profesores que entran/salen de Ocasional por CAMBIO DE VINCULACIÓN
-        // (es decir, no son "nuevos" del todo ni "removidos" del todo, sino que cambiaron de Cátedra a Ocasional o viceversa)
+        $percentageOcasional = ($totalProfesoresOcasionalAnterior != 0) ? ($diffOcasional / $totalProfesoresOcasionalAnterior) * 100 : 0;
+        $percentageOcasionalh = ($totalhorasOcasionalAnterior != 0) ? ($diffOcasionalh / $totalhorasOcasionalAnterior) * 100 : 0;
+
+        $classOcasional = ($diffOcasional >= 0) ? 'positive-alert' : 'negative-favorable';
+        $classOcasionalh = ($diffOcasionalh >= 0) ? 'positive-alert' : 'negative-favorable';
+
         $discrepanciaOcasional = $diffOcasional - ($contadorVerdesOc - $contadorRojosOc);
         ?>
-        <div class="card-percentage <?= $classOcasional ?>">
-            <?= ($percentageOcasional >= 0 ? '+' : '') . number_format($percentageOcasional, 1) . '%' ?>
+        
+        <div class="dual-percentage">
+            <div class="card-percentage <?= $classOcasional ?>">
+                <?= ($percentageOcasional >= 0 ? '+' : '') . number_format($percentageOcasional, 1) . '%' ?>
+            </div>
         </div>
+        
         <h3 class="card-title">Profesores Ocasionales (<?= $anio_semestre ?>)</h3>
         <div class="card-main-value">
             <?= $totalProfesoresOcasional ?>
@@ -2007,27 +2104,210 @@ echo "<div>
         <div class="card-subtext">
             <span class="new-count positive-alert">+<?= $contadorVerdesOc ?> nuevos</span>
             <span class="removed-count negative-favorable">-<?= $contadorRojosOc ?> no continúan</span>
-            <?php if ($discrepanciaOcasional !== 0): // Solo muestra si hay una discrepancia real ?>
+            <?php if ($discrepanciaOcasional !== 0): ?>
                 <span class="change-vinculacion">
-                    <?= ($discrepanciaOcasional > 0 ? '+' : '') . $discrepanciaOcasional ?> cambian vinculación
+                    <?= ($discrepanciaOcasional > 0 ? '+' : '') . $discrepanciaOcasional ?> cambian vinc.
                 </span>
             <?php endif; ?>
             <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresOcasionalAnterior ?></span>
         </div>
     </div>
+    
+    <!-- Línea divisoria reforzada -->
+   <div class="hours-divider-title">
+        <span class="divider-text">Equivalente en  horas:</span>
+        <hr class="strong-divider">
+    </div>    
+    <!-- Sección de horas ultra compacta -->
+    <div class="ultra-compact-hours">
+        <div class="hours-grid">
+            <div class="hour-item">
+                <div class="hour-label">Horas:</div>
+                <div class="hour-number"><?= number_format($totalhorasOcasional, 1) ?></div>
+            </div>
+            <div class="hour-item">
+                <div class="hour-label">Anterior:</div>
+                <div class="hour-number"><?= number_format($totalhorasOcasionalAnterior, 1) ?></div>
+            </div>
+            <div class="hour-item">
+                <div class="hour-label">Dif:</div>
+                <div class="hour-number <?= $classOcasionalh ?>">
+                    <?= ($diffOcasionalh >= 0 ? '+' : '') . number_format($diffOcasionalh, 1) ?>
+                </div>
+            </div>
+            <div class="hour-item">
+                <div class="hour-label">%:</div>
+                <div class="hour-number <?= $classOcasionalh ?>">
+                    <?= ($percentageOcasionalh >= 0 ? '+' : '') . number_format($percentageOcasionalh, 1) . '%' ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <div class="card">
+<style>
+/* Estilos generales de la tarjeta */
+.card {
+    position: relative;
+    padding: 15px;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    min-height: auto;
+}
+
+/* Sección superior */
+.card-top-section {
+    margin-bottom: 5px;
+}
+
+.dual-percentage {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+}
+
+.card-percentage {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.card-title {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.card-main-value {
+    font-size: 1.8em;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.card-variation {
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-left: 5px;
+}
+
+.card-subtext {
+    font-size: 0.8em;
+    color: #666;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+/* Línea divisoria */
+/* Estilo para el contenedor del título y la línea */
+.hours-divider-title {
+    position: relative;
+    margin: 10px 0 8px;
+    width: 100%;
+}
+
+/* Texto sobre la línea */
+.divider-text {
+    position: relative;
+    padding-right: 10px;
+    background: white; /* Mismo fondo que la tarjeta */
+    color: #666;
+    font-size: 0.75rem;
+    font-weight: 500;
+    z-index: 1;
+}
+
+/* Línea mejorada */
+.strong-divider {
+    border: none;
+    border-top: 2px solid #c0c0c0;
+    margin-top: -8px; /* Superpone la línea al texto */
+    width: 100%;
+    position: relative;
+}
+/* Sección de horas compacta */
+.ultra-compact-hours {
+    padding: 3px 0;
+    height: auto;
+}
+
+.hours-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;   
+}
+
+.hour-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hour-label {
+    font-size: 0.65em;
+    color: #777;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.hour-number {
+    font-size: 0.75em;
+    font-weight: 600;
+}
+
+/* Colores */
+.positive-alert {
+    color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.negative-favorable {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.new-count {
+    color: #28a745;
+}
+
+.removed-count {
+    color: #dc3545;
+}
+
+.change-vinculacion {
+    color: #6c757d;
+}
+
+.previous-count {
+    color: #6c757d;
+}
+</style>
+
+<!-- Tarjeta de Profesores Cátedra -->
+<div class="card">
+    <div class="card-top-section">
         <?php
         $diffCatedra = $totalProfesoresCatedra - $totalProfesoresCatedraAnterior;
-        $percentageCatedra = ($totalProfesoresCatedraAnterior != 0) ? ($diffCatedra / $totalProfesoresCatedraAnterior) * 100 : 0;
-        $classCatedra = ($diffCatedra >= 0) ? 'positive-alert' : 'negative-favorable';
+        $diffCatedrah = $totalhorasCatedra - $totalhorasCatedraAnterior;
 
-        // Calcula la discrepancia para Cátedra
+        $percentageCatedra = ($totalProfesoresCatedraAnterior != 0) ? ($diffCatedra / $totalProfesoresCatedraAnterior) * 100 : 0;
+        $percentageCatedrah = ($totalhorasCatedraAnterior != 0) ? ($diffCatedrah / $totalhorasCatedraAnterior) * 100 : 0;
+
+        $classCatedra = ($diffCatedra >= 0) ? 'positive-alert' : 'negative-favorable';
+        $classCatedrah = ($diffCatedrah >= 0) ? 'positive-alert' : 'negative-favorable';
+
         $discrepanciaCatedra = $diffCatedra - ($contadorVerdesCa - $contadorRojosCa);
         ?>
-        <div class="card-percentage <?= $classCatedra ?>">
-            <?= ($percentageCatedra >= 0 ? '+' : '') . number_format($percentageCatedra, 1) . '%' ?>
+        
+        <div class="dual-percentage">
+            <div class="card-percentage <?= $classCatedra ?>">
+                <?= ($percentageCatedra >= 0 ? '+' : '') . number_format($percentageCatedra, 1) . '%' ?>
+            </div>
         </div>
+        
         <h3 class="card-title">Profesores Cátedra (<?= $anio_semestre ?>)</h3>
         <div class="card-main-value">
             <?= $totalProfesoresCatedra ?>
@@ -2038,7 +2318,7 @@ echo "<div>
         <div class="card-subtext">
             <span class="new-count positive-alert">+<?= $contadorVerdesCa ?> nuevos</span>
             <span class="removed-count negative-favorable">-<?= $contadorRojosCa ?> no continúan</span>
-            <?php if ($discrepanciaCatedra !== 0): // Solo muestra si hay una discrepancia real ?>
+            <?php if ($discrepanciaCatedra !== 0): ?>
                 <span class="change-vinculacion">
                     <?= ($discrepanciaCatedra > 0 ? '+' : '') . $discrepanciaCatedra ?> cambian vinculación
                 </span>
@@ -2046,18 +2326,63 @@ echo "<div>
             <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresCatedraAnterior ?></span>
         </div>
     </div>
+    
+    <!-- Línea divisoria -->
+   <div class="hours-divider-title">
+        <span class="divider-text">Equivalente en  horas:</span>
+        <hr class="strong-divider">
+    </div>    
+    <!-- Sección de horas compacta -->
+    <div class="ultra-compact-hours">
+        <div class="hours-grid">
+            <div class="hour-item">
+                <div class="hour-label">Horas:</div>
+                <div class="hour-number"><?= number_format($totalhorasCatedra, 1) ?></div>
+            </div>
+            <div class="hour-item">
+                <div class="hour-label">Anterior:</div>
+                <div class="hour-number"><?= number_format($totalhorasCatedraAnterior, 1) ?></div>
+            </div>
+            <div class="hour-item">
+                <div class="hour-label">Dif:</div>
+                <div class="hour-number <?= $classCatedrah ?>">
+                    <?= ($diffCatedrah >= 0 ? '+' : '') . number_format($diffCatedrah, 1) ?>
+                </div>
+            </div>
+            <div class="hour-item">
+                <div class="hour-label">%:</div>
+                <div class="hour-number <?= $classCatedrah ?>">
+                    <?= ($percentageCatedrah >= 0 ? '+' : '') . number_format($percentageCatedrah, 1) . '%' ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <div class="card total-card">
+<!-- Tarjeta de Total Profesores -->
+<div class="card total-card">
+    <div class="card-top-section">
         <?php
         $totalProfesoresTotal = $totalProfesoresOcasional + $totalProfesoresCatedra;
         $totalProfesoresTotalAnterior = $totalProfesoresOcasionalAnterior + $totalProfesoresCatedraAnterior;
         $diffTotalProfesores = $totalProfesoresTotal - $totalProfesoresTotalAnterior;
+        $totalHorasTotal = $totalhorasOcasional + $totalhorasCatedra;
+        $totalHorasTotalAnterior = $totalhorasOcasionalAnterior + $totalhorasCatedraAnterior;
+        $diffTotalHoras = $totalHorasTotal - $totalHorasTotalAnterior;
+        
         $percentageTotalProfesores = ($totalProfesoresTotalAnterior != 0) ? ($diffTotalProfesores / $totalProfesoresTotalAnterior) * 100 : 0;
+        $percentageTotalHoras = ($totalHorasTotalAnterior != 0) ? ($diffTotalHoras / $totalHorasTotalAnterior) * 100 : 0;
+        
         $classTotalProfesores = ($diffTotalProfesores >= 0) ? 'positive-alert' : 'negative-favorable';
+        $classTotalHoras = ($diffTotalHoras >= 0) ? 'positive-alert' : 'negative-favorable';
         ?>
-        <div class="card-percentage <?= $classTotalProfesores ?>">
-            <?= ($percentageTotalProfesores >= 0 ? '+' : '') . number_format($percentageTotalProfesores, 1) . '%' ?>
+        
+        <div class="dual-percentage">
+            <div class="card-percentage <?= $classTotalProfesores ?>">
+                <?= ($percentageTotalProfesores >= 0 ? '+' : '') . number_format($percentageTotalProfesores, 1) . '%' ?>
+            </div>
         </div>
+        
         <h3 class="card-title">Total Profesores (<?= $anio_semestre ?>)</h3>
         <div class="card-main-value">
             <?= $totalProfesoresTotal ?>
@@ -2069,8 +2394,38 @@ echo "<div>
             <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresTotalAnterior ?></span>
         </div>
     </div>
+    
+    <!-- Línea divisoria -->
+   <div class="hours-divider-title">
+        <span class="divider-text">Equivalente en  horas:</span>
+        <hr class="strong-divider">
+    </div>  
+    <!-- Sección de horas compacta -->
+    <div class="ultra-compact-hours">
+        <div class="hours-grid">
+            <div class="hour-item">
+                <div class="hour-label">Horas:</div>
+                <div class="hour-number"><?= number_format($totalHorasTotal, 1) ?></div>
+            </div>
+            <div class="hour-item">
+                <div class="hour-label">Anterior:</div>
+                <div class="hour-number"><?= number_format($totalHorasTotalAnterior, 1) ?></div>
+            </div>
+            <div class="hour-item">
+                <div class="hour-label">Dif:</div>
+                <div class="hour-number <?= $classTotalHoras ?>">
+                    <?= ($diffTotalHoras >= 0 ? '+' : '') . number_format($diffTotalHoras, 1) ?>
+                </div>
+            </div>
+            <div class="hour-item">
+                <div class="hour-label">%:</div>
+                <div class="hour-number <?= $classTotalHoras ?>">
+                    <?= ($percentageTotalHoras >= 0 ? '+' : '') . number_format($percentageTotalHoras, 1) . '%' ?>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
         <div class="card-container">
             <div class="card">
                 <?php
@@ -2328,7 +2683,7 @@ elseif (abs($diffTotalProfesores) <= 2 && $diffTotalProyectado > 0) {
 
   
     if ($huboCambioVinculacion) {
-        $causas[] = "Se identificaron cambios en el tipo de vinculación de algunos profesores, lo que avecata su valor.";
+        $causas[] = "Se identificaron cambios en el tipo de vinculación de algunos profesores, lo que afecta su valor.";
     }
 
     $interpretacion = $interpretacion_base;
@@ -3246,11 +3601,41 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
 /* ============================ */
 /* ===  MEDIA QUERIES PARA RESPONSIVIDAD === */
 /* ============================ */
+.card-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    width: 100%; /* Asegura que ocupe todo el ancho disponible */
+}
+
+/* Estilo para todas las tarjetas (asegurar consistencia) */
+.card {
+    flex: 1; /* Esto hará que las tarjetas se expandan igualmente */
+    min-width: 250px; /* Ancho mínimo para responsividad */
+    max-width: calc(33.333% - 20px); /* Para 3 tarjetas con gap de 20px */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ajustes responsivos */
 @media (max-width: 992px) {
     .card-container {
+        display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         justify-content: center;
+        gap: 15px;
     }
+    
+    .card {
+        max-width: 100%; /* En móvil ocupa todo el ancho del grid */
+    }
+}
+
+/* Asegurar que todas las tarjetas tengan la misma altura */
+.card-top-section {
+    flex: 1; /* Hace que esta sección ocupe el espacio disponible */
+    min-height: 120px; /* Altura mínima para consistencia */
 }
 @media (max-width: 768px) {
     /* Encabezado de navegación en móviles */

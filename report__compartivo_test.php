@@ -457,11 +457,6 @@ font-family: "Open Sans", sans-serif;
 /* CONTENEDOR PRINCIPAL - TABLAS EN LÍNEA */
 
 
-.period-container {
-    display: flex;
-    gap: 15px;
-    align-items: flex-start; /* Alinea al tope */
-}
 
 /* ESTILO COMPACTO PARA TABLAS */
 
@@ -1771,6 +1766,8 @@ echo "<style>
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 4px 12px rgba(0, 51, 102, 0.2);
+max-width: 1600px;margin: 0 auto;
+
 }
 
 /* Contenedor del título */
@@ -2230,6 +2227,7 @@ if (!empty($departamentos_data) || $facultad_seleccionada ) {
         $depto_ids_ordenados[] = $nombre_a_ids[$depto_nombre]['PK_DEPTO'] ?? null;
         $facultad_ids_ordenados[] = $nombre_a_ids[$depto_nombre]['PK_FAC'] ?? null;
     }
+if ($tipo_usuario !=3 ) {
 
     echo "<div class='chart-grid'>";
    echo "<div class='chart-box'>";
@@ -2424,7 +2422,7 @@ echo "<h3 style='text-align: center; color: #2c3e50;'>Profesores por Departament
 echo "<canvas id='chartProfesoresDeptoAmpliado' style='max-width: 100%; max-height: 100%;'></canvas>";
 echo "</div>";
 echo "</div>"; 
-    
+}
     
     echo "</div>";
     
@@ -3091,52 +3089,52 @@ if (!empty($combined_data)) {
 
         echo "<tr>";
         echo "<td>" . htmlspecialchars($data['nombre_facultad']) . "</td>";
-                  echo "<td>"; // Celda del departamento
-            // Añade data-order para que DataTables lo use para ordenar por el nombre completo
-            echo "<span data-order='" . htmlspecialchars($data['nombre_departamento']) . "'>";
-            echo "<form action='depto_comparativo.php' method='POST' style='display: inline;'>";
-            echo "<input type='hidden' name='departamento_id' value='" . htmlspecialchars($data['PK_DEPTO']) . "'>";
-            echo "<input type='hidden' name='facultad_id' value='" . htmlspecialchars($data['FK_FAC']) . "'>";
-            echo "<input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>";
-            echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>";
-            echo "<button type='submit' class='departamento-link no-wrap-content'>"; // Añadimos una nueva clase aquí
-            echo htmlspecialchars($data['nombre_departamento']);
-            echo "</button>";
-            echo "</form>";
-            echo "</span>";
-            echo "</td>";
+        echo "<td>"; // Celda del departamento
+        // Añade data-order para que DataTables lo use para ordenar por el nombre completo
+        echo "<span data-order='" . htmlspecialchars($data['nombre_departamento']) . "'>";
+        echo "<form action='depto_comparativo.php' method='POST' style='display: inline;'>";
+        echo "<input type='hidden' name='departamento_id' value='" . htmlspecialchars($data['PK_DEPTO']) . "'>";
+        echo "<input type='hidden' name='facultad_id' value='" . htmlspecialchars($data['FK_FAC']) . "'>";
+        echo "<input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>";
+        echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>";
+        echo "<button type='submit' class='departamento-link no-wrap-content'>"; // Añadimos una nueva clase aquí
+        echo htmlspecialchars($data['nombre_departamento']);
+        echo "</button>";
+        echo "</form>";
+        echo "</span>";
+        echo "</td>";
         echo "<td>" . htmlspecialchars($data['tipo_docente']) . "</td>";
 
         // Datos del Periodo Actual
         if ($data['tipo_docente'] !== 'Catedra') {
-            echo "<td>" . (isset($current['total_ocasional_tc']) && $current['total_ocasional_tc'] > 0 ? htmlspecialchars($current['total_ocasional_tc']) : '') . "</td>";
-            echo "<td>" . (isset($current['total_ocasional_mt']) && $current['total_ocasional_mt'] > 0 ? htmlspecialchars($current['total_ocasional_mt']) : '') . "</td>";
+            echo "<td data-order='" . (isset($current['total_ocasional_tc']) ? $current['total_ocasional_tc'] : 0) . "'>" . (isset($current['total_ocasional_tc']) && $current['total_ocasional_tc'] > 0 ? htmlspecialchars($current['total_ocasional_tc']) : '') . "</td>";
+            echo "<td data-order='" . (isset($current['total_ocasional_mt']) ? $current['total_ocasional_mt'] : 0) . "'>" . (isset($current['total_ocasional_mt']) && $current['total_ocasional_mt'] > 0 ? htmlspecialchars($current['total_ocasional_mt']) : '') . "</td>";
         } else {
-            echo "<td></td>";
-            echo "<td></td>";
+            echo "<td data-order='0'></td>";
+            echo "<td data-order='0'></td>";
         }
-        echo "<td>" . ($current_prof !== 0 ? htmlspecialchars($current_prof) : '') . "</td>";
-        echo "<td>" . ($current_horas !== 0 ? number_format($current_horas, 0, ',', '.') : '') . "</td>";
-        echo "<td class='currency'>$" . ($current_proy !== 0 ? number_format($current_proy / 1000000, 2, ',', '.') . "M" : '') . "</td>";
+        echo "<td data-order='" . $current_prof . "'>" . ($current_prof !== 0 ? htmlspecialchars($current_prof) : '') . "</td>";
+        echo "<td data-order='" . $current_horas . "'>" . ($current_horas !== 0 ? number_format($current_horas, 0, ',', '.') : '') . "</td>";
+        echo "<td class='currency' data-order='" . $current_proy . "'>$" . ($current_proy !== 0 ? number_format($current_proy / 1000000, 2, ',', '.') . "M" : '') . "</td>";
 
         // Datos del Periodo Anterior
         if ($data['tipo_docente'] !== 'Catedra') {
-            echo "<td>" . (isset($previous['total_ocasional_tc']) && $previous['total_ocasional_tc'] > 0 ? htmlspecialchars($previous['total_ocasional_tc']) : '') . "</td>";
-            echo "<td>" . (isset($previous['total_ocasional_mt']) && $previous['total_ocasional_mt'] > 0 ? htmlspecialchars($previous['total_ocasional_mt']) : '') . "</td>";
+            echo "<td data-order='" . (isset($previous['total_ocasional_tc']) ? $previous['total_ocasional_tc'] : 0) . "'>" . (isset($previous['total_ocasional_tc']) && $previous['total_ocasional_tc'] > 0 ? htmlspecialchars($previous['total_ocasional_tc']) : '') . "</td>";
+            echo "<td data-order='" . (isset($previous['total_ocasional_mt']) ? $previous['total_ocasional_mt'] : 0) . "'>" . (isset($previous['total_ocasional_mt']) && $previous['total_ocasional_mt'] > 0 ? htmlspecialchars($previous['total_ocasional_mt']) : '') . "</td>";
         } else {
-            echo "<td></td>";
-            echo "<td></td>";
+            echo "<td data-order='0'></td>";
+            echo "<td data-order='0'></td>";
         }
-        echo "<td>" . ($previous_prof !== 0 ? htmlspecialchars($previous_prof) : '') . "</td>";
-        echo "<td>" . ($previous_horas !== 0 ? number_format($previous_horas, 0, ',', '.') : '') . "</td>";
-        echo "<td class='currency'>$" . ($previous_proy !== 0 ? number_format($previous_proy / 1000000, 2, ',', '.') . "M" : '') . "</td>";
+        echo "<td data-order='" . $previous_prof . "'>" . ($previous_prof !== 0 ? htmlspecialchars($previous_prof) : '') . "</td>";
+        echo "<td data-order='" . $previous_horas . "'>" . ($previous_horas !== 0 ? number_format($previous_horas, 0, ',', '.') : '') . "</td>";
+        echo "<td class='currency' data-order='" . $previous_proy . "'>$" . ($previous_proy !== 0 ? number_format($previous_proy / 1000000, 2, ',', '.') . "M" : '') . "</td>";
 
         // Celdas de Diferencias (Prof, Hrs, Proy, %)
-        echo "<td class='" . $class_prof . "'>" . ($diff_prof !== 0 ? htmlspecialchars($diff_prof) . " " . $arrow_prof : '') . "</td>";
-        echo "<td class='" . $class_horas . "'>" . ($diff_horas !== 0 ? number_format($diff_horas, 0, ',', '.') . " " . $arrow_horas : '') . "</td>";
-        echo "<td class='currency " . $class_proy . "'>$" . ($diff_proy !== 0 ? number_format($diff_proy / 1000000, 2, ',', '.') . "M" . " " . $arrow_proy : '') . "</td>";
+        echo "<td class='" . $class_prof . "' data-order='" . $diff_prof . "'>" . ($diff_prof !== 0 ? htmlspecialchars($diff_prof) . " " . $arrow_prof : '') . "</td>";
+        echo "<td class='" . $class_horas . "' data-order='" . $diff_horas . "'>" . ($diff_horas !== 0 ? number_format($diff_horas, 0, ',', '.') . " " . $arrow_horas : '') . "</td>";
+        echo "<td class='currency " . $class_proy . "' data-order='" . $diff_proy . "'>$" . ($diff_proy !== 0 ? number_format($diff_proy / 1000000, 2, ',', '.') . "M" . " " . $arrow_proy : '') . "</td>";
         // ¡NUEVA CELDA: Porcentaje de Cambio!
-        echo "<td class='" . $class_proy . "'>"; // Reutilizamos la clase de color de proy.
+        echo "<td class='" . $class_proy . "' data-order='" . ($percentage_change !== null ? $percentage_change : -999999999) . "'>"; // Use a very low number for null/empty for consistent sorting
         if ($percentage_change !== null && $diff_proy !== 0) { // Mostrar solo si hay un cambio y es calculable
             echo number_format($percentage_change, 1, ',', '.') . "%";
         }
@@ -3164,9 +3162,8 @@ echo "</div>"; // cierre unicauca-container
             // Inicializa DataTables en tu tabla.
             // Asegúrate de que el ID de la tabla coincida con el que generas en PHP.
             $('#comparativeTable').DataTable({
-                // Opciones adicionales si las necesitas, por ejemplo:
-                // "paging": true, // Habilitar paginación
-                // "searching": true // Habilitar búsqueda
+                // DataTables automáticamente detecta el atributo data-order para la ordenación.
+                // No necesitas configuración adicional si lo usas consistentemente.
             });
         });
     </script>
@@ -3202,11 +3199,13 @@ echo "</div>"; // cierre unicauca-container
 
 /* Contenedor principal de tablas (si lo usas) */
 .period-container {
-  display: flex;
-  gap: 20px; /* Espacio entre las tablas si hay varias */
-  flex-wrap: wrap; /* Permite que las tablas se ajusten en pantallas pequeñas */
-  justify-content: center; /* Centra las tablas si el espacio lo permite */
-  padding: 15px; /* Pequeño padding alrededor del contenedor principal */
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 15px;
+    max-width: 1700px;
+    margin: 0 auto; /* Add this line to center the container itself */
 }
 
 /* Estilo profesional para tablas - UX Mejorado */
@@ -3214,7 +3213,7 @@ echo "</div>"; // cierre unicauca-container
   width: 100%;
   border-collapse: separate; /* Permite border-spacing y border-radius */
   border-spacing: 0; /* Elimina espacio entre bordes de celda */
-  font-size: 0.85em;
+  font-size: 1em;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   color: var(--unicauca-text);
   margin: 1rem 0; /* Espacio superior e inferior */
@@ -3225,7 +3224,7 @@ echo "</div>"; // cierre unicauca-container
 
 /* Encabezados con estilo moderno */
 .compact-table thead th {
-  background-color: var(--unicauca-blue);
+  background-color:#9D0311;
   color: white;
   font-weight: 600;
   padding: 12px 15px;
@@ -3372,18 +3371,17 @@ echo "</div>"; // cierre unicauca-container
 }
 
 .table-container::-webkit-scrollbar-track {
-  background: var(--unicauca-gray-medium);
+  background: #f1f1f1; /* Un gris muy claro para el fondo del riel */
 }
 
 .table-container::-webkit-scrollbar-thumb {
-  background: var(--unicauca-blue);
+  background: #888; /* Un gris medio para el pulgar */
   border-radius: 4px;
 }
 
 .table-container::-webkit-scrollbar-thumb:hover {
-  background: var(--unicauca-blue-light);
+  background: #555; /* Un gris más oscuro al pasar el ratón para el pulgar */
 }
-
 /* Efecto de sombra al hacer scroll (requiere JS para añadir/quitar la clase 'scrolling') */
 .table-container.scrolling::after {
   content: "";
@@ -3399,8 +3397,7 @@ echo "</div>"; // cierre unicauca-container
 /* Encabezado General para comparativos (ya estaba definido y es lo que querías estandarizar) */
 .comparison-header,
 .period-comparison-header { /* Aplicamos los mismos estilos a ambos */
-    background: linear-gradient(to right, #006699, #004d80);
-    color: white;
+background: linear-gradient(to right, #005a8c, #003366);    color: white;
     padding: 0.8rem 1.5rem;
     border-radius: 8px;
     margin-bottom: 1.5rem;
@@ -3499,7 +3496,7 @@ echo "</div>"; // cierre unicauca-container
   padding: 8px 18px;
   border-radius: 6px;
   text-decoration: none;
-  font-size: 0.95em;
+  font-size: 0.95em;F
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
