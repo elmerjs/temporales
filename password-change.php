@@ -23,41 +23,43 @@
                 <div class="card login-card">
                     <div class="loginBox text-center">
                         <img src="images/logounicauca.png" class="img-fluid login-logo" alt="Logo Universidad del Cauca">
-                        <form method="POST" action="">
-                            <div class="form-group">
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text unicauca-input-icon"><i class="fas fa-envelope"></i></span>
-                                    </div>
-                                    <input type="email" class="form-control unicauca-input" id="email" name="email" placeholder="Email" required>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text unicauca-input-icon"><i class="fas fa-lock"></i></span>
-                                    </div>
-                                    <input type="password" class="form-control unicauca-input" id="current_password" name="current_password" placeholder="Contraseña actual" required>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text unicauca-input-icon"><i class="fas fa-key"></i></span>
-                                    </div>
-                                    <input type="password" class="form-control unicauca-input" id="new_password" name="new_password" placeholder="Nueva contraseña" required>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text unicauca-input-icon"><i class="fas fa-check-circle"></i></span>
-                                    </div>
-                                    <input type="password" class="form-control unicauca-input" id="confirm_password" name="confirm_password" placeholder="Confirmar nueva contraseña" required>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-block unicauca-btn-primary-lg">Actualizar Contraseña</button>
-                        </form>
+                      <form method="POST" action="">
+    <div class="form-group">
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text unicauca-input-icon"><i class="fas fa-envelope"></i></span>
+            </div>
+            <input type="email" class="form-control unicauca-input" id="email" name="email" placeholder="Email" required>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text unicauca-input-icon"><i class="fas fa-lock"></i></span>
+            </div>
+            <input type="password" class="form-control unicauca-input" id="current_password" name="current_password" placeholder="Contraseña actual" required>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text unicauca-input-icon"><i class="fas fa-key"></i></span>
+            </div>
+            <input type="password" class="form-control unicauca-input" id="new_password" name="new_password" placeholder="Nueva contraseña" required>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text unicauca-input-icon"><i class="fas fa-check-circle"></i></span>
+            </div>
+            <input type="password" class="form-control unicauca-input" id="confirm_password" name="confirm_password" placeholder="Confirmar nueva contraseña" required>
+        </div>
+    </div>
+    <p class="mt-3">¿Has olvidado tu contraseña? <a href="forgot-password.php" class="unicauca-link">**Restablecer ahora.**</a></p>
+
+    <button type="submit" class="btn btn-primary btn-block unicauca-btn-primary-lg">Actualizar Contraseña</button>
+</form>
                         <hr class="unicauca-hr">
                         <p><a href="index.html" class="unicauca-link"><i class="fas fa-arrow-left"></i> Volver al inicio</a></p>
                         

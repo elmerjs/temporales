@@ -696,18 +696,18 @@ $base_url_params = [
     'anio_semestre_anterior' => $original_anio_semestre_anterior // Siempre usa el original para alternar
 ];
 if (isset($_GET['facultad_id'])) {
-    $base_url_params['facultad_id'] = htmlspecialchars($_GET['facultad_id']);
+    $base_url_params['facultad_id'] = $_GET['facultad_id'];
+}
+if ($is_espejo_active) {
+    $base_url_params['espejo'] = 'true';
 }
 
 // Construye la URL para activar/desactivar el modo espejo
 $toggle_espejo_url_params = $base_url_params;
 if ($is_espejo_active) {
-    // Si está en espejo, el próximo clic desactiva el espejo
-    // No añadir 'espejo=true', o establecerlo a 'false' si se prefiere una URL más explícita
-    // Para simplificar, simplemente no incluimos el parámetro 'espejo'
+    unset($toggle_espejo_url_params['espejo']); // Quita el parámetro para desactivar el modo espejo
 } else {
-    // Si no está en espejo, el próximo clic activa el espejo
-    $toggle_espejo_url_params['espejo'] = 'true';
+    $toggle_espejo_url_params['espejo'] = 'true'; // Añade el parámetro para activar el modo espejo
 }
 
 $toggle_url = '?' . http_build_query($toggle_espejo_url_params);
@@ -721,32 +721,30 @@ if ($tipo_usuario == 1) {
     echo "<div class='selector-facultad-container'>";
     echo "<form method='get' action='' class='selector-facultad-form'>";
     echo "<input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>";
-    echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($original_anio_semestre_anterior) . "'>"; // Se mantiene el original aquí
+    echo "<input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($original_anio_semestre_anterior) . "'>";
 
-    // Si el modo espejo está activo para el admin, también lo envía en el formulario para persistencia
+    // Si el modo espejo está activo, lo envía en el formulario para persistencia
     if ($is_espejo_active) {
         echo "<input type='hidden' name='espejo' value='true'>";
     }
 
     echo "<label for='facultad_id' class='selector-label'>Seleccione una Facultad</label>";
-    echo "<select name='facultad_id' id='facultad_id'>";
+    echo "<select name='facultad_id' id='facultad_id' onchange='this.form.submit()'>"; // Auto-envía al cambiar
     echo "<option value=''>Ver General</option>";
     foreach ($facultades as $id => $nombre) {
         echo "<option value='$id'" . ($facultad_seleccionada == $id ? ' selected' : '') . ">" . htmlspecialchars($nombre) . "</option>";
     }
     echo "</select>";
-    echo "<button type='submit' class='btn-primary'>Ver Reporte</button>";
-    echo "</form>";
+    echo "</form>"; // Cierra el formulario aquí
 
-    // Botón de comparativo espejo/anterior para admin
+    // Botón de comparativo espejo/anterior para admin (fuera del formulario)
     echo "<a href='" . htmlspecialchars($toggle_url) . "' class='btn-switch $button_class'>" . htmlspecialchars($button_text) . "</a>";
 
-    echo "</div>"; // Cierre del nuevo contenedor
+    echo "</div>"; // Cierre del contenedor
 } else {
     // Mostrar encabezado para usuario no-admin (Tipo de Usuario 2)
-    echo "<div id='secciongraf' class='comparison-header'>";
+    echo "<div class='comparison-header'>";
     echo "<h2 class='comparison-title'>Comparativo " . htmlspecialchars($anio_semestre) . " - " . htmlspecialchars($periodo_anterior) . "</h2>";
-
 
     echo "<a href='#vertablas' class='view-tables-btn'>";
     echo "<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'>";
@@ -760,8 +758,7 @@ if ($tipo_usuario == 1) {
     echo "</div>";
 }
 echo "</div>"; // cierre unicauca-container
-
-echo "<style>
+    echo "<style>
  
 /* Variables de color institucionales Unicauca */
 :root {
