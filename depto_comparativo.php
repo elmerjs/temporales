@@ -1352,8 +1352,8 @@ if ($tipo_docente == 'Ocasional') {
                         // Cálculos de proyección
                         if ($tipo_docente == "Catedra")  {
 
-                      $asignacion_total= $valorPuntos*$valor_punto *($row["horas"]+$row["horas_r"])*$semanas_cat;
-                    $asignacion_mes=$valorPuntos*$valor_punto*($row["horas"] +$row["horas_r"])*4;
+                    $asignacion_total= $valorPuntos*$valor_punto*($row["horas"]+$row["horas_r"])*$semanas_cat;
+                    $asignacion_mes  = $valorPuntos*$valor_punto*($row["horas"] +$row["horas_r"])*4;
                     $prima_navidad = $asignacion_mes*3/12;
                     $indem_vacaciones = $asignacion_mes*$dias/360;
                     $indem_prima_vacaciones = $indem_vacaciones*2/3;
@@ -1920,7 +1920,45 @@ $(document).ready(function(){
 });
 </script>';
             
+    
+echo "<div style='margin-bottom: 10px; font-size: 0.9em;'>
+  <strong>Nota:</strong> 
+  <span style='color: red; font-weight: bold;'>En rojo:</span> Profesores nuevos; (Ocasionales: {$contadorVerdesOc}; Cátedra: {$contadorVerdesCa}) - Total: {$contadorVerdes} &nbsp;|&nbsp;
+  <span style='color: green; font-weight: bold;'>En verde:</span> Profesores que ya no continúan. (Ocasionales: {$contadorRojosOc}, Cátedra: {$contadorRojosCa}) - Total: {$contadorRojos} &nbsp;|&nbsp;
+  <span style='background-color: yellow; color: red; font-weight: bold;'>&nbsp;Cambio de vinculación&nbsp;</span>:  Profesores que cambian de tipo de vinculación en el periodo actual.
+</div>  ";
+    
+// Calcular el porcentaje de cambio (manteniendo tus variables exactas)
+$diferencia = $total_consolidado - $total_cosolidado_ant;
+$porcentaje = ($total_cosolidado_ant != 0) 
+    ? round(($diferencia / $total_cosolidado_ant) * 100, 1) 
+    : 0;
 
+// Determinar color y flecha (con colores invertidos como solicitaste)
+if ($porcentaje > 0) {
+    $color = "danger"; // Rojo para incremento
+    $icono = "bi bi-arrow-up";
+    $texto = "Incremento";
+} elseif ($porcentaje < 0) {
+    $color = "success"; // Verde para decremento
+    $icono = "bi bi-arrow-down";
+    $texto = "Decremento";
+} else {
+    $color = "secondary"; // Gris
+    $icono = "bi bi-dash";
+    $texto = "Estable";
+}
+
+// Mostrar el indicador (versión compacta en una sola línea)
+echo <<<HTML
+<div class="text-end mb-3"  id="seccionGraficos">
+    <span class="text-muted me-2">Variación en proyecto presupuestal:</span>
+    <span class="badge bg-{$color}-subtle text-{$color}">
+        <i class="{$icono} me-1"></i>
+        $texto: <strong>".abs($porcentaje)."%</strong>
+    </span>
+</div>
+HTML;
 ?>
 </div>    
    
@@ -2021,44 +2059,7 @@ document.querySelectorAll('.delete-form').forEach(function(form) {
 </script>
 
 <?php       // Función para obtener el cierreo no de departamento
-    
-echo "<div style='margin-bottom: 10px; font-size: 0.9em;'>
-  <strong>Nota:</strong> 
-  <span style='color: red; font-weight: bold;'>En rojo:</span> Profesores nuevos; (Ocasionales: {$contadorVerdesOc}; Cátedra: {$contadorVerdesCa}) - Total: {$contadorVerdes} &nbsp;|&nbsp;
-  <span style='color: green; font-weight: bold;'>En verde:</span> Profesores que ya no continúan. (Ocasionales: {$contadorRojosOc}, Cátedra: {$contadorRojosCa}) - Total: {$contadorRojos} &nbsp;|&nbsp;
-  <span style='background-color: yellow; color: red; font-weight: bold;'>&nbsp;Cambio de vinculación&nbsp;</span>:  Profesores que cambian de tipo de vinculación en el periodo actual.
-</div>  ";
-// Calcular el porcentaje de cambio (manteniendo tus variables exactas)
-$diferencia = $total_consolidado - $total_cosolidado_ant;
-$porcentaje = ($total_cosolidado_ant != 0) 
-    ? round(($diferencia / $total_cosolidado_ant) * 100, 1) 
-    : 0;
 
-// Determinar color y flecha (con colores invertidos como solicitaste)
-if ($porcentaje > 0) {
-    $color = "danger"; // Rojo para incremento
-    $icono = "bi bi-arrow-up";
-    $texto = "Incremento";
-} elseif ($porcentaje < 0) {
-    $color = "success"; // Verde para decremento
-    $icono = "bi bi-arrow-down";
-    $texto = "Decremento";
-} else {
-    $color = "secondary"; // Gris
-    $icono = "bi bi-dash";
-    $texto = "Estable";
-}
-
-// Mostrar el indicador (versión compacta en una sola línea)
-echo <<<HTML
-<div class="text-end mb-3"  id="seccionGraficos">
-    <span class="text-muted me-2">Variación en proyecto presupuestal:</span>
-    <span class="badge bg-{$color}-subtle text-{$color}">
-        <i class="{$icono} me-1"></i>
-        $texto: <strong>".abs($porcentaje)."%</strong>
-    </span>
-</div>
-HTML;
 echo "<div>
 
 </div>  ";
@@ -3057,7 +3058,7 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
 /* ============================ */
 
 .dashboard-profesores {
-    max-width: 100%;
+    max-width: 1800px;
     margin: 20px auto;
     padding: 0 15px;
 }

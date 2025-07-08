@@ -774,6 +774,8 @@ th {
 </head>
 <body>
    <!-- Barra superior -->
+    <div style="max-width: 1800px; width: 100%; margin: auto;">
+
 <div class="top-nav">
     <div class="container position-relative d-flex align-items-center justify-content-center"> <?php if ($tipo_usuario != 3): ?>
             <a href="report_depto_full.php?anio_semestre=<?= urlencode($anio_semestre) ?>" 
@@ -3005,7 +3007,7 @@ $conn->close();
 .modal-submit-btn:hover {
     background-color: #0056b3;
 }
-</style>
+        </style></div>
 </body>
     
 </html>
