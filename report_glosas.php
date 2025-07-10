@@ -1,4 +1,6 @@
 <?php
+$active_menu_item = 'observaciones';
+
 require('include/headerz.php');
 require 'vendor/autoload.php';
 require 'funciones.php';

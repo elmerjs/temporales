@@ -1,4 +1,6 @@
 <?php
+$active_menu_item = 'gestion_periodos';
+
 require('include/headerz.php');
 require 'conn.php';
 

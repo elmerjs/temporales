@@ -153,7 +153,7 @@ header {
     justify-content: space-between;
     padding: 0 20px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Sombra más pronunciada */
-    border-bottom: 3px solid var(--unicauca-rojo); /* Borde inferior más grueso y distintivo */
+    border-bottom: 3px solid var(--unicauca-gris-claro); /* Borde inferior más grueso y distintivo */
 }
 
 /* Estilos del título del encabezado */
@@ -270,8 +270,7 @@ nav ul li ul.submenu li a:hover {
 }
 
 /* MODIFICADO: Mostrar submenu al hacer hover en el padre O si el padre tiene la clase 'active' */
-nav ul li:hover ul.submenu,
-nav ul li.active > ul.submenu { /* Cuando el LI tiene la clase 'active' */
+nav ul li:hover ul.submenu{ /* Cuando el LI tiene la clase 'active' */
     display: block;
 }
 
@@ -782,7 +781,7 @@ nav ul li ul.submenu li.active a::after {
             <?php endif; ?>
 
             <?php if ($tipo_usuario == 1): ?>
-                <li class="<?= ($active_menu_item == 'pb_graficos') ? 'active' : '' ?>">
+                <li class="<?= ($active_menu_item == 'powerbics') ? 'active' : '' ?>">
                     <a href="../../temporales/powerbics.php">PB-Gráficos</a>
                 </li>
             <?php endif; ?>

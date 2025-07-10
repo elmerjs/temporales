@@ -1,4 +1,6 @@
 <?php
+$active_menu_item = 'powerbics';
+
 require('include/headerz.php');
 ?>
 

@@ -1,4 +1,7 @@
 <?php
+$active_menu_item = 'video_tutorial';
+
+
 require('include/headerz.php');
 
 // Define the default video URL

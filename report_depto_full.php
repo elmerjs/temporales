@@ -1,4 +1,6 @@
 <?php
+$active_menu_item = 'gestion_facultad';
+
 require('include/headerz.php');
 
 require 'vendor/autoload.php'; // Incluye la configuración necesaria para PHPWord u otras librerías

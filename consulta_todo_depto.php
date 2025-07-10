@@ -1,4 +1,7 @@
 <?php
+
+$active_menu_item = 'gestion_depto';
+
 require('include/headerz.php');
 require 'funciones.php';
 //require 'actualizar_usuario.php'; // <-- Incluir aquí

@@ -1,4 +1,6 @@
 <?php
+$active_menu_item = 'inicio'; // Define el menú activo para esta página
+
 require('include/headerz.php');
 require 'funciones.php';
  if (!isset($_SESSION['name']) || empty($_SESSION['name'])) {

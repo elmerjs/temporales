@@ -1,4 +1,6 @@
 <?php
+$active_menu_item = 'comparativo';
+
 require('include/headerz.php');
 require 'funciones.php'; // Asegúrate de que este archivo contiene funciones como obtenerperiodo, etc.
 
@@ -1972,7 +1974,7 @@ echo "<div style='width: 32px; height: 32px; background-color: #3498db20; border
 echo "</div>"; // Cierra chart-box
     echo "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>";
     echo "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0'></script>";
-    echo "<script>
+   echo "<script>
     document.addEventListener('DOMContentLoaded', function() {
         Chart.register(ChartDataLabels);
 
@@ -2013,14 +2015,14 @@ echo "</div>"; // Cierra chart-box
                 {
                     label: 'Actual (" . htmlspecialchars($anio_semestre) . ")',
                     data: profesoresActual,
-                    backgroundColor: 'rgba(75, 192, 192, 1)', // Cambiado a 1
+                    backgroundColor: 'rgba(75, 192, 192, 1)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1
                 },
                 {
                     label: 'Anterior (" . htmlspecialchars($periodo_anterior) . ")',
                     data: profesoresAnterior,
-                    backgroundColor: 'rgba(153, 102, 255, 1)', // Cambiado a 1
+                    backgroundColor: 'rgba(153, 102, 255, 1)',
                     borderColor: 'rgba(153, 102, 255, 1)',
                     borderWidth: 1
                 }
@@ -2047,11 +2049,14 @@ echo "</div>"; // Cierra chart-box
                     datalabels: {
                         display: true,
                         color: '#333',
-                        anchor: 'end',
-                        align: 'end',
+                        anchor: 'end', // Ancla el label al final (parte superior) de la barra
+                        align: 'center', // Alinea el label al centro horizontalmente con la barra
+                        offset: 5, // Mueve el label 5 píxeles hacia arriba desde el final de la barra
                         formatter: function(value, context) {
                             return value.toLocaleString();
-                        }
+                        },
+                        // Permite que el label no sea recortado si se sale del área del gráfico
+                        clip: false
                     },
                     tooltip: {
                         enabled: true
@@ -2059,71 +2064,72 @@ echo "</div>"; // Cierra chart-box
                 }
             }
         });
-// Gráfica de Valor Proyectado por Tipo de Docente
-const ctxValorTipo = document.getElementById('chartValorTipo').getContext('2d');
-new Chart(ctxValorTipo, {
-    type: 'bar',
-    data: {
-        labels: labels,
-     datasets: [
-                {
-                    label: 'Actual (" . htmlspecialchars($anio_semestre) . ")',
-                    data: valorActual,
-                    backgroundColor: 'rgba(255, 159, 64, 1)', // Cambiado a 1
-                    borderColor: 'rgba(255, 159, 64, 1)',
-                    borderWidth: 1
+
+        // Gráfica de Valor Proyectado por Tipo de Docente
+        const ctxValorTipo = document.getElementById('chartValorTipo').getContext('2d');
+        new Chart(ctxValorTipo, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Actual (" . htmlspecialchars($anio_semestre) . ")',
+                        data: valorActual,
+                        backgroundColor: 'rgba(255, 159, 64, 1)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Anterior (" . htmlspecialchars($periodo_anterior) . ")',
+                        data: valorAnterior,
+                        backgroundColor: 'rgba(255, 99, 132, 1)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Valor Proyectado (en millones)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + (value / 1000000).toFixed(1) + 'M';
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tipo de Docente'
+                        }
+                    }
                 },
-                {
-                    label: 'Anterior (" . htmlspecialchars($periodo_anterior) . ")',
-                    data: valorAnterior,
-                    backgroundColor: 'rgba(255, 99, 132, 1)', // Cambiado a 1
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1
-                }
-            ]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: {
-                beginAtZero: true,
-                title: {
-                    display: true,
-                    text: 'Valor Proyectado (en millones)'
-                },
-                ticks: {
-                    callback: function(value) {
-                        return '$' + (value / 1000000).toFixed(1) + 'M';
+                plugins: {
+                    datalabels: {
+                        display: true,
+                        color: '#6c757d', // Un gris suave
+                        anchor: 'end', // Ancla el label al final (parte superior) de la barra
+                        align: 'center', // Alinea el label al centro horizontalmente con la barra
+                        offset: 5, // Mueve el label 5 píxeles hacia arriba desde el final de la barra
+                        formatter: function(value) {
+                            return '$' + (value / 1000000).toFixed(1) + 'M';
+                        },
+                        font: {
+                            size: 10,
+                            weight: 'bold'
+                        },
+                        // Permite que el label no sea recortado si se sale del área del gráfico
+                        clip: false
                     }
                 }
-            },
-            x: {
-                title: {
-                    display: true,
-                    text: 'Tipo de Docente'
-                }
             }
-        },
-        plugins: {
-            datalabels: {
-                display: true,
-                // Cambiado a un tono de gris
-                color: '#6c757d', // Un gris suave
-                anchor: 'center',
-                align: 'top',
-                offset: -10,
-                formatter: function(value) {
-                    return '$' + (value / 1000000).toFixed(1) + 'M';
-                },
-                font: {
-                    size: 10,
-                    weight: 'bold'
-                },
-                clip: false
-            }
-        }
-    }
-});
+        });
     });
     </script>";
 }
