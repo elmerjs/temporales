@@ -2048,7 +2048,7 @@ th[title]:hover::after {
                 // Mostrar botón de Reimprimir incluso si el periodo está cerrado
                 if ($resultb->num_rows > 0 && ($acepta_vra == '2' || $row['dp_estado_total'] == 1)) { ?>
                     <button class="btn unacauca-btn-reprint" onclick="reimprOficio_depto()" style="border-radius: 30px;">
-                        Reimprimir Oficio
+                        (solicitud enviada) Reimprimir Oficio
                     </button>
                 <?php } elseif (!$todosCerrados) { ?>
                     <div data-bs-toggle="tooltip" data-bs-placement="top" title="Confirmar profesores para poder enviar">

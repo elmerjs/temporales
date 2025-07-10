@@ -283,7 +283,8 @@ if ($result->num_rows > 0) {
         ];
     }
 } else {
-        echo "No se encontraron resultados.";
+          //  echo "<div style='max-width: 1800px; width: 100%; margin: auto;'>";
+//echo "No se encontraron resultados."; echo "</div>"
     }
 
     $conn->close();
@@ -1021,6 +1022,7 @@ h2.section-title {
 </head>
 <body>
     
+    <div style="max-width: 1200px; width: 100%; margin: auto;">
 
 <!-- Mostrar los botones de filtro si no se pasa el parámetro 'anio_semestre' -->
 <div>
@@ -1405,6 +1407,7 @@ setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'es_ES', 'es'); // Configurar
     </div>
 </div>
     <?php endif; ?>
+    </div>
 </body>
 <script>
     // Usar localStorage para mantener el valor de $anio_semestre al hacer clic en los botones

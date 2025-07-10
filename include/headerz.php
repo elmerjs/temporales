@@ -642,7 +642,7 @@ nav ul li ul.submenu li.active a::after {
                 <a href="#" title="Novedades que se presentan para los profesores temporales vinculados en el periodo actual">
                     Novedades
                 </a>
-                <ul class="submenu novedades-submenu">
+                 <ul class="submenu novedades-submenu">
                     <?php
                     $periodosMostrados = [];
                     if ($tipo_usuario == 1):
@@ -652,7 +652,9 @@ nav ul li ul.submenu li.active a::after {
                                 <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
                                     <a href="#" class="novedades-periodo"
                                         data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                        data-anio-semestre="<?php echo $previousPeriod; ?>"
+                                           data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+ 
+                                       data-anio-semestre="<?php echo $previousPeriod; ?>"
                                         data-tipo-usuario="<?php echo $tipo_usuario; ?>"
                                         data-email-user="<?php echo $email_user; ?>">
                                         <?php echo $previousPeriod; ?>
@@ -664,7 +666,9 @@ nav ul li ul.submenu li.active a::after {
                                 <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $periodo_work) ? 'active' : '' ?>">
                                     <a href="#" class="novedades-periodo"
                                         data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                        data-anio-semestre="<?php echo $periodo_work; ?>"
+                                           data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+
+                                       data-anio-semestre="<?php echo $periodo_work; ?>"
                                         data-tipo-usuario="<?php echo $tipo_usuario; ?>"
                                         data-email-user="<?php echo $email_user; ?>">
                                         <?php echo $periodo_work; ?>
@@ -676,7 +680,9 @@ nav ul li ul.submenu li.active a::after {
                                 <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
                                     <a href="#" class="novedades-periodo"
                                         data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                        data-anio-semestre="<?php echo $nextPeriod; ?>"
+                                         data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+
+                                       data-anio-semestre="<?php echo $nextPeriod; ?>"
                                         data-tipo-usuario="<?php echo $tipo_usuario; ?>"
                                         data-email-user="<?php echo $email_user; ?>">
                                         <?php echo $nextPeriod; ?>
@@ -691,7 +697,9 @@ nav ul li ul.submenu li.active a::after {
                                 <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
                                     <a href="#" class="novedades-periodo"
                                         data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                        data-anio-semestre="<?php echo $previousPeriod; ?>"
+                                      data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+
+                                       data-anio-semestre="<?php echo $previousPeriod; ?>"
                                         data-tipo-usuario="<?php echo $tipo_usuario; ?>"
                                         data-email-user="<?php echo $email_user; ?>">
                                         <?php echo $previousPeriod; ?>
@@ -702,7 +710,9 @@ nav ul li ul.submenu li.active a::after {
                                 $periodosMostrados[] = $periodo_work; ?>
                                 <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $periodo_work) ? 'active' : '' ?>">
                                     <a href="#" class="novedades-periodo"
-                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+    data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+
+                                       data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
                                         data-anio-semestre="<?php echo $periodo_work; ?>"
                                         data-tipo-usuario="<?php echo $tipo_usuario; ?>"
                                         data-email-user="<?php echo $email_user; ?>">
@@ -715,7 +725,9 @@ nav ul li ul.submenu li.active a::after {
                                 <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
                                     <a href="#" class="novedades-periodo"
                                         data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                        data-anio-semestre="<?php echo $nextPeriod; ?>"
+                                            data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+    
+                                       data-anio-semestre="<?php echo $nextPeriod; ?>"
                                         data-tipo-usuario="<?php echo $tipo_usuario; ?>"
                                         data-email-user="<?php echo $email_user; ?>">
                                         <?php echo $nextPeriod; ?>
