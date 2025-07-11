@@ -39,6 +39,62 @@ function validarCedulasEnPeriodo($cedulas, $anioSemestre) {
     return $cedulas_faltantes;
 }
 
+function datosProfesorCompleto(string $cedula, string $anioSemestre): array|false 
+{
+    $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+
+    if ($conn->connect_error) {
+        die("Error de conexión: " . $conn->connect_error);
+    }
+
+    $sql = "
+        SELECT 
+            t.email,
+            t.nombre_completo,
+            a.asp_departamentos,
+            a.asp_titulos,
+            a.asp_telefono,
+            a.asp_celular,
+            a.asp_correo,
+            a.asp_trabaja_actual,
+            a.asp_cargo
+        FROM aspirante AS a
+        JOIN tercero AS t ON t.documento_tercero = a.fk_asp_doc_tercero
+        WHERE t.documento_tercero = ? 
+          AND a.fk_asp_periodo = ?";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        die("Error al preparar la consulta: " . $conn->error);
+    }
+
+    $stmt->bind_param("ss", $cedula, $anioSemestre);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        $datos = [
+            'email' => $row['email'],
+            'nombre_completo' => $row['nombre_completo'],
+            'departamento' => $row['asp_departamentos'],
+            'titulos' => $row['asp_titulos'],
+            'telefono' => $row['asp_telefono'],
+            'celular' => $row['asp_celular'],
+            'correo' => $row['asp_correo'],
+            'trabaja_actualmente' => $row['asp_trabaja_actual'],
+            'cargo_actual' => $row['asp_cargo']
+        ];
+        $stmt->close();
+        $conn->close();
+        return $datos;
+    }
+
+    $stmt->close();
+    $conn->close();
+    return false;
+}
+
+
 function obtenerDeptoCerrado($depto, $periodo) {
     $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
     

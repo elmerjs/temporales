@@ -222,7 +222,7 @@ echo "<style>
     margin-bottom: 30px;
     width: 100%;
     /* Aumenta el ancho máximo del contenedor para dar más espacio a las tarjetas */
-    max-width: 1600px; /* Incrementado de 900px para permitir tarjetas más anchas */
+    max-width: 1700px; /* Incrementado de 900px para permitir tarjetas más anchas */
     margin-left: auto;
     margin-right: auto;
 }
@@ -275,10 +275,11 @@ echo '<style>
 
 
     .unicauca-container {
-        max-width: 1600px;
+        max-width: 1700px;
         margin: 0 auto;
         padding: 0;
 font-family: "Open Sans", sans-serif;
+   
     }
 
     /* Encabezado premium */
@@ -3314,7 +3315,7 @@ echo "</div>"; // cierre unicauca-container
 }
 
 .diff-good::before {
-  content: "↑"; /* Flecha hacia arriba */
+  content: "↓"; /* Flecha hacia arriba */
   position: absolute;
   left: 2px;
   top: 50%;
@@ -3331,7 +3332,7 @@ echo "</div>"; // cierre unicauca-container
 }
 
 .diff-bad::before {
-  content: "↓"; /* Flecha hacia abajo */
+  content: "↑"; /* Flecha hacia abajo */
   position: absolute;
   left: 2px;
   top: 50%;
@@ -3407,7 +3408,7 @@ background: linear-gradient(to right, #005a8c, #003366);    color: white;
     margin-bottom: 1.5rem;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
     display: flex;
-    align-items: center;
+    align-items: center;nax
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 10px;
@@ -3681,7 +3682,7 @@ background: linear-gradient(to right, #005a8c, #003366);    color: white;
     flex-direction: column;
     gap: 10px;
     padding: 10px;
-  }
+      }
 
   .selector-facultad-form {
     flex-direction: column;

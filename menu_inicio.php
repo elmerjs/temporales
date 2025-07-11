@@ -1018,6 +1018,9 @@ h2.section-title {
         padding: 0.75rem;
     }
 }
+    .row {
+  margin: 0 20px; /* 0 para el margen superior/inferior, 20px para el izquierdo/derecho */
+}
 </style>
 
 
@@ -1364,29 +1367,10 @@ setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'es_ES', 'es'); // Configurar
                 </div>
             </div>
         </div>
-    </div>
+ 
 
     <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-unicauca-blue text-white">
-                    <h5 class="mb-0">Facultades Recibidas</h5>
-                </div>
-                <div class="card-body p-0"> <ul class="list-group list-group-flush">
-                        <?php if (empty($facultades_recibidas)): ?>
-                            <li class="list-group-item text-muted">Aún no hay facultades recibidas.</li>
-                        <?php else: ?>
-                            <?php foreach ($facultades_recibidas as $facultad): ?>
-                                <li class="list-group-item list-group-item-success-custom d-flex justify-content-between align-items-center">
-                                    <span><?php echo htmlspecialchars($facultad['nombre']); ?></span>
-                                    <small class="text-muted"><?php echo htmlspecialchars($facultad['fecha_accion']); ?></small>
-                                </li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ul>
-                </div>
-            </div>
-        </div>
+   
         <div class="col-md-6 mb-4">
             <div class="card h-100">
                 <div class="card-header bg-danger text-white">
@@ -1406,7 +1390,28 @@ setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'es_ES', 'es'); // Configurar
                 </div>
             </div>
         </div>
+             <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-unicauca-green text-white">
+                    <h5 class="mb-0">Facultades Recibidas</h5>
+                </div>
+                <div class="card-body p-0"> <ul class="list-group list-group-flush">
+                        <?php if (empty($facultades_recibidas)): ?>
+                            <li class="list-group-item text-muted">Aún no hay facultades recibidas.</li>
+                        <?php else: ?>
+                            <?php foreach ($facultades_recibidas as $facultad): ?>
+                                <li class="list-group-item list-group-item-success-custom d-flex justify-content-between align-items-center">
+                                    <span><?php echo htmlspecialchars($facultad['nombre']); ?></span>
+                                    <small class="text-muted"><?php echo htmlspecialchars($facultad['fecha_accion']); ?></small>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
+           </div>
 </div>
     <?php endif; ?>
     </div>

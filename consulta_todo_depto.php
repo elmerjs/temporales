@@ -1041,12 +1041,40 @@ echo ")</h4>";
     if ($row["anexa_hv_docente_nuevo"] == 'si' || $row["actualiza_hv_antiguo"] == 'si') {
         $contadorHV++;
     }
+  // Obtenemos los datos del profesor (array asociativo o false)
+$datosProfesor = datosProfesorCompleto($row["cedula"], $anio_semestre);
+
+// Preparamos el tooltip
+$tooltip = '';
+
+if ($datosProfesor !== false) {
+    // Escapamos todos los valores para HTML
+    $datosSeguros = array_map('htmlspecialchars', $datosProfesor);
     
-    echo "<tr>
-        <td class='td-simple'>" . $item . "</td> 
-        <td class='td-simple' style='text-align: left;'>" . htmlspecialchars($row["cedula"]) . "</td>
-        <td class='td-simple' style='text-align: left;'>" . htmlspecialchars($row["nombre"]) . "</td>
+    // Construimos el tooltip con formato legible
+    //quite del tootlip          <strong>postulado en Departamento(s):</strong> {$datosSeguros['departamento']}<br>        <strong>Teléfono:</strong> {$datosSeguros['telefono']}<br>
+
+
+    $tooltip = "
+     
+        <strong>Email:</strong> {$datosSeguros['email']}<br>
+        <strong>Títulos:</strong> {$datosSeguros['titulos']}<br>
+        <strong>Celular:</strong> {$datosSeguros['celular']}<br>
+        <strong>Trabaja actualmente:</strong> {$datosSeguros['trabaja_actualmente']}<br>
+        <strong>Cargo actual:</strong> {$datosSeguros['cargo_actual']}
     ";
+}
+// Generamos la fila de la tabla
+echo "<tr>
+    <td class='td-simple'>" . $item . "</td> 
+    <td class='td-simple' style='text-align: left;'>" . htmlspecialchars($row["cedula"]) . "</td>
+    <td class='td-simple' style='text-align: left;' 
+      data-toggle='tooltip' 
+      data-html='true' 
+      title='" . $tooltip . "'>
+      " . htmlspecialchars($row["nombre"]) . "
+    </td>
+";
 
     if ($tipo_docente == "Ocasional") {
         echo "<td class='td-simple'>" . htmlspecialchars($row["tipo_dedicacion"]) . "</td>
@@ -1158,10 +1186,10 @@ echo ")</h4>";
             data-maestria='" . htmlspecialchars($row["maestria"] ?? '') . "'
             data-doctorado='" . htmlspecialchars($row["doctorado"] ?? '') . "'
             data-otro_estudio='" . htmlspecialchars($row["otro_estudio"] ?? '') . "'
-            data-experiencia_docente='" . htmlspecialchars($row["experiencia_docente"] ?? '') . "'
-            data-experiencia_profesional='" . htmlspecialchars($row["experiencia_profesional"] ?? '') . "'
-            data-otra_experiencia='" . htmlspecialchars($row["otra_experiencia"] ?? '') . "'
-            data-bs-toggle='modal' 
+            data-experiencia-docente='" . htmlspecialchars($row["experiencia_docente"] ?? '') . "'
+            data-experiencia-profesional='" . htmlspecialchars($row["experiencia_profesional"] ?? '') . "'
+            data-otra-experiencia='" . htmlspecialchars($row["otra_experiencia"] ?? '') . "'
+            data-cedula-profesor='" . htmlspecialchars($row["cedula"] ?? '') . "'  data-bs-toggle='modal'
             data-bs-target='#actaModal'>
             <i class='fa-solid fa-file-arrow-down' style='font-size:16px; color:#1A73E8;'></i>
         </button>
@@ -1313,7 +1341,7 @@ echo ")</h4>";
                             <!-- Columna de Información Académica -->
                             <div class="col-md-7">
                                 <div class="info-section">
-                                    <div class="card-header mb-3">Información Académica (Opcional)</div>
+                                    <div class="card-header mb-3">Información Académica (Verificar)</div>
                                     
                                     <div class="mb-3">
                                         <label for='pregrado' class='form-label'>Pregrado</label>
@@ -1399,38 +1427,66 @@ echo ")</h4>";
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const actaModal = document.getElementById('actaModal');
-    
+
     if (actaModal) {
         actaModal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
-            // Guardar referencia al botón que abrió el modal
-            actaModal.currentButton = button;
-            
-            // Campos existentes
+            actaModal.currentButton = button; // Guardar referencia al botón que abrió el modal
+
+            // Campos de la solicitud
             const id_solicitud = button.getAttribute('data-id-solicitud');
             const departamento_id = button.getAttribute('data-departamento-id');
             const anio_semestre = button.getAttribute('data-anio-semestre');
             const numero_acta = button.getAttribute('data-numero-acta');
             const fecha_acta = button.getAttribute('data-fecha-acta');
-            
-            // Nuevos campos
-            const pregrado = button.getAttribute('data-pregrado');
-            const especializacion = button.getAttribute('data-especializacion');
-            const maestria = button.getAttribute('data-maestria');
-            const doctorado = button.getAttribute('data-doctorado');
-            const otro_estudio = button.getAttribute('data-otro_estudio');
-            const exp_docente = button.getAttribute('data-experiencia_docente');
-            const exp_profesional = button.getAttribute('data-experiencia_profesional');
-            const otra_exp = button.getAttribute('data-otra_experiencia');
-            
-            // Setear valores en el formulario
+
+            // Campos de estudio y experiencia desde el botón (prioridad 1)
+            let pregrado = button.getAttribute('data-pregrado');
+            let especializacion = button.getAttribute('data-especializacion');
+            let maestria = button.getAttribute('data-maestria');
+            let doctorado = button.getAttribute('data-doctorado');
+            let otro_estudio = button.getAttribute('data-otro_estudio');
+            let exp_docente = button.getAttribute('data-experiencia-docente');
+            let exp_profesional = button.getAttribute('data-experiencia-profesional');
+            let otra_exp = button.getAttribute('data-otra-experiencia');
+
+            // Obtener la cédula del profesor del nuevo data-attribute
+            const cedulaProfesor = button.getAttribute('data-cedula-profesor'); 
+
+            // Verificar si TODOS los campos de estudio están vacíos
+            const allStudyFieldsEmpty =
+                !pregrado && !especializacion && !maestria && !doctorado && !otro_estudio;
+
+            // Si todos los campos de estudio están vacíos Y tenemos la cédula, hacemos la llamada AJAX
+            if (allStudyFieldsEmpty && cedulaProfesor) {
+                fetch(`get_profesor_data.php?cedula=${cedulaProfesor}&anioSemestre=${anio_semestre}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.titulos) {
+                            const titulosStr = data.titulos;
+                            const parsedTitulos = parseTitulos(titulosStr);
+
+                            // Asignar los valores parseados solo si el campo correspondiente está vacío
+                            document.getElementById('pregrado').value = parsedTitulos.pregrado || '';
+                            document.getElementById('especializacion').value = parsedTitulos.especializacion || '';
+                            document.getElementById('maestria').value = parsedTitulos.maestria || '';
+                            document.getElementById('doctorado').value = parsedTitulos.doctorado || '';
+                            // 'otro_estudio' de la función no se está parseando, se mantiene el comportamiento original
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al obtener datos del profesor:', error);
+                    });
+            }
+
+            // Setear valores en el formulario (siempre se asignan los que vienen del botón primero)
             document.getElementById('modal_id_solicitud').value = id_solicitud;
             document.getElementById('modal_departamento_id').value = departamento_id;
             document.getElementById('modal_anio_semestre').value = anio_semestre;
             document.getElementById('numero_acta').value = numero_acta || '';
             document.getElementById('fecha_actab').value = fecha_acta || '';
-            
-            // Setear nuevos campos
+
+            // Setear campos de estudio y experiencia desde los data-attributes del botón
             document.getElementById('pregrado').value = pregrado || '';
             document.getElementById('especializacion').value = especializacion || '';
             document.getElementById('maestria').value = maestria || '';
@@ -1440,13 +1496,113 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('experiencia_profesional').value = exp_profesional || '';
             document.getElementById('otra_experiencia').value = otra_exp || '';
         });
-        
-        // Actualizar datos del botón después de enviar el formulario
+
+        // Función para parsear el string de títulos (¡AHORA USA startsWith() Y PRIORIZA!)
+        function parseTitulos(titulosStr) {
+            const parsed = {
+                pregrado: '',
+                especializacion: '',
+                maestria: '',
+                doctorado: ''
+            };
+
+            // Definir palabras clave para cada tipo de estudio
+            // Se han ajustado para ser más efectivas con startsWith()
+            const keywords = {
+                doctorado: ['DOCTORADO EN', 'DOCTOR', 'DOCTORA', 'PH.D.', 'PHD'],
+                maestria: [
+                    'MAESTRIA EN', 'MAESTRÍA EN', 'MAGISTER EN', 'MASTER EN',
+                    'MAGISTER', 'MAESTRO', 'MASTER', 'MAGÍSTER', 'MAESTRÍA', 'MAESTRA', 'MÁSTER' 
+                ],
+                especializacion: ['ESPECIALIZACION EN', 'ESPECIALIZACIÓN EN', 'ESP.', 'ESPECIALISTA'],
+                pregrado: [ // Palabras clave para pregrado, adaptadas para startsWith()
+                    'LICENCIADO EN', 'LICENCIADA EN', 'LICENCIATURA EN', 
+                    'PROFESIONAL EN', 'INGENIERO EN', 'INGENIERA EN',
+                    'ABOGADO', 'ABOGADA', 'ADMINISTRADOR DE', 'ADMINISTRADORA DE', 
+                    'BIOLOGO', 'BIOLOGA', 'QUIMICO', 'QUÍMICO', 'CIRUJANO', 'ANTROPOLOGO', 
+                    'ENFERMERO', 'ENFERMERA', 'TECNICO EN', 'TÉCNICO EN', 'TECNOLOGO EN', 'TECNÓLOGO EN',
+                    'MEDICO', 'MÉDICO', 'MATEMATICO', 'MATEMÁTICO', 'CONTADOR', 'ECONOMISTA', 
+                    'BACHILLER', 'NORMALISTA', 'ARQUITECTO', 'ARQUITECTA', 'FILOSOFO', 'FILOSOFA', 
+                    'PSICOLOGO', 'PSICOLOGA', 'CITOHISTOTECNOLOGO', 'BACTERIOLOGO', 'BACTERIOLOGA',
+                    'LABORATORISTA', 'GEOTECNOLOGO', 'GEOTECNOLOGA', 'GEOGRAFO', 'GEOGRAFA', 
+                    'ODONTOLOGO', 'ODONTOLOGA', 'NUTRICIONISTA', 'FISIOTERAPEUTA',
+                    'COMUNICADOR', 'PERIODISTA', 'DISEÑADOR', 'SOCIOLOGO', 'HISTORIADOR',
+                    'POLITOLOGO', 'QUÍMICO FARMACÉUTICO', 'ZOOTECNISTA', 'AGRONOMO',
+                    // Palabras clave más cortas que son comunes al inicio de un título, pero menos genéricas que 'ARTE'
+                    'INGENIERO', 'INGENIERA', // Aunque hay 'Ingeniero en', estas son genéricas al inicio
+                    'LICENCIADO', 'LICENCIADA', 'LICENCIATURA',
+                    'TECNICO', 'TÉCNICO', 'TECNOLOGO', 'TECNÓLOGO',
+                    'ADMINISTRADOR', 'ADMINISTRADORA',
+                    'BACHILLER', 'NORMALISTA',
+                    'MÚSICA', 'ARTE', // Para casos donde el pregrado es simplemente "Música" o "Arte"
+                    'GUIA' // Para Guianza Turística Bilingüe
+                ]
+            };
+
+            // Dividir el string por saltos de línea, lo que nos dará cada título o frase
+            const titlesArray = titulosStr.split(/[\r\n]+/); 
+
+            for (const title of titlesArray) {
+                const trimmedTitle = title.trim();
+                if (!trimmedTitle) continue;
+
+                const upperTrimmedTitle = trimmedTitle.toUpperCase();
+
+                // 1. Intentar detectar Doctorado (máxima prioridad)
+                if (!parsed.doctorado) { 
+                    for (const keyword of keywords.doctorado) {
+                        // Usar startsWith para exigir que la palabra clave esté al inicio
+                        if (upperTrimmedTitle.startsWith(keyword.toUpperCase())) {
+                            parsed.doctorado = trimmedTitle;
+                            break; 
+                        }
+                    }
+                    if (parsed.doctorado) continue; // Si se encontró, pasa al siguiente título del array y no busca más
+                }
+
+                // 2. Intentar detectar Maestría
+                if (!parsed.maestria) { 
+                    for (const keyword of keywords.maestria) {
+                        // Usar startsWith para exigir que la palabra clave esté al inicio
+                        if (upperTrimmedTitle.startsWith(keyword.toUpperCase())) {
+                            parsed.maestria = trimmedTitle;
+                            break; 
+                        }
+                    }
+                    if (parsed.maestria) continue; // Si se encontró, pasa al siguiente título del array y no busca más
+                }
+
+                // 3. Intentar detectar Especialización
+                if (!parsed.especializacion) { 
+                    for (const keyword of keywords.especializacion) {
+                        // Usar startsWith para exigir que la palabra clave esté al inicio
+                        if (upperTrimmedTitle.startsWith(keyword.toUpperCase())) {
+                            parsed.especializacion = trimmedTitle;
+                            break; 
+                        }
+                    }
+                    if (parsed.especializacion) continue; // Si se encontró, pasa al siguiente título del array y no busca más
+                }
+
+                // 4. Intentar detectar Pregrado (última prioridad)
+                if (!parsed.pregrado) { 
+                    for (const keyword of keywords.pregrado) {
+                        // Usar startsWith para exigir que la palabra clave esté al inicio
+                        if (upperTrimmedTitle.startsWith(keyword.toUpperCase())) {
+                            parsed.pregrado = trimmedTitle;
+                            break; 
+                        }
+                    }
+                }
+            }
+            return parsed;
+        }
+
+        // El resto de tu script (envío de formulario, etc.) permanece igual.
         document.getElementById('actaForm').addEventListener('submit', function(event) {
             event.preventDefault();
             const form = this;
-            
-            // Recoger los nuevos valores del formulario
+
             const newData = {
                 numero_acta: document.getElementById('numero_acta').value,
                 fecha_actab: document.getElementById('fecha_actab').value,
@@ -1459,11 +1615,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 experiencia_profesional: document.getElementById('experiencia_profesional').value,
                 otra_experiencia: document.getElementById('otra_experiencia').value
             };
-            
-            // Actualizar los atributos del botón
+
             if (actaModal.currentButton) {
                 const button = actaModal.currentButton;
-                
+
                 button.setAttribute('data-numero-acta', newData.numero_acta);
                 button.setAttribute('data-fecha-acta', newData.fecha_actab);
                 button.setAttribute('data-pregrado', newData.pregrado);
@@ -1471,12 +1626,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.setAttribute('data-maestria', newData.maestria);
                 button.setAttribute('data-doctorado', newData.doctorado);
                 button.setAttribute('data-otro_estudio', newData.otro_estudio);
-                button.setAttribute('data-experiencia_docente', newData.experiencia_docente);
-                button.setAttribute('data-experiencia_profesional', newData.experiencia_profesional);
-                button.setAttribute('data-otra_experiencia', newData.otra_experiencia);
+                button.setAttribute('data-experiencia-docente', newData.experiencia_docente);
+                button.setAttribute('data-experiencia-profesional', newData.experiencia_profesional);
+                button.setAttribute('data-otra-experiencia', newData.otra_experiencia);
             }
-            
-            // Enviar el formulario después de actualizar el botón
+
             setTimeout(() => {
                 form.submit();
             }, 500);
@@ -1484,7 +1638,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
- 
        
     </div>    </div>
 
@@ -2444,8 +2597,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Bootstrap Tooltip Initialization
-        $('[data-toggle="tooltip"]').tooltip();
-
+  $('[data-toggle="tooltip"]').tooltip({
+        html: true,
+        placement: 'auto', // Elige automáticamente la mejor posición
+        fallbackPlacement: 'flip', // Si no cabe, invierte la posición
+        boundary: 'viewport'
+    });
         // JavaScript for handling the observation modal
         // Listen for the 'show.bs.modal' event on the observation modal
         $('#modalObservacion').on('show.bs.modal', function(event) {
@@ -2955,7 +3112,7 @@ $conn->close();
 
 /* Tooltip style (optional, if default isn't matching) */
 .tooltip-inner {
-    background-color: #8B0000; /* Red background */
+    background-color: rgba(139, 0, 0, 0.8); /* #8B0000 con 80% opacidad */
     color: #fff;
     padding: 8px 12px;
     border-radius: 4px;
