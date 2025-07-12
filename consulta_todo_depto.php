@@ -1023,9 +1023,9 @@ echo ")</h4>";
             echo "<th style='display:none;'>Eliminar</th>
                   <th style='display:none;'>Editar</th>
                   <th>Visado</th>";
-            if ($tipo_usuario == 3) {
+           // if ($tipo_usuario == 3) {
                 echo "<th style='text-align: center; vertical-align: middle;' title='Formato FOR 45 - Revisión Requisitos Vinculación Docente'>FOR.45</th>";
-            }
+            //}
         }
 
         echo "</tr>";
@@ -1195,6 +1195,38 @@ echo "<tr>
         </button>
     </td>";
                 }
+           else {
+               
+// Construir la URL con todas las variables
+$web_view_url = "for45web.php?" .
+    "id_solicitud=" . htmlspecialchars($row["id_solicitud"]) . "&" .
+    "departamento_id=" . htmlspecialchars($departamento_id) . "&" .
+    "anio_semestre=" . htmlspecialchars($anio_semestre) . "&" .
+    "numero_acta=" . htmlspecialchars($num_acta) . "&" .
+    "fecha_actab=" . htmlspecialchars($fecha_acta) . "&" . // Usar 'fecha_actab' para coincidir con el GET
+    "pregrado=" . urlencode(htmlspecialchars($row["pregrado"] ?? '')) . "&" .
+    "especializacion=" . urlencode(htmlspecialchars($row["especializacion"] ?? '')) . "&" .
+    "maestria=" . urlencode(htmlspecialchars($row["maestria"] ?? '')) . "&" .
+    "doctorado=" . urlencode(htmlspecialchars($row["doctorado"] ?? '')) . "&" .
+    "otro_estudio=" . urlencode(htmlspecialchars($row["otro_estudio"] ?? '')) . "&" .
+    "experiencia_docente=" . urlencode(htmlspecialchars($row["experiencia_docente"] ?? '')) . "&" .
+    "experiencia_profesional=" . urlencode(htmlspecialchars($row["experiencia_profesional"] ?? '')) . "&" .
+    "otra_experiencia=" . urlencode(htmlspecialchars($row["otra_experiencia"] ?? '')) . "&" .
+    "cedula_profesor=" . urlencode(htmlspecialchars($row["cedula"] ?? ''));
+
+// Aquí puedes usar este $web_view_url donde lo necesites, por ejemplo:
+
+// Opción 1: Un botón o enlace al lado del botón de descarga de Word
+echo "<td class='td-simple centered-column'>";
+
+
+// Nuevo botón para la vista web
+echo " <a href='" . $web_view_url . "' target='_blank' class='btn btn-sm btn-info' title='Ver en Web'>
+            <i class='fa-solid fa-eye' style='font-size:16px; color:white;'></i>
+        </a>"; // Usamos 'target="_blank"' para abrir en una nueva pestaña
+echo "</td>";
+               
+           }
 
             }
             echo "</tr>";
@@ -1725,7 +1757,21 @@ $resultb = $conn->query($sqlb);
     border-top: 4px solid var(--unicauca-primary);
     padding: 25px;
 }
+.btn.btn-sm.btn-info .fa-eye {
+    font-size: 9px !important; /* Puedes probar 12px, 14px, 16px. !important para asegurar la aplicación */
+    color: white !important;
+    line-height: 1; /* Esto ayuda a que el icono no añada espacio vertical extra */
+    vertical-align: middle; /* Para asegurar que el icono esté centrado verticalmente si el texto no lo está */
+}
 
+/* Para el icono de descarga de Word (si también quieres asegurarte de su tamaño y color) */
+.btn.btn-sm.btn-primary .fa-file-arrow-down {
+    font-size: 9px !important;
+    color: #1A73E8 !important;
+    line-height: 1;
+    vertical-align: middle;
+    
+}
 /* Encabezado del resumen */
 /* Encabezado del resumen */
 .summary-header {
