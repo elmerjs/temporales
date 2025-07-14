@@ -140,26 +140,40 @@ class PDF extends FPDF
     {
         // Imagen del encabezado
         // Ajusta X, Y y Width según necesidad para que tome el ancho completo
-        $this->Image($this->header_image_path, 15, 5, 250); 
+        $this->Image($this->header_image_path, 15, 2, 250); 
         $this->SetY(45); // Establecer la posición Y después del encabezado
     }
 
     function Footer()
-    {
-        $this->SetY(-20); // Posición a 20 mm del final (para dar espacio al texto y la imagen)
-        $this->SetFont('Arial', 'B', 8); // Fuente para el texto del footer
-        
-        // Texto del footer
-        $this->SetX(15); // Margen izquierdo
-        $this->Cell(0, 4, utf8_decode('Responsable:'), 0, 1, 'L');
-        $this->SetX(15);
-        $this->Cell(0, 4, '_________________________', 0, 1, 'L');
-        $this->SetX(15);
-        $this->Cell(0, 4, utf8_decode('Jefe de Departamento'), 0, 0, 'L');
+{
+    $this->SetY(-20);                       // Punto de partida del footer
+    $this->SetFont('Arial', 'B', 8);
 
-        // Imagen del footer (asegúrate de que la ruta sea correcta)
-        $this->Image($this->footer_image_path, $this->GetPageWidth() - 35, $this->GetY() - 10, 20); // Ajusta X, Y y Width
-    }
+    // ───── Responsable y línea ─────
+    $this->SetX(15);
+    $this->Cell(0, 4, utf8_decode('Responsable:'), 0, 1, 'L');
+
+    $this->SetX(15);
+    $this->Cell(0, 4, '_________________________', 0, 1, 'L');
+
+    // Guarda la coordenada Y antes de imprimir “Jefe de Departamento”
+    $yJefe = $this->GetY();
+
+    $this->SetX(15);
+    $this->Cell(0, 4, utf8_decode('Jefe de Departamento'), 0, 0, 'L');
+
+    // ───── SUPERPONER “ORIGINAL FIRMADO” ─────
+    $this->SetFont('Arial', 'B', 10);       // Fuente más grande
+    $this->SetTextColor(150, 0, 0);         // Rojo oscuro (elige el color que quieras)
+    $this->SetXY(15, $yJefe - 5);           // Misma X, 1 mm arriba para cubrir el texto
+    $this->Cell(0, 4, 'ORIGINAL FIRMADO', 0, 0, 'L');
+
+    // ───── Imagen de firma (opcional) ─────
+    $imgX = $this->GetPageWidth() - 35;
+    $imgY = $this->GetY() - 10;
+    $this->Image($this->footer_image_path, $imgX, $imgY, 20);
+}
+
 
     // Método para dibujar un checkbox
     function Checkbox($x, $y, $checked) {
@@ -192,7 +206,7 @@ $availableTableWidth = $pdf->page_content_width; // 249.4 mm
 
         // Primer Tabla: Facultad, Departamento, Acta, Fecha
         // Posición inicial de la tabla (ajusta Y según donde termina tu encabezado)
-        $pdf->SetY(45); 
+        $pdf->SetY(40); 
 
         // Anchos de las columnas en mm (aproximados para que sumen el ancho disponible)
         // Total 249.4mm
@@ -489,13 +503,13 @@ $pdf->Cell($colWidth_anexa_q, $rowHeight, utf8_decode('Anexa actualización:'), 
 $pdf->Cell($colWidth_anexa_si_no, $rowHeight, utf8_decode('SI'), 1, 0, 'C');  // Cambiado de 'R' a 'C'
 $x = $pdf->GetX(); $y = $pdf->GetY();
 $pdf->Cell($colWidth_anexa_check, $rowHeight, '', 1, 0, 'C');
-$pdf->Checkbox($x + $checkbox_offset_x, $y + $checkbox_offset_y, ($actualiza_hv_antiguo === 'si'));
+$pdf->Checkbox($x + $checkbox_offset_x-7, $y + $checkbox_offset_y, ($actualiza_hv_antiguo === 'si'));
 
 // Celda NO (mantenemos centrado)
 $pdf->Cell($colWidth_anexa_si_no, $rowHeight, utf8_decode('NO'), 1, 0, 'C');
 $x = $pdf->GetX(); $y = $pdf->GetY();
 $pdf->Cell($colWidth_anexa_check, $rowHeight, '', 1, 0, 'C');
-$pdf->Checkbox($x + $checkbox_offset_x, $y + $checkbox_offset_y, ($actualiza_hv_antiguo === 'no'));
+$pdf->Checkbox($x + $checkbox_offset_x-7, $y + $checkbox_offset_y, ($actualiza_hv_antiguo === 'no'));
 
 // Celda Cuál - con fuente tamaño 9
 $pdf->SetFont('Arial', '', 9);  // Fuerza tamaño 9
@@ -503,7 +517,7 @@ $pdf->Cell($colWidth_cual, $rowHeight, utf8_decode('Cuál:'), 1, 1, 'L');
 
 // Row 2: Observaciones
 $pdf->SetFont('Arial', 'B', 9);
-$pdf->MultiCell($availableTableWidth, 30, utf8_decode('Observaciones:'), 1, 'L');// --- Output del PDF ---
+$pdf->MultiCell($availableTableWidth, 20, utf8_decode('Observaciones:'), 1, 'L');// --- Output del PDF ---
 $file_name = 'FOR-45_' . str_replace(' ', '_', $nombre_solicitante) . '_' . str_replace(' ', '_', $periodo_consulta) . '_' . str_replace(' ', '_', $nombre_departamento) . '.pdf';
 $pdf->Output('I', $file_name); // 'I' para mostrar en el navegador, 'D' para forzar descarga
 
