@@ -33,7 +33,7 @@ if ($currentMonth >= 7) {
     $nextPeriod = $currentYear . '-2';
     $previousPeriod = ($currentYear - 1) . '-2';
 }
-echo "nombre sesion: ". $nombre_sesion;
+//echo "nombre sesion: ". $nombre_sesion;
 $consultaf = "SELECT * FROM users WHERE users.Name= '$nombre_sesion'";
 $resultadof = $con->query($consultaf);
 
@@ -61,12 +61,12 @@ if ($con->connect_error) {
 }
 
 if ($tipo_usuario != 1) {
-    $result = $con->query("SELECT PK_FAC, nombre_fac_minb, deparmanentos.depto_nom_propio, deparmanentos.PK_DEPTO
+    $result = $con->query("SELECT PK_FAC, nombre_fac_min, deparmanentos.depto_nom_propio, deparmanentos.PK_DEPTO
                            FROM facultad, deparmanentos 
                            $where
                            AND deparmanentos.FK_FAC = facultad.PK_FAC");
 } else {
-    $result = $con->query("SELECT PK_FAC, nombre_fac_minb, deparmanentos.depto_nom_propio, deparmanentos.PK_DEPTO 
+    $result = $con->query("SELECT PK_FAC, nombre_fac_min, deparmanentos.depto_nom_propio, deparmanentos.PK_DEPTO 
                            FROM facultad, deparmanentos 
                            WHERE deparmanentos.FK_FAC = facultad.PK_FAC");
 }
@@ -105,6 +105,20 @@ $con->close();
     --nuevo-fondo-menu: #ECF0FF;
     --nueva-letra-menu: #1F2124;
 }
+    :root {
+    --unicauca-azul: #000066;            /* Azul principal */
+    --unicauca-azul-oscuro: #000b41;    /* Azul oscuro */
+    --unicauca-rojo: #A61717;            /* Rojo institucional */
+    --unicauca-rojo-claro: #D32F2F;      /* Rojo más claro */
+    --unicauca-blanco: #FFFFFF;          /* Blanco */
+    --unicauca-gris: #6C757D;            /* Gris para textos */
+    --unicauca-gris-claro: #F8F9FA;      /* Un gris muy claro para fondos sutiles */
+    --unicauca-gris-medio: #E9ECEF;      /* Gris un poco más oscuro para bordes */
+
+    /* Nuevas variables para los colores solicitados */
+    --nuevo-fondo-menu: #ECF0FF; /* Fondo claro para la barra de menú */
+    --nueva-letra-menu: #1F2124; /* Letra oscura para los menús */
+}
 
 /* Opción 2 - Efecto de pulso con colores Unicauca */
 .pulse-badge {
@@ -140,20 +154,21 @@ $con->close();
 
 /* Estilos del encabezado MEJORADO */
 header {
-    background: var(--nuevo-fondo-menu); /* Usamos la nueva variable para el fondo */
+    background: white; /* Fondo blanco para el header */
     width: 100%;
-    height: 70px;
+    height: 120px; /* La altura total del header */
     position: fixed;
     top: 0;
     left: 0;
     z-index: 99;
-    color: var(--nueva-letra-menu); /* Cambiamos el color de texto general del header */
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Sombra más pronunciada */
-    border-bottom: 3px solid var(--unicauca-gris-claro); /* Borde inferior más grueso y distintivo */
+    color: var(--nueva-letra-menu);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border-bottom: 3px solid var(--unicauca-gris-claro);
+
+    display: grid; /* ¡Clave! Usamos Grid para organizar las filas */
+    grid-template-rows: 60px 60px; /* Dos filas, cada una de 60px para sumar los 120px */
+    grid-template-columns: 1fr; /* Una columna que ocupe todo el ancho */
+    padding: 0; /* Quita el padding del header principal para que las filas internas lo manejen */
 }
 
 /* Estilos del título del encabezado */
@@ -174,6 +189,8 @@ header h1 {
 nav {
     display: flex;
     align-items: center; /* Asegura que el menú esté alineado verticalmente */
+        margin-left: auto; /* <-- Añade esta línea */
+
 }
 
 nav ul {
@@ -181,6 +198,8 @@ nav ul {
     display: flex;
     padding: 0;
     margin: 0;
+        justify-content: flex-end ; /* <-- Añade esta línea */
+
 }
 
 nav ul li {
@@ -193,15 +212,20 @@ nav ul li a {
     text-decoration: none;
     display: block;
     padding: 15px 18px; /* Ajustar padding para más espacio sin afectar el alto del header */
-    color: var(--nueva-letra-menu); /* Cambiamos el color de la letra de los ítems del menú */
     transition: all 0.3s ease;
-    font-weight: 500;
     position: relative;
     border-radius: 4px; /* Un poco de border-radius para un look más suave */
     font-size: 0.9em;
         font-family: 'Open Sans', sans-serif; /* <-- Añade/Modifica esta línea */
 
 }
+    nav ul li a {
+    padding: 10px 18px; /* AJUSTADO AQUÍ: Ajusta el padding para la altura de 60px de la fila inferior */
+    font-weight: normal; /* <--- Esto quitará la negrita o la hará más suave */
+    color: var(--nueva-letra-menu); /* Color de letra del menú principal */
+    /* Otros estilos... */
+}
+
 
 /* MODIFICADO: Aplicar estilos de hover también al estado activo */
 nav ul li a:hover,
@@ -368,10 +392,7 @@ nav ul li ul.submenu li ul.submenu {
 }
 
 /* Contenido principal */
-#contenido {
-    margin-top: 70px;
-    padding: 20px;
-}
+
 
 /* !!! CAMBIOS PRINCIPALES PARA EL ESTADO ACTIVO !!! */
 /* Estilos para los elementos 'a' dentro del submenu cuando están activos */
@@ -401,7 +422,7 @@ nav ul li ul.submenu li.active a::after {
 
 /* Contenido principal */
 #contenido {
-    margin-top: 70px;
+    margin-top: 120px;
     padding: 20px;
 }
 
@@ -459,12 +480,278 @@ nav ul li ul.submenu li.active a::after {
 .unacauca-btn-reprint .fas {
     margin-right: 8px; /* Consistent spacing for icons */
 }
+    .logo-container {
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #e0e0e0; /* Borde gris claro */
+   /* background-color:  #003366; /* Fondo azul Unicauca */
+    margin-bottom: 1rem;
+}
+
+.unicauca-logo {
+    max-width: 100px;
+    height: auto;
+    filter: brightness(0) invert(1); /* Logo blanco */
+}
+
+.logo-container h5 {
+    font-weight: 500;
+    margin-top: 1rem;
+    color: white;
+    font-size: 1rem;
+}
+    .header-top-row {
+    display: flex; /* Usamos flexbox para alinear elementos horizontalmente */
+    justify-content: space-between; /* Espacio entre el logo/título y los user-controls */
+    align-items: center; /* Centrar verticalmente los elementos */
+    padding: 0 20px; /* Padding horizontal para la fila superior */
+    width: 100%;
+}
+
+.logo-and-title {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Espacio entre el logo-container y el h1 */
+}
+
+/* Modifica .logo-container (asegúrate de que no tenga bordes o márgenes que afecten el diseño) */
+.logo-container {
+    padding: 0; /* Quitar padding si el logo ya tiene tamaño definido */
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: none; /* Asegurar que no tenga este borde aquí */
+    margin-bottom: 0; /* Asegurar que no tenga este margen aquí */
+}
+.logo-container h5 { /* Ajusta el color si tu fondo de header es blanco */
+    color: var(--nueva-letra-menu); /* O un color específico como #333 */
+    margin-top: 0;
+    font-size: 0.9rem;
+}
+
+/* Estilos del título del encabezado (h1) */
+header h1 {
+    font-size: 1.3rem; /* Tamaño del título */
+    font-weight: 700;
+    color: var(--unicauca-azul); /* Color del título principal */
+    text-shadow: none; /* Si no quieres sombra */
+    letter-spacing: normal;
+}
+
+/* Estilos para el contenedor de Presupuesto y Login */
+.user-controls {
+    display: flex;
+    align-items: center; /* Centrar verticalmente */
+    gap: 15px; /* Espacio entre el botón de presupuesto y el login */
+        padding: 0 40px; /* <--- Cambia este valor */
+
+}
+
+/* Ajusta los estilos de #login para que se vea bien en la fila superior */
+#login {
+    background-color: rgba(0, 0, 0, 0.05); /* Fondo sutil para el área de login */
+    padding: 6px 12px;
+    border-radius: 6px;
+    box-shadow: none;
+    gap: 8px;
+    font-size: 0.85em;
+}
+#login i {
+    color: var(--nueva-letra-menu); /* Color del texto del usuario */
+    font-weight: normal;
+}
+#login .btn-logout {
+    padding: 4px 10px;
+    font-size: 0.8em;
+}
+
+/* Ajusta el botón de Presupuesto */
+.btn-external-link {
+    padding: 8px 15px !important;
+    border-radius: 6px !important;
+    font-size: 0.85em !important;
+    background-color: var(--unicauca-azul) !important;
+    color: var(--unicauca-blanco) !important;
+}
+.btn-external-link:hover {
+    background-color: var(--unicauca-azul-oscuro) !important;
+}
+
+
+/* Estilos para la fila inferior del encabezado (MENÚ PRINCIPAL) */
+.header-bottom-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between; /* <--- ¡CAMBIADO! Esto alinea el primer elemento a la izquierda y el último a la derecha */
+    align-items: center; /* Centrar verticalmente los ítems del menú */
+    background: white;/*var(--nuevo-fondo-menu); /* Fondo para la barra de menú */
+    border-top: 1px solid var(--unicauca-gris-claro); /* Borde superior para separarlo visualmente */
+    padding: 0 80px; /* Padding horizontal para el menú */
+    
+}
+
+/* Asegúrate de que nav dentro de .header-bottom-row no rompa el layout */
+nav { /* Esta regla CSS puede ser más específica si tienes otras etiquetas <nav> */
+    width: 100%; /* Ocupar todo el ancho disponible */
+    display: flex;
+    justify-content: center; /* Asegura que la lista <ul> se centre */
+    flex-wrap: wrap; /* Permitir que los ítems se envuelvan si no hay espacio */
+}
+
+/* Modifica las reglas existentes para los elementos del menú principal */
+
+/* ESTILOS DE HOVER Y ACTIVO PARA MENU PRINCIPAL */
+nav ul li a:hover,
+nav ul li.active > a {
+    background-color: var(--unicauca-azul); /* Fondo azul Unicauca al pasar el mouse o activo */
+    color: var(--unicauca-blanco); /* Letra blanca en hover/activo */
+    transform: none; /* Eliminar la elevación para este estilo */
+    border-radius: 4px; /* Mantener bordes redondeados */
+}
+
+nav ul li a::after { /* Línea debajo de los items */
+    background: var(--unicauca-rojo-claro); /* Usa un rojo más claro para la línea */
+    height: 2px; /* Línea más delgada */
+    bottom: 0; /* Asegurar que esté abajo */
+    left: 50%;
+    width: 0;
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+nav ul li a:hover::after,
+nav ul li.active > a::after {
+    width: 80%; /* Ancho de la línea al pasar el mouse/activo */
+    left: 10%; /* Ajusta si es necesario para centrar */
+    transform: none; /* Eliminar transform si es necesario para el nuevo left */
+}
+
+/* Submenús */
+nav ul li ul.submenu {
+    background: white; /* Fondo blanco para submenú */
+    border: 1px solid var(--unicauca-gris-medio); /* Borde más suave */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Sombra más suave */
+    border-top: 4px solid var(--unicauca-rojo); /* Borde superior con el color institucional */
+    border-radius: 0 0 6px 6px;
+    padding: 0; /* Asegurar que el padding interno no empuje los elementos */
+}
+
+nav ul li ul.submenu li a {
+    color: var(--nueva-letra-menu); /* Letra oscura para submenú */
+    border-bottom: 1px solid var(--unicauca-gris-claro); /* Borde sutil */
+    padding: 10px 20px; /* Padding interno para los ítems del submenú */
+}
+
+nav ul li ul.submenu li a:hover {
+    background-color: var(--unicauca-gris-claro); /* Fondo gris claro en hover de submenú */
+    color: var(--unicauca-azul); /* Letra azul Unicauca en hover de submenú */
+    padding-left: 25px; /* Ajustar el padding al hacer hover */
+}
+
+nav ul li ul.submenu li.active a {
+    background-color: var(--unicauca-rojo-claro); /* Fondo rojo claro para sub-ítem activo */
+    color: var(--unicauca-blanco); /* Letra blanca para sub-ítem activo */
+    font-weight: bold;
+}
+
+nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem activo */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px; /* Es una línea vertical */
+    height: 100%;
+    background: var(--unicauca-azul-oscuro); /* Línea azul oscura para sub-ítem activo */
+}
+    .header-bottom-row h1 {
+    margin-left: 40px;
+    font-weight: normal; /* <--- Para quitar la negrita o hacerla más ligera */
+    font-size: 1.2em;    /* <--- Para ajustar el tamaño de la letra (puedes usar 'em', 'px', etc.) */
+    color: #333; /* <--- (Opcional) Para un color menos prominente, como un gris oscuro */
+}
+    /* Para el título h1 dentro del contenedor del logo */
+.small-logo {
+    height: 100px; /* <--- Aumenta la altura para que sea más grande */
+    width: auto; /* Mantiene la proporción de la imagen */
+    margin-right: -10px; /* <--- Margen negativo para que se superponga un poco con el texto */
+    /*box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3); /* <--- Añade una sombra para efecto 3D */
+    z-index: 1; /* <--- Asegura que la imagen esté por encima del texto si hay superposición */
+    position: relative; /* Necesario para que z-index funcione */
+        top: 25px; /* <--- Añade esta línea para moverlo hacia abajo. Ajusta el valor según necesites (ej. 5px, 10px) */
+
+}
+/* Ajustes para el h1 dentro del contenedor del logo si es necesario */
+.logo-container h1 {
+   /* Si el logo ya tiene un margin-right, el margin-left del h1 podría ser 0 */
+    margin-left: 20px; /* Asegúrate de que el 'px' esté ahí */
+    
+    font-weight: normal; /* <--- Esto quita la negrita o la hace más ligera (equivalente a 400) */
+    font-size: 1.2em;    /* <--- Ajusta este valor para el tamaño de la letra. Puedes usar 'em', 'px', o 'rem' */
+    color: #333; /* <--- (Opcional) Puedes ajustar el color para que sea menos prominente, por ejemplo, un gris oscuro */
+    }
 </style>
 </head>
 <body>
 <header>
-    <h1>Solicitud Aval - Profesores Temporales</h1>
-    <nav>
+    <div class="header-top-row">
+ <div class="logo-and-title">
+    <div class="logo-container text-center">
+        <a href="../../temporales/menu_inicio.php" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
+            <img src="images/logounicaucat.png" alt="Logo Unicauca" class="small-logo">
+            <h1>Vicerrectoría Académica</h1>
+        </a>
+    </div>
+</div>
+        
+        
+        
+    <div class="user-controls">
+        
+        <?php
+                $usuarios_presupuesto_permitidos = [92, 4]; // Mantenemos los mismos de tu lógica original
+
+        if ($tipo_usuario == 1 && in_array($id_user, $usuarios_presupuesto_permitidos)): ?>
+            <a href="/presupuesto_novedades/" class="btn-external-link" title="Módulo de novedades presupuestales" target="_blank" style="border-radius: 25px; padding: 10px 20px;">
+                <i class="fas fa-money-bill-wave me-2"></i> Presupuesto
+            </a>
+        <?php endif; ?>
+        <div id="login">
+            <?php
+                if (isset($_SESSION['loggedin'])) {
+                    if (!empty($departamentos)) {                 // hay resultados
+                        $deptoNom = $departamentos[0]['depto_nom_propio'];
+
+                        $facultad_impresa = false;
+
+                    foreach ($departamentos as $dept) {
+
+                        // ► Usuario 2: mostrar facultad solo la primera vez
+                        if ($tipo_usuario == 2 && !$facultad_impresa) {
+                            echo '<b>Facultad: ' . htmlspecialchars($dept['nombre_fac_min']) . '</b>';
+                            $facultad_impresa = true;
+                        }
+
+                        // ► Usuario 3: mostrar cada departamento
+                        if ($tipo_usuario == 3) {
+                            echo '<i>depto: ' . htmlspecialchars($dept['depto_nom_propio']) . '</i> - ';
+                        }
+                    }
+                                        }
+                                        echo "<i> usuario: " . $_SESSION['name'] . "</i> <a href='../../temporales/logout.php' class='btn-logout'>Logout</a>";
+                } else {
+                    // Puedes añadir aquí el mensaje o lógica para usuarios no autenticados si es diferente al de tu código original.
+                    echo "SESSION loggedin: " . ($_SESSION['loggedin'] ? 'true' : 'false') . "<br>";
+                    echo "Email fac: " . $email_fac . "<br>";
+                    echo "<div class='alert alert-danger mt-4' role='alert'><h4>You need to login to access this page.</h4><p><a href='/temporales/index.html'>Login Here!</a></p></div>";
+                }
+            ?>
+        </div>
+    </div>
+        
+        
+        
+       </div>
+    <nav class="header-bottom-row">
+          <h1>Solicitud Aval - Profesores Temporales</h1>
         <ul>
             <li class="<?= ($active_menu_item == 'inicio') ? 'active' : '' ?>">
                 <a href="../../temporales/menu_inicio.php">Inicio</a>
@@ -601,16 +888,17 @@ nav ul li ul.submenu li.active a::after {
                     $previousPeriod_anterior = get_immediate_previous_period($previousPeriod);
                     $periodo_work_anterior = get_immediate_previous_period($periodo_work);
                     $nextPeriod_anterior = get_immediate_previous_period($nextPeriod);
+                
                     ?>
 
                     <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
                         <a href="#" class="report-linkg"
-                           data-facultad-id="<?php echo htmlspecialchars($departamento['PK_FAC']); ?>"
-                           data-anio-semestre="<?php echo htmlspecialchars($previousPeriod); ?>"
-                           data-anio-semestre-anterior="<?php echo htmlspecialchars($previousPeriod_anterior); ?>"
-                           data-departamento-id="<?php echo htmlspecialchars($departamento['PK_DEPTO']); ?>">
-                            <?php echo htmlspecialchars($previousPeriod); ?>
-                        </a>
+   data-facultad-id="<?php echo isset($departamento['PK_FAC']) ? htmlspecialchars($departamento['PK_FAC']) : ''; ?>"
+   data-anio-semestre="<?php echo htmlspecialchars($previousPeriod); ?>"
+   data-anio-semestre-anterior="<?php echo htmlspecialchars($previousPeriod_anterior); ?>"
+   data-departamento-id="<?php echo isset($departamento['PK_DEPTO']) ? htmlspecialchars($departamento['PK_DEPTO']) : ''; ?>">
+    <?php echo htmlspecialchars($previousPeriod); ?>
+</a>
                     </li>
                     <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $periodo_work) ? 'active' : '' ?>">
                         <a href="#" class="report-linkg"
@@ -791,35 +1079,7 @@ nav ul li ul.submenu li.active a::after {
             </li>
         </ul>
     </nav>
-    <?php
-        // Definir los IDs de usuario permitidos (92, 93, 94, 4) para Presupuesto
-        $usuarios_presupuesto_permitidos = [92, 4]; // Mantenemos los mismos de tu lógica original
 
-        // MOVER el enlace de Presupuesto aquí
-        if ($tipo_usuario == 1 && in_array($id_user, $usuarios_presupuesto_permitidos)):
-    ?>
-            <a href="/presupuesto_novedades/" class="btn-external-link" title="Módulo de novedades presupuestales" target="_blank" style="border-radius: 25px; padding: 10px 20px;">
-                <i class="fas fa-money-bill-wave me-2"></i> Presupuesto
-            </a>
-    <?php endif; ?>
-    <div id="login">
-        <?php
-            if (isset($_SESSION['loggedin'])) {
-                if ($tipo_usuario==3) {
-                    echo "<i>depto: ".$departamento['depto_nom_propio']. "</i> - " ;
-                }
-                echo "<i> usuario: " . $_SESSION['name'] . "</i> <a href='../../temporales/logout.php' class='btn-logout'>Logout</a>";
-            } else {
-                echo "SESSION loggedin: " . ($_SESSION['loggedin'] ? 'true' : 'false') . "<br>";
-
-                echo "Email fac: " . $email_fac . "<br>";
-                echo "<div class='alert alert-danger mt-4' role='alert'>
-                    <h4>You need to login to access this page.</h4>
-                    <p><a href='/temporales/index.html'>Login Here!</a></p>
-                </div>";
-            }
-        ?>
-    </div>
 </header>
     <div id="contenido">
         </div>

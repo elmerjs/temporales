@@ -1,7 +1,9 @@
 <?php
-// for_45_web_elaborated.php
-// Este script genera una versión HTML del formato FOR-45, replicando la estructura del .docx
+// for45pdf.php
+// Este script genera una versión PDF del formato FOR-45 usando FPDF
 
+// Asegúrate de que la ruta a fpdf.php sea correcta
+require('fpdf186/fpdf.php');
 require 'funciones.php'; // Asegúrate de que este archivo contiene la función existeSolicitudAnterior si la usas
 require 'cn.php'; // Asegúrate de que este archivo contiene la conexión a la base de datos
 
@@ -19,30 +21,31 @@ if ($fecha_acta_str) {
     list($year, $month, $day) = explode('-', $fecha_acta_str);
 }
 
-// Variables para almacenar los resultados de la consulta SQL
-$nombre_facultad = null;
-$nombre_departamento = null;
-$periodo_consulta = null;
-$email_solicitante = null;
-$nombre_solicitante = null;
-$cedula_solicitante = null;
-$tipo_docente = null;
-$vinculacion_ocasional = null;
-$vinculacion_ocasional_reg = null;
-$horas_p = null;
-$horas_r = null;
-$anexa_hv_nuevo = null;
-$actualiza_hv_antiguo = null;
+// Variables para almacenar los resultados de la consulta SQL (inicializar con valores predeterminados)
+$nombre_facultad = '';
+$nombre_departamento = '';
+$periodo_consulta = '';
+$email_solicitante = '';
+$nombre_solicitante = '';
+$cedula_solicitante = '';
+$tipo_docente = '';
+$vinculacion_ocasional = '';
+$vinculacion_ocasional_reg = '';
+$horas_p = 0;
+$horas_r = 0;
+$anexa_hv_nuevo = '';
+$actualiza_hv_antiguo = '';
 
 // Nuevos campos recibidos del modal (ya actualizados en la BD por el script principal)
-$pregrado = $_GET['pregrado'] ?? null;
-$especializacion = $_GET['especializacion'] ?? null;
-$maestria = $_GET['maestria'] ?? null;
-$doctorado = $_GET['doctorado'] ?? null;
-$otro_estudio = $_GET['otro_estudio'] ?? null;
-$experiencia_docente = $_GET['experiencia_docente'] ?? null;
-$experiencia_profesional = $_GET['experiencia_profesional'] ?? null;
-$otra_experiencia = $_GET['otra_experiencia'] ?? null;
+$pregrado = $_GET['pregrado'] ?? '';
+$especializacion = $_GET['especializacion'] ?? '';
+$maestria = $_GET['maestria'] ?? '';
+$doctorado = $_GET['doctorado'] ?? '';
+$otro_estudio = $_GET['otro_estudio'] ?? '';
+$experiencia_docente = $_GET['experiencia_docente'] ?? '';
+$experiencia_profesional = $_GET['experiencia_profesional'] ?? '';
+$otra_experiencia = $_GET['otra_experiencia'] ?? '';
+
 
 // Realizar la consulta a la base de datos para obtener todos los datos
 if (isset($anio_semestre) && isset($departamento_id) && isset($id_solicitud)) {
@@ -125,306 +128,383 @@ if (isset($anio_semestre) && isset($departamento_id) && isset($id_solicitud)) {
 }
 $con->close(); // Cerrar la conexión después de todas las consultas
 
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formato FOR-45 - Vista Web Elaborada</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0.5cm 1.5cm; /* Margen superior/inferior 0.5cm, izq/der 1.5cm */
-            font-size: 9pt;
-            box-sizing: border-box;
-            background-color: #f0f0f0; /* Fondo para que el "documento" resalte */
-        }
-        .document-page {
-            width: 100%; /* Ocupa el ancho disponible */
-            max-width: 27.94cm; /* Reducido a tamaño carta horizontal */
-            background-color: white;
-            border: 1px solid #ccc;
-            padding: 0.5cm 1.5cm; /* Padding interno para simular márgenes del documento */
-            box-sizing: border-box;
-            margin: 20px auto; /* Centrar la "página" en la pantalla */
-            box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Sombra ligera */
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 5px; /* Espacio más reducido entre tablas */
-        }
-        table, th, td {
-            border: 1px solid #000;
-        }
-        th, td {
-            padding: 3px; /* Reducir padding en celdas */
-            text-align: left;
-            vertical-align: top;
-            font-size: 9pt;
-        }
-        th {
-            background-color: #f2f2f2;
-            text-align: center;
-            font-weight: bold;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .text-left {
-            text-align: left;
-        }
-        .text-right { /* Nuevo estilo para alinear a la derecha */
-            text-align: right;
-        }
-        .header-img {
-            width: 100%;
-            /* Eliminado: max-width: 695px; */ /* Permite que la imagen tome todo el ancho del contenedor padre */
-            display: block;
-            margin: 0 auto 5px auto; /* Reducir margen inferior */
-        }
-        .footer-content {
-            clear: both;
-            padding-top: 10px;
-            position: relative; /* Para posicionar la imagen del footer */
-        }
-        .footer-img {
-            width: 80px;
-            position: absolute;
-            right: 0;
-            bottom: 0;
-        }
-        .no-border {
-            border: none;
-        }
-        .checkbox-symbol {
-            font-size: 1em; /* Ajustar el tamaño del símbolo */
-            line-height: 1;
-        }
-        .centered-checkbox-cell {
-            text-align: center !important;
-            padding: 0 !important; /* Elimina padding para centrado exacto del checkbox */
-            vertical-align: middle;
-        }
-        .bold {
-            font-weight: bold;
-        }
-        /* Estilos específicos para celdas de encabezado de tabla 1 para un ajuste visual */
-        .table1-header-cell {
-            height: 1.5cm; /* Aproximar altura de celdas de encabezado */
-            vertical-align: middle;
-        }
-        /* Ajustes finos para que el texto "Título(s)" esté centrado verticalmente */
-        .vertical-align-middle {
-            vertical-align: middle;
-        }
-        .vertical-align-top {
-            vertical-align: top;
-        }
-        .small-line-height {
-            line-height: 1.2; /* Para reducir el espacio entre líneas si es necesario */
-        }
-        /* Ajuste para el footer */
-        .footer-text-line {
-            margin: 0; /* Eliminar márgenes predeterminados del párrafo */
-            padding: 0;
-            line-height: 1.0; /* Reducir aún más el interlineado */
-        }
-    </style>
-</head>
-<body>
+// --- Clase FPDF extendida para Header y Footer ---
+class PDF extends FPDF
+{
+    private $header_image_path = 'img/encabezadofor45.png';
+    private $footer_image_path = 'img/icontec.png';
+    // Ancho útil de la página (279.4mm - 15mm - 15mm)
+    public $page_content_width = 249.4; // CAMBIADO A PUBLIC
 
-    <div class="document-page">
-        <img src="img/encabezadofor45.png" alt="Encabezado" class="header-img">
+    function Header()
+    {
+        // Imagen del encabezado
+        // Ajusta X, Y y Width según necesidad para que tome el ancho completo
+        $this->Image($this->header_image_path, 15, 5, 250); 
+        $this->SetY(45); // Establecer la posición Y después del encabezado
+    }
 
-        <table>
-            <thead>
-                <tr>
-                    <th rowspan="2" class="table1-header-cell">Facultad</th>
-                    <th rowspan="2" class="table1-header-cell">Departamento</th>
-                    <th rowspan="2" class="table1-header-cell">Número de Acta de Selección</th>
-                    <th colspan="3" class="table1-header-cell">Fecha de Acta de Selección</th>
-                </tr>
-                <tr>
-                    <th>Día</th>
-                    <th>Mes</th>
-                    <th>Año</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td rowspan="1" class="vertical-align-middle"><?php echo htmlspecialchars($nombre_facultad ?? ''); ?></td>
-                    <td rowspan="1" class="vertical-align-middle"><?php echo htmlspecialchars($nombre_departamento ?? ''); ?></td>
-                    <td rowspan="1" class="text-center vertical-align-middle"><?php echo htmlspecialchars($numero_acta ?? ''); ?></td>
-                    <td class="text-center"><?php echo htmlspecialchars($day); ?></td>
-                    <td class="text-center"><?php echo htmlspecialchars($month); ?></td>
-                    <td class="text-center"><?php echo htmlspecialchars($year); ?></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div style="height: 5px;"></div>
-
-        <table style="width: auto;">
-            <tr>
-                <td style="width: 150px; font-weight: bold; border-left: 1px solid #000; border-top: 1px solid #000; border-bottom: 1px solid #000;">Periodo académico</td>
-                <td style="width: 150px; border-right: 1px solid #000; border-top: 1px solid #000; border-bottom: 1px solid #000;"><?php echo htmlspecialchars($periodo_consulta ?? ''); ?></td>
-            </tr>
-        </table>
+    function Footer()
+    {
+        $this->SetY(-20); // Posición a 20 mm del final (para dar espacio al texto y la imagen)
+        $this->SetFont('Arial', 'B', 8); // Fuente para el texto del footer
         
-        <div style="height: 5px;"></div>
+        // Texto del footer
+        $this->SetX(15); // Margen izquierdo
+        $this->Cell(0, 4, utf8_decode('Responsable:'), 0, 1, 'L');
+        $this->SetX(15);
+        $this->Cell(0, 4, '_________________________', 0, 1, 'L');
+        $this->SetX(15);
+        $this->Cell(0, 4, utf8_decode('Jefe de Departamento'), 0, 0, 'L');
 
-        <table>
-            <tr>
-                <td style="width: 20%;" class="bold">Nombre Docente</td>
-                <td style="width: 45%;"><?php echo htmlspecialchars($nombre_solicitante ?? ''); ?></td>
-                <td style="width: 15%;" class="bold">Identificación</td>
-                <td style="width: 20%;"><?php echo htmlspecialchars($cedula_solicitante ?? ''); ?></td>
-            </tr>
-            <tr>
-                <td style="width: 20%;" class="bold">Correo Electrónico</td>
-                <td colspan="3"><?php echo htmlspecialchars($email_solicitante ?? ''); ?></td>
-            </tr>
-        </table>
+        // Imagen del footer (asegúrate de que la ruta sea correcta)
+        $this->Image($this->footer_image_path, $this->GetPageWidth() - 35, $this->GetY() - 10, 20); // Ajusta X, Y y Width
+    }
 
-        <div style="height: 5px;"></div>
+    // Método para dibujar un checkbox
+    function Checkbox($x, $y, $checked) {
+        $size = 4; // Tamaño del cuadro del checkbox
+        $this->Rect($x, $y, $size, $size, 'D'); // Dibuja el cuadro (Draw)
+        if ($checked) {
+            $this->SetFont('ZapfDingbats', '', $size + 2); // Usa una fuente con checkmark (ZapfDingbats)
+            $this->Text($x + 0.5, $y + $size - 0.5, utf8_decode('4')); // '4' en ZapfDingbats es el checkmark
+            $this->SetFont('Arial', '', $this->FontSizePt); // Vuelve a la fuente anterior
+        }
+    }
+}
 
-        <table>
-            <thead>
-                <tr>
-                    <th colspan="2">Ocasional</th>
-                    <th colspan="2">Planta</th>
-                    <th>Cátedra</th>
-                </tr>
-                <tr>
-                    <th>MT</th>
-                    <th>TC</th>
-                    <th>MT</th>
-                    <th>TC</th>
-                    <th>Horas semana</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="centered-checkbox-cell">
-                        <span class="checkbox-symbol"><?php echo (($vinculacion_ocasional === 'MT' || $vinculacion_ocasional_reg === 'MT') ? '&#9745;' : '&#9744;'); ?></span>
-                    </td>
-                    <td class="centered-checkbox-cell">
-                        <span class="checkbox-symbol"><?php echo (($vinculacion_ocasional === 'TC' || $vinculacion_ocasional_reg === 'TC') ? '&#9745;' : '&#9744;'); ?></span>
-                    </td>
-                    <td class="centered-checkbox-cell">
-                        <span class="checkbox-symbol">&#9744;</span>
-                    </td>
-                    <td class="centered-checkbox-cell">
-                        <span class="checkbox-symbol">&#9744;</span>
-                    </td>
-                    <td class="text-center">
-                        <?php
-                        $suma_horas = '';
-                        if ($tipo_docente === 'Catedra') {
-                            $suma_horas = ($horas_p ?? 0) + ($horas_r ?? 0);
-                        }
-                        echo htmlspecialchars($suma_horas);
-                        ?>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+// --- Configuración de FPDF ---
+$pdf = new PDF('L', 'mm', 'Letter'); // 'L' para horizontal (Landscape), 'mm' para unidades en milímetros, 'Letter' para tamaño carta
+$pdf->AddPage();
 
-        <div style="height: 5px;"></div>
+// Márgenes se configuran en el constructor o en AddPage
+ $pdf->SetMargins(15, 15, 15); // Ya se hace en AddPage por defecto si no se especifican en el constructor
+$pdf->SetAutoPageBreak(true, 20); // Auto salto de página con margen inferior de 20mm (espacio para el footer)
 
-        <table>
-            <thead>
-                <tr>
-                    <th rowspan="2" style="width: 60%;" class="vertical-align-middle">Requisitos de estudio</th>
-                    <th colspan="2" style="width: 40%;" class="vertical-align-middle">Experiencia</th>
-                </tr>
-                <tr>
-                    <th>Tipo</th>
-                    <th>Años</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="text-left bold vertical-align-middle">Título(s)</td>
-                    <td colspan="2"></td> </tr>
-                <tr>
-                    <td class="text-left">Pregrado(s): <?php echo htmlspecialchars($pregrado ?? ''); ?></td>
-                    <td class="text-left">Docente:</td>
-                    <td class="text-left"><?php echo htmlspecialchars($experiencia_docente ?? ''); ?></td>
-                </tr>
-                <tr>
-                    <td class="text-left">Especialización(s): <?php echo htmlspecialchars($especializacion ?? ''); ?></td>
-                    <td class="text-left">Profesional:</td>
-                    <td class="text-left"><?php echo htmlspecialchars($experiencia_profesional ?? ''); ?></td>
-                </tr>
-                <tr>
-                    <td class="text-left">Maestría(s): <?php echo htmlspecialchars($maestria ?? ''); ?></td>
-                    <td class="text-left" rowspan="2" class="vertical-align-middle">Otra:</td>
-                    <td class="text-left" rowspan="2" class="vertical-align-middle"><?php echo htmlspecialchars($otra_experiencia ?? ''); ?></td>
-                </tr>
-                <tr>
-                    <td class="text-left">Doctorado(s): <?php echo htmlspecialchars($doctorado ?? ''); ?></td>
-                </tr>
-                <tr>
-                    <td class="text-left">Otro: <?php echo htmlspecialchars($otro_estudio ?? ''); ?></td>
-                    <td colspan="2"></td> </tr>
-            </tbody>
-        </table>
+// --- Contenido del Documento ---
 
-        <div style="height: 5px;"></div>
+// Fuente para el contenido
+$pdf->SetFont('Arial', '', 9);
 
-        <table>
-            <tr>
-                <td style="width: 75%;" class="bold text-left">El Docente ha estado vinculado con la Universidad del Cauca:</td>
-                <td style="width: 5%;" class="bold text-right">SI</td>
-                <td class="centered-checkbox-cell" style="width: 5%;">
-                    <span class="checkbox-symbol"><?php echo (function_exists('existeSolicitudAnterior') && existeSolicitudAnterior($cedula_solicitante, $anio_semestre) ? '&#9745;' : '&#9744;'); ?></span>
-                </td>
-                <td style="width: 5%;" class="bold text-center">NO</td>
-                <td class="centered-checkbox-cell" style="width: 5%;">
-                    <span class="checkbox-symbol"><?php echo (!(function_exists('existeSolicitudAnterior') && existeSolicitudAnterior($cedula_solicitante, $anio_semestre)) ? '&#9745;' : '&#9744;'); ?></span>
-                </td>
-            </tr>
-            <tr>
-                <td style="width: 75%;" class="bold text-left">Se anexa historia laboral (hoja de vida):</td>
-                <td style="width: 5%;" class="bold text-right">SI</td>
-                <td class="centered-checkbox-cell" style="width: 5%;">
-                    <span class="checkbox-symbol"><?php echo (($anexa_hv_nuevo === 'si') ? '&#9745;' : '&#9744;'); ?></span>
-                </td>
-                <td style="width: 5%;" class="bold text-center">NO</td>
-                <td class="centered-checkbox-cell" style="width: 5%;">
-                    <span class="checkbox-symbol"><?php echo (($anexa_hv_nuevo === 'no') ? '&#9745;' : '&#9744;'); ?></span>
-                </td>
-            </tr>
-        </table>
+// Ancho total disponible para las tablas
+$availableTableWidth = $pdf->page_content_width; // 249.4 mm
 
-        <table>
-            <tr>
-                <td style="width: 46%;" class="text-left">Anexa actualización:</td>
-                <td style="width: 3%;" class="bold text-right">SI</td>
-                <td class="centered-checkbox-cell" style="width: 3%;">
-                    <span class="checkbox-symbol"><?php echo (($actualiza_hv_antiguo === 'si') ? '&#9745;' : '&#9744;'); ?></span>
-                </td>
-                <td style="width: 5%;" class="bold text-center">NO</td>
-                <td class="centered-checkbox-cell" style="width: 3%;">
-                    <span class="checkbox-symbol"><?php echo (($actualiza_hv_antiguo === 'no') ? '&#9745;' : '&#9744;'); ?></span>
-                </td>
-                <td style="width: 40%;" class="text-left">Cuál:</td>
-            </tr>
-            <tr>
-                <td colspan="6" style="height: 50px;" class="bold text-left vertical-align-top">Observaciones:</td>
-            </tr>
-        </table>
 
-        <div class="footer-content">
-            <p class="bold footer-text-line" style="margin-bottom: 2px;">Responsable:</p>
-            <p class="footer-text-line">_________________________</p> 
-            <p class="bold footer-text-line" style="margin-top: 0px;">Jefe de Departamento</p>
-            <img src="img/icontec.png" alt="Icontec Logo" class="footer-img">
-        </div>
-    </div>
+        // Primer Tabla: Facultad, Departamento, Acta, Fecha
+        // Posición inicial de la tabla (ajusta Y según donde termina tu encabezado)
+        $pdf->SetY(45); 
 
-</body>
-</html>
+        // Anchos de las columnas en mm (aproximados para que sumen el ancho disponible)
+        // Total 249.4mm
+        $colWidth_fac = $availableTableWidth * 0.24; // ~60mm
+        $colWidth_dep = $availableTableWidth * 0.24; // ~60mm
+        $colWidth_acta = $availableTableWidth * 0.24; // ~60mm
+        $colWidth_fecha_total = $availableTableWidth * 0.28; // El resto del ancho para la fecha ~69.4mm
+        $colWidth_fecha_dia = $colWidth_fecha_total / 3;
+        $colWidth_fecha_mes = $colWidth_fecha_total / 3;
+        $colWidth_fecha_anio = $colWidth_fecha_total / 3;
+
+        $rowHeight = 6; // Altura de las filas de la tabla
+
+        // Encabezados de la tabla
+        $pdf->SetFillColor(242, 242, 242); // Color de fondo para encabezados
+        $pdf->SetFont('Arial', 'B', 9); // Negrita para encabezados
+        $pdf->Cell($colWidth_fac, $rowHeight * 2, utf8_decode('Facultad'), 1, 0, 'C', true); // rowspan 2
+        $pdf->Cell($colWidth_dep, $rowHeight * 2, utf8_decode('Departamento'), 1, 0, 'C', true); // rowspan 2
+        $pdf->Cell($colWidth_acta, $rowHeight * 2, utf8_decode('Número de Acta de Selección'), 1, 0, 'C', true); // rowspan 2
+
+        $x_fecha_col = $pdf->GetX(); // Guardar posición X para los sub-encabezados de fecha
+        $y_fecha_row = $pdf->GetY(); // Guardar posición Y para los sub-encabezados de fecha
+
+        $pdf->Cell($colWidth_fecha_total, $rowHeight, utf8_decode('Fecha de Acta de Selección'), 1, 1, 'C', true); // colspan 3
+
+        // Sub-encabezados de fecha
+        $pdf->SetY($y_fecha_row + $rowHeight); // Volver a la línea para la segunda parte de los encabezados
+        $pdf->SetX($x_fecha_col); // Mover a la posición guardada
+        $pdf->Cell($colWidth_fecha_dia, $rowHeight, utf8_decode('Día'), 1, 0, 'C', true);
+        $pdf->Cell($colWidth_fecha_mes, $rowHeight, utf8_decode('Mes'), 1, 0, 'C', true);
+        $pdf->Cell($colWidth_fecha_anio, $rowHeight, utf8_decode('Año'), 1, 1, 'C', true); // Salto de línea al final
+
+        // Datos de la tabla 1
+        $pdf->SetFont('Arial', '', 9); // Volver a fuente normal
+        $pdf->Cell($colWidth_fac, $rowHeight, utf8_decode($nombre_facultad), 1, 0, 'C'); // Facultad
+        $pdf->Cell($colWidth_dep, $rowHeight, utf8_decode($nombre_departamento), 1, 0, 'C'); // Departamento
+        $pdf->Cell($colWidth_acta, $rowHeight, utf8_decode($numero_acta), 1, 0, 'C'); // Número de Acta
+        $pdf->Cell($colWidth_fecha_dia, $rowHeight, utf8_decode($day), 1, 0, 'C'); // Día
+        $pdf->Cell($colWidth_fecha_mes, $rowHeight, utf8_decode($month), 1, 0, 'C'); // Mes
+        $pdf->Cell($colWidth_fecha_anio, $rowHeight, utf8_decode($year), 1, 1, 'C'); // Año y salto de línea
+// Segunda Tabla: Periodo académico
+$pdf->Ln(2); // Salto de línea de 2mm entre tablas
+$pdf->SetFont('Arial', 'B', 9);
+// Establece el ancho para ambas columnas igual al ancho original de la primera columna
+$fixedColWidth = $availableTableWidth * 0.18;
+
+$pdf->Cell($fixedColWidth, $rowHeight, utf8_decode('Periodo académico'), 1, 0, 'L');
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell($fixedColWidth, $rowHeight, utf8_decode($periodo_consulta), 1, 1, 'L'); // La segunda columna ahora tiene el mismo ancho que la primera
+
+// Tercera Tabla: Datos del Docente
+// Tercera Tabla: Datos del Docente
+$pdf->Ln(2);
+$pdf->SetFont('Arial', 'B', 9);
+
+// Anchos de las columnas para la primera fila
+$width_label_nombre = $availableTableWidth * (5/24);
+$width_data_nombre = $availableTableWidth * (11/24);
+$width_label_id = $availableTableWidth * (4/24);
+$width_data_id = $availableTableWidth * (4/24);
+
+$pdf->Cell($width_label_nombre, $rowHeight, utf8_decode('Nombre Docente'), 1, 0, 'L');
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell($width_data_nombre, $rowHeight, utf8_decode($nombre_solicitante), 1, 0, 'L');
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell($width_label_id, $rowHeight, utf8_decode('Identificación'), 1, 0, 'L');
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell($width_data_id, $rowHeight, utf8_decode($cedula_solicitante), 1, 1, 'L');
+
+// Anchos de las columnas para la segunda fila (Correo Electrónico)
+$width_label_email = $availableTableWidth * (5/24);
+$width_data_email = $availableTableWidth * (19/24); // El resto del ancho (24/24 - 5/24 = 19/24)
+
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell($width_label_email, $rowHeight, utf8_decode('Correo Electrónico'), 1, 0, 'L');
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell($width_data_email, $rowHeight, utf8_decode($email_solicitante), 1, 1, 'L');
+
+// Cuarta Tabla: Tipo Vinculación
+$pdf->Ln(2);
+
+// Calcula el nuevo ancho total que esta tabla debe ocupar (3/5 del ancho disponible)
+$table4_total_width = $availableTableWidth * (3/5);
+
+// Ahora, divide este nuevo ancho total entre 5 para obtener la base de las columnas
+$colWidth_vinculacion_base = $table4_total_width / 5; // Cada "quinto" será ahora un quinto de los 3/5 del ancho disponible
+
+$pdf->SetFillColor(242, 242, 242);
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell($colWidth_vinculacion_base * 2, $rowHeight, utf8_decode('Ocasional'), 1, 0, 'C', true); // Colspan 2
+$pdf->Cell($colWidth_vinculacion_base * 2, $rowHeight, utf8_decode('Planta'), 1, 0, 'C', true); // Colspan 2
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, utf8_decode('Cátedra'), 1, 1, 'C', true); // Colspan 1
+
+// Segunda fila de encabezados
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, utf8_decode('MT'), 1, 0, 'C', true);
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, utf8_decode('TC'), 1, 0, 'C', true);
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, utf8_decode('MT'), 1, 0, 'C', true);
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, utf8_decode('TC'), 1, 0, 'C', true);
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, utf8_decode('Horas semana'), 1, 1, 'C', true);
+
+// Datos de la tabla 4 con checkboxes
+$pdf->SetFont('Arial', '', 9);
+$checkbox_size = 4;
+// Recalcula los offsets de los checkboxes para que sigan centrados en las nuevas columnas más estrechas
+$checkbox_offset_x = ($colWidth_vinculacion_base - $checkbox_size) / 2;
+$checkbox_offset_y = ($rowHeight - $checkbox_size) / 2;
+
+// Ocasional MT
+$x = $pdf->GetX(); $y = $pdf->GetY();
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, '', 1, 0, 'C');
+$pdf->Checkbox($x + $checkbox_offset_x, $y + $checkbox_offset_y, ($vinculacion_ocasional === 'MT' || $vinculacion_ocasional_reg === 'MT'));
+
+// Ocasional TC
+$x = $pdf->GetX(); $y = $pdf->GetY();
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, '', 1, 0, 'C');
+$pdf->Checkbox($x + $checkbox_offset_x, $y + $checkbox_offset_y, ($vinculacion_ocasional === 'TC' || $vinculacion_ocasional_reg === 'TC'));
+
+// Planta MT
+$x = $pdf->GetX(); $y = $pdf->GetY();
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, '', 1, 0, 'C');
+// Asumiendo que no hay datos de Planta MT en tus variables, siempre false
+$pdf->Checkbox($x + $checkbox_offset_x, $y + $checkbox_offset_y, false);
+
+// Planta TC
+$x = $pdf->GetX(); $y = $pdf->GetY();
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, '', 1, 0, 'C');
+// Asumiendo que no hay datos de Planta TC en tus variables, siempre false
+$pdf->Checkbox($x + $checkbox_offset_x, $y + $checkbox_offset_y, false);
+
+// Horas semana (Cátedra)
+$pdf->Cell($colWidth_vinculacion_base, $rowHeight, ($tipo_docente === 'Catedra' ? ($horas_p ?? 0) + ($horas_r ?? 0) : ''), 1, 1, 'C');
+
+// Quinta Tabla: Requisitos de estudio y Experiencia
+//$rowHeight = 9; // Aumentada la altura estándar de fila de 8 a 9
+// $availableTableWidth = 190; // Ancho total disponible para la tabla
+
+// Quinta Tabla: Requisitos de estudio y Experiencia
+$pdf->Ln(2);
+
+// Definir los anchos de columna
+$colWidth_estudio = $availableTableWidth * 0.55;
+$colWidth_tipo_exp = $availableTableWidth * 0.225;
+$colWidth_anios_exp = $availableTableWidth * 0.225;
+$ancho_disponible = $colWidth_tipo_exp + $colWidth_anios_exp;
+
+$x_start_table = $pdf->GetX();
+$y_header_row1_start = $pdf->GetY();
+
+// --- MEJORA PARA "EXPERIENCIA" ---
+$pdf->SetFont('Arial', 'B', 9);
+$texto_experiencia = utf8_decode('Experiencia');
+
+// Calcular altura necesaria para "Experiencia"
+$num_lineas = ceil($pdf->GetStringWidth($texto_experiencia) / $ancho_disponible);
+$altura_necesaria = $rowHeight * max(2, $num_lineas); // Mínimo 2 filas
+
+// Fila de Encabezados 1
+$pdf->Cell($colWidth_estudio, $altura_necesaria, utf8_decode('Requisitos de estudio'), 1, 0, 'C', true);
+$pdf->Cell($ancho_disponible, $altura_necesaria, $texto_experiencia, 'LTR', 1, 'C', true);
+
+// Fila de Encabezados 2
+$pdf->SetXY($x_start_table, $y_header_row1_start + $altura_necesaria);
+$pdf->Cell($colWidth_estudio, $rowHeight, utf8_decode('Título(s)'), 1, 0, 'C', true);
+$pdf->Cell($ancho_disponible, $rowHeight, '', 'LRB', 1, 'C', true);
+
+// --- Fin del bloque de encabezados ---
+
+// Datos de la tabla
+$pdf->SetFont('Arial', '', 9);
+$line_height_multicell = $rowHeight;
+
+// Pregrado(s)
+$current_x_pregrado = $pdf->GetX();
+$current_y_pregrado = $pdf->GetY();
+$pdf->MultiCell($colWidth_estudio, $line_height_multicell, utf8_decode('Pregrado(s): ' . $pregrado), 1, 'L');
+$new_y_after_pregrado_multicell = $pdf->GetY();
+$pdf->SetXY($current_x_pregrado + $colWidth_estudio, $current_y_pregrado);
+
+$pdf->Cell($colWidth_tipo_exp, $line_height_multicell, utf8_decode('Docente:'), 1, 0, 'L');
+$pdf->Cell($colWidth_anios_exp, $line_height_multicell, utf8_decode($experiencia_docente), 1, 1, 'L');
+$pdf->SetY(max($new_y_after_pregrado_multicell, $pdf->GetY()));
+
+// Especialización(s)
+$current_x_especializacion = $pdf->GetX();
+$current_y_especializacion = $pdf->GetY();
+$pdf->MultiCell($colWidth_estudio, $line_height_multicell, utf8_decode('Especialización(s): ' . $especializacion), 1, 'L');
+$new_y_after_especializacion_multicell = $pdf->GetY();
+$pdf->SetXY($current_x_especializacion + $colWidth_estudio, $current_y_especializacion);
+
+$pdf->Cell($colWidth_tipo_exp, $line_height_multicell, utf8_decode('Profesional:'), 1, 0, 'L');
+$pdf->Cell($colWidth_anios_exp, $line_height_multicell, utf8_decode($experiencia_profesional), 1, 1, 'L');
+$pdf->SetY(max($new_y_after_especializacion_multicell, $pdf->GetY()));
+
+// Maestría(s)
+$current_x_maestria = $pdf->GetX();
+$current_y_maestria = $pdf->GetY();
+$pdf->MultiCell($colWidth_estudio, $line_height_multicell, utf8_decode('Maestría(s): ' . $maestria), 1, 'L');
+$y_after_maestria_multicell = $pdf->GetY();
+
+// Experiencia Profesional
+$pdf->SetXY($current_x_maestria + $colWidth_estudio, $current_y_maestria);
+$pdf->Cell($colWidth_tipo_exp, $line_height_multicell, utf8_decode('Profesional:'), 1, 0, 'L');
+$pdf->Cell($colWidth_anios_exp, $line_height_multicell, utf8_decode($experiencia_profesional), 1, 1, 'L');
+$y_after_profesional_exp = $pdf->GetY();
+
+// Asegurar posición
+$y_start_doctorado_otro_block = max($y_after_maestria_multicell, $y_after_profesional_exp);
+$pdf->SetY($y_start_doctorado_otro_block);
+
+// Doctorado(s) y Otro estudio
+$original_x_calc = $pdf->GetX();
+$original_y_calc = $pdf->GetY();
+
+// Calcular alturas
+$temp_y_before_doctorado_calc = $pdf->GetY();
+$pdf->MultiCell($colWidth_estudio, $line_height_multicell, utf8_decode('Doctorado(s): ' . $doctorado), 0, 'L');
+$h_doctorado = $pdf->GetY() - $temp_y_before_doctorado_calc;
+
+$temp_y_before_otro_calc = $pdf->GetY();
+$pdf->MultiCell($colWidth_estudio, $line_height_multicell, utf8_decode('Otro: ' . $otro_estudio), 0, 'L');
+$h_otro = $pdf->GetY() - $temp_y_before_otro_calc;
+
+$pdf->SetXY($original_x_calc, $original_y_calc);
+
+// Calcular altura total
+$total_height_for_otra_exp = $h_doctorado + $h_otro;
+
+// Dibujar experiencia "Otra"
+$pdf->SetXY($original_x_calc + $colWidth_estudio, $original_y_calc);
+$pdf->Cell($colWidth_tipo_exp, $total_height_for_otra_exp, utf8_decode('Otra:'), 1, 0, 'L');
+$pdf->Cell($colWidth_anios_exp, $total_height_for_otra_exp, utf8_decode($otra_experiencia), 1, 1, 'L');
+$y_after_otra_exp_drawn = $pdf->GetY();
+
+// Dibujar Doctorado y Otro estudio
+$pdf->SetXY($original_x_calc, $original_y_calc);
+$pdf->MultiCell($colWidth_estudio, $line_height_multicell, utf8_decode('Doctorado(s): ' . $doctorado), 1, 'L');
+$pdf->SetX($original_x_calc);
+$pdf->MultiCell($colWidth_estudio, $line_height_multicell, utf8_decode('Otro: ' . $otro_estudio), 1, 'L');
+
+// Posición final
+$pdf->SetY(max($y_after_otra_exp_drawn, $pdf->GetY()));
+
+// Sexta Tabla: Vinculación Anterior y Anexos HV
+$pdf->Ln(2);
+
+// Ajustar anchos para que la tabla ocupe el 100% del ancho disponible
+$colWidth_q = $availableTableWidth * 0.80;   // 70% para la pregunta
+$colWidth_si = $availableTableWidth * 0.05;  // 5% para "SI"
+$colWidth_check1 = $availableTableWidth * 0.05; // 5% para checkbox SI
+$colWidth_no = $availableTableWidth * 0.05;  // 5% para "NO"
+$colWidth_check2 = $availableTableWidth * 0.05; // 5% para checkbox NO
+
+// Row 1: Ha estado vinculado con la Universidad del Cauca
+$pdf->SetFont('Arial', '', 9); // Fuente normal tamaño 9
+$pdf->Cell($colWidth_q, $rowHeight, utf8_decode('El Docente ha estado vinculado con la Universidad del Cauca:'), 1, 0, 'L');
+$pdf->Cell($colWidth_si, $rowHeight, utf8_decode('SI'), 1, 0, 'C');
+
+// Dibujar checkbox para SI
+$check_si = (function_exists('existeSolicitudAnterior') && existeSolicitudAnterior($cedula_solicitante, $anio_semestre)) ? 'X' : '';
+$pdf->Cell($colWidth_check1, $rowHeight, $check_si, 1, 0, 'C');
+
+$pdf->Cell($colWidth_no, $rowHeight, utf8_decode('NO'), 1, 0, 'C');
+
+// Dibujar checkbox para NO
+$check_no = (!(function_exists('existeSolicitudAnterior') || !existeSolicitudAnterior($cedula_solicitante, $anio_semestre))) ? 'X' : '';
+$pdf->Cell($colWidth_check2, $rowHeight, $check_no, 1, 1, 'C');
+
+// Row 2: Se anexa historia laboral (hoja de vida)
+$pdf->Cell($colWidth_q, $rowHeight, utf8_decode('Se anexa historia laboral (hoja de vida):'), 1, 0, 'L');
+$pdf->Cell($colWidth_si, $rowHeight, utf8_decode('SI'), 1, 0, 'C');
+
+// Dibujar checkbox para SI
+$check_si_hv = ($anexa_hv_nuevo === 'si') ? 'X' : '';
+$pdf->Cell($colWidth_check1, $rowHeight, $check_si_hv, 1, 0, 'C');
+
+$pdf->Cell($colWidth_no, $rowHeight, utf8_decode('NO'), 1, 0, 'C');
+
+// Dibujar checkbox para NO
+$check_no_hv = ($anexa_hv_nuevo === 'no') ? 'X' : '';
+$pdf->Cell($colWidth_check2, $rowHeight, $check_no_hv, 1, 1, 'C');
+
+// Séptima Tabla: Anexa Actualización y Observaciones
+$pdf->Ln(2);
+$colWidth_anexa_q = $availableTableWidth * 0.4;
+$colWidth_anexa_si_no = $availableTableWidth * 0.05;
+$colWidth_anexa_check = $availableTableWidth * 0.05;
+$colWidth_cual = $availableTableWidth - $colWidth_anexa_q - ($colWidth_anexa_si_no + $colWidth_anexa_check) * 2;
+
+// Row 1: Anexa actualización - CORREGIDO
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell($colWidth_anexa_q, $rowHeight, utf8_decode('Anexa actualización:'), 1, 0, 'L');
+
+// Celda SI - ahora centrada
+$pdf->Cell($colWidth_anexa_si_no, $rowHeight, utf8_decode('SI'), 1, 0, 'C');  // Cambiado de 'R' a 'C'
+$x = $pdf->GetX(); $y = $pdf->GetY();
+$pdf->Cell($colWidth_anexa_check, $rowHeight, '', 1, 0, 'C');
+$pdf->Checkbox($x + $checkbox_offset_x, $y + $checkbox_offset_y, ($actualiza_hv_antiguo === 'si'));
+
+// Celda NO (mantenemos centrado)
+$pdf->Cell($colWidth_anexa_si_no, $rowHeight, utf8_decode('NO'), 1, 0, 'C');
+$x = $pdf->GetX(); $y = $pdf->GetY();
+$pdf->Cell($colWidth_anexa_check, $rowHeight, '', 1, 0, 'C');
+$pdf->Checkbox($x + $checkbox_offset_x, $y + $checkbox_offset_y, ($actualiza_hv_antiguo === 'no'));
+
+// Celda Cuál - con fuente tamaño 9
+$pdf->SetFont('Arial', '', 9);  // Fuerza tamaño 9
+$pdf->Cell($colWidth_cual, $rowHeight, utf8_decode('Cuál:'), 1, 1, 'L');
+
+// Row 2: Observaciones
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->MultiCell($availableTableWidth, 30, utf8_decode('Observaciones:'), 1, 'L');// --- Output del PDF ---
+$file_name = 'FOR-45_' . str_replace(' ', '_', $nombre_solicitante) . '_' . str_replace(' ', '_', $periodo_consulta) . '_' . str_replace(' ', '_', $nombre_departamento) . '.pdf';
+$pdf->Output('I', $file_name); // 'I' para mostrar en el navegador, 'D' para forzar descarga
+
+?>

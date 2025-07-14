@@ -181,7 +181,7 @@ $smlv_ant = 0;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comparativa de Periodos</title>
 
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     </head>
 <body>
  <?php   
@@ -269,8 +269,7 @@ echo '<style>
         background-color: #f8fafc;
         color: #333;
         margin: 0;
-        padding: 15px;
-        font-size: 14px;
+       
     }
 
 
