@@ -511,7 +511,7 @@ $result_existing_periods = $conn->query($sql_existing_periods);
 </head>
 <body>
      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <div class="container mt-5">
         <h1 class="text-center mb-4">Gestión de Periodos</h1>

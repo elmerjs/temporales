@@ -33,6 +33,8 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
             $sesionok = 1;
             // Establecer variables de sesión
             $_SESSION['loggedin'] = true;
+            $_SESSION['id_user'] = $row['Id']; // ◄ Asegúrate que 'id' existe en tu tabla users
+
             $_SESSION['name'] = $row['Name'];
                         $_SESSION['fk_fac_user'] = $row['fk_fac_user'];
 

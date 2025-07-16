@@ -1,14 +1,15 @@
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
-
 <?php
 session_start();
 $currentYear = date("Y");
 ?>
 <?php
 require 'cn.php';
+
+
 if (isset($_SESSION['name'])) {
     $nombre_sesion = $_SESSION['name'];
         $fk_fac_user = $_SESSION['fk_fac_user'];
+    
 
 } else {
     $nombre_sesion = "elmer jurado";
@@ -84,6 +85,9 @@ $con->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solicitud Aval Temporales</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9O5SmXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous">
+
 <style>
 /* Colores institucionales Unicauca */
 :root {
@@ -665,7 +669,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
     .header-bottom-row h1 {
     margin-left: 40px;
     font-weight: normal; /* <--- Para quitar la negrita o hacerla más ligera */
-    font-size: 1.2em;    /* <--- Para ajustar el tamaño de la letra (puedes usar 'em', 'px', etc.) */
+    font-size: 1.8em;    /* <--- Para ajustar el tamaño de la letra (puedes usar 'em', 'px', etc.) */
     color: #333; /* <--- (Opcional) Para un color menos prominente, como un gris oscuro */
 }
     /* Para el título h1 dentro del contenedor del logo */
@@ -685,7 +689,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
     margin-left: 20px; /* Asegúrate de que el 'px' esté ahí */
     
     font-weight: normal; /* <--- Esto quita la negrita o la hace más ligera (equivalente a 400) */
-    font-size: 1.2em;    /* <--- Ajusta este valor para el tamaño de la letra. Puedes usar 'em', 'px', o 'rem' */
+    font-size: 1.5em;    /* <--- Ajusta este valor para el tamaño de la letra. Puedes usar 'em', 'px', o 'rem' */
     color: #333; /* <--- (Opcional) Puedes ajustar el color para que sea menos prominente, por ejemplo, un gris oscuro */
     }
 </style>
@@ -704,49 +708,50 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
         
         
         
-    <div class="user-controls">
-        
+  <div class="user-controls">
+
+    <?php
+    $usuarios_presupuesto_permitidos = [92, 4];
+
+    if ($tipo_usuario == 1 && in_array($id_user, $usuarios_presupuesto_permitidos)): ?>
+        <a href="/presupuesto_novedades/" class="btn-external-link" title="Módulo de novedades presupuestales" target="_blank" style="border-radius: 25px; padding: 10px 20px;">
+            <i class="fas fa-money-bill-wave me-2"></i> Presupuesto
+        </a>
+    <?php endif; ?>
+
+    <div id="user-info-dropdown" class="dropdown">
         <?php
-                $usuarios_presupuesto_permitidos = [92, 4]; // Mantenemos los mismos de tu lógica original
-
-        if ($tipo_usuario == 1 && in_array($id_user, $usuarios_presupuesto_permitidos)): ?>
-            <a href="/presupuesto_novedades/" class="btn-external-link" title="Módulo de novedades presupuestales" target="_blank" style="border-radius: 25px; padding: 10px 20px;">
-                <i class="fas fa-money-bill-wave me-2"></i> Presupuesto
-            </a>
-        <?php endif; ?>
-        <div id="login">
-            <?php
-                if (isset($_SESSION['loggedin'])) {
-                    if (!empty($departamentos)) {                 // hay resultados
-                        $deptoNom = $departamentos[0]['depto_nom_propio'];
-
-                        $facultad_impresa = false;
-
-                    foreach ($departamentos as $dept) {
-
-                        // ► Usuario 2: mostrar facultad solo la primera vez
-                        if ($tipo_usuario == 2 && !$facultad_impresa) {
-                            echo '<b>Facultad: ' . htmlspecialchars($dept['nombre_fac_min']) . '</b>';
-                            $facultad_impresa = true;
-                        }
-
-                        // ► Usuario 3: mostrar cada departamento
-                        if ($tipo_usuario == 3) {
-                            echo '<i>depto: ' . htmlspecialchars($dept['depto_nom_propio']) . '</i> - ';
-                        }
+        if (!empty($_SESSION['loggedin'])) {
+            // ► Mostrar facultad o departamento según rol
+            if (!empty($departamentos)) {
+                $facultad_impresa = false;
+                foreach ($departamentos as $dept) {
+                    if ($tipo_usuario == 2 && !$facultad_impresa) {
+                        echo '<b>Facultad: ' . htmlspecialchars($dept['nombre_fac_min']) . '</b> - ';
+                        $facultad_impresa = true;
                     }
-                                        }
-                                        echo "<i> usuario: " . $_SESSION['name'] . "</i> <a href='../../temporales/logout.php' class='btn-logout'>Logout</a>";
-                } else {
-                    // Puedes añadir aquí el mensaje o lógica para usuarios no autenticados si es diferente al de tu código original.
-                    echo "SESSION loggedin: " . ($_SESSION['loggedin'] ? 'true' : 'false') . "<br>";
-                    echo "Email fac: " . $email_fac . "<br>";
-                    echo "<div class='alert alert-danger mt-4' role='alert'><h4>You need to login to access this page.</h4><p><a href='/temporales/index.html'>Login Here!</a></p></div>";
+                    if ($tipo_usuario == 3) {
+                        echo '<i>Depto: ' . htmlspecialchars($dept['depto_nom_propio']) . '</i> - ';
+                    }
                 }
+            }
             ?>
-        </div>
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-user-circle me-2"></i> <?php echo htmlspecialchars($_SESSION['name']); ?>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">Perfil</a></li>
+                <li><a class="dropdown-item" href="../../temporales/logout.php">Cerrar sesión</a></li>
+            </ul>
+        <?php } else { ?>
+            <div class="alert alert-danger mt-4" role="alert">
+                <h4>Necesitas iniciar sesión para acceder.</h4>
+                <p><a href="/temporales/index.html">Ir al login</a></p>
+            </div>
+        <?php } ?>
     </div>
-        
+</div>
+
         
         
        </div>
@@ -1084,7 +1089,108 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
     <div id="contenido">
         </div>
    
-    <script>
+  
+<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="profileModalLabel">Mi Perfil</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="profileForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nombre de Usuario:</label>
+                        <input type="text" class="form-control" id="username" value="<?php echo htmlspecialchars($_SESSION['name']); ?>" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="profesorEnCargo" class="form-label">Profesor en el cargo (Opcional):</label>
+                        <input type="text" class="form-control" id="profesorEnCargo" name="profesor_en_cargo" value="">
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailPersonal" class="form-label">Email personal (Opcional):</label>
+                        <input type="email" class="form-control" id="emailPersonal" name="email_personal" value="">
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefonoPersonal" class="form-label">Teléfono personal (Opcional):</label>
+                        <input type="tel" class="form-control" id="telefonoPersonal" name="telefono_personal" value="">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+   <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar el dropdown de Bootstrap
+       // var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'))
+        //var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+        //    return new bootstrap.Dropdown(dropdownToggleEl)
+        //});
+
+        var profileModal = document.getElementById('profileModal');
+        profileModal.addEventListener('show.bs.modal', function (event) {
+            // Fetch current user data when modal opens
+            fetch('/temporales/get_profile_data.php') // Create this file as well
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('profesorEnCargo').value = data.u_nombre_en_cargo || '';
+                        document.getElementById('emailPersonal').value = data.u_email_en_cargo || '';
+                        document.getElementById('telefonoPersonal').value = data.u_tel_en_cargo || '';
+                    } else {
+                        console.error('Error al cargar datos del perfil:', data.message);
+                    }
+                })
+                .catch(error => console.error('Error de red al cargar datos del perfil:', error));
+        });
+
+        var profileForm = document.getElementById('profileForm');
+   profileForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    
+    var formData = new FormData(this);
+
+fetch('/temporales/update_profile.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            // Si la respuesta HTTP no es exitosa (200-299)
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert(`✅ Éxito: ${data.message}`);
+            var modal = bootstrap.Modal.getInstance(profileModal);
+            modal.hide();
+        } else {
+            // Mostrar mensaje de error del servidor con posibles detalles adicionales
+            let errorMsg = `❌ Error al guardar:\n${data.message}`;
+            if (data.error_details) {
+                errorMsg += `\n\nDetalles:\n${data.error_details}`;
+            }
+            alert(errorMsg);
+        }
+    })
+    .catch(error => {
+        console.error('Error completo:', error);
+        // Mensaje más informativo para el usuario
+        alert(`⚠️ Error de conexión:\n${error.message}\n\nPor favor, inténtelo nuevamente o contacte al soporte técnico.`);
+    });
+});
+    });
+</script>     
+     <script>
     // Ajustar evento para los enlaces de los periodos
 document.querySelectorAll('.periodo-link').forEach(function(link) {
     link.addEventListener('click', function(event) {
@@ -1335,6 +1441,6 @@ document.querySelectorAll('.novedades-periodo').forEach(function(link) {
             });
         });
 </script>
-
+ 
 </body>
 </html>

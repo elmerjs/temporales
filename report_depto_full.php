@@ -224,7 +224,6 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
 <!-- Bootstrap JS and dependencies -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
 
     <style>
@@ -303,7 +302,7 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
     margin-bottom: 10px;
     padding: 3px;
     border: 1px solid #c2dcf0;  /* Borde azul claro institucional */
-    background-color: #ECF0FF;  /* Fondo azul claro institucional (#16A8E1 con 10% de opacidad) */
+    /*background-color: #ECF0FF;  /* Fondo azul claro institucional (#16A8E1 con 10% de opacidad) */
     border-radius: 5px;
         font-family: 'Open Sans', sans-serif; /* <-- Añade/Modifica esta línea */
 }
@@ -532,7 +531,7 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
   
     
     <!--verificar cuales sirven-->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+      
 <style>
        
     /* --- */
@@ -1673,7 +1672,7 @@ document.addEventListener('DOMContentLoaded', function () {
     --unicauca-warning: #F8AE15;
         --unicauca-light: #ECF0FF;
 
-    --unicauca-lightb: #F5F7FF;
+    --unicauca-lightb: /*#F5F7FF;*/
     --unicauca-dark: #1a1a2e;
 }
 
@@ -2417,7 +2416,7 @@ function submitOficioForm() {
 }
 
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".ver-mas").forEach(function (enlace) {
