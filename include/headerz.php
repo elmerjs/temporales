@@ -46,6 +46,7 @@ while ($row = $resultadof->fetch_assoc()) {
     $depto_user= $row['fk_depto_user'];
     $id_user= $row['Id'];
 
+$profe_en_cargo= $row['u_nombre_en_cargo'];
 
     $where = "";
     if ($tipo_usuario== 3) {

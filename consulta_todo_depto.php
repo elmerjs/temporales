@@ -2411,7 +2411,7 @@ $anio_semestre_anterior= obtenerPeriodoAnterior($anio_semestre);
                         </div>
                         <div class="mb-3">
                             <label for="elaboro" class="form-label">Jefe de Departamento<sup>*</sup></label>
-                            <input type="text" class="form-control unacauca-input" id="elaboro" name="elaboro" placeholder="Ej. Pedro Perez" required>
+                            <input type="text" class="form-control unacauca-input" id="elaboro" name="elaboro" value="<?php echo $profe_en_cargo; ?>" placeholder="Ej. Pedro Perez" required>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6 mb-3">
