@@ -92,7 +92,6 @@ $con->close();
 <style>
 /* Colores institucionales Unicauca */
 :root {
-    --unicauca-azul: #000066;            /* Azul principal */
     --unicauca-azul-oscuro: #000b41;    /* Azul oscuro, usado para submenús */
     --unicauca-rojo: #A61717;            /* Rojo institucional */
     --unicauca-rojo-claro: #D32F2F;      /* Rojo más claro */
@@ -111,6 +110,8 @@ $con->close();
     --nueva-letra-menu: #1F2124;
 }
     :root {
+            --unicauca-azul_br: #0051C6;            /* Azul principal */
+
     --unicauca-azul: #000066;            /* Azul principal */
     --unicauca-azul-oscuro: #000b41;    /* Azul oscuro */
     --unicauca-rojo: #A61717;            /* Rojo institucional */
@@ -147,7 +148,7 @@ $con->close();
 
 /* Opción 1 - Badge estático */
 .new-badge {
-    background-color: var(--unicauca-rojo);
+    background-color: #F8AE15 ;
     color: var(--unicauca-blanco);
     font-size: 0.6em;
     padding: 2px 5px;
@@ -231,26 +232,6 @@ nav ul li a {
     /* Otros estilos... */
 }
 
-
-/* MODIFICADO: Aplicar estilos de hover también al estado activo */
-nav ul li a:hover,
-nav ul li.active > a { /* Cuando el LI tiene la clase 'active' */
-    background-color: rgba(0, 0, 0, 0.1); /* Fondo más oscuro y sutil al pasar el mouse/activo */
-    color: var(--unicauca-azul); /* Puedes usar un color que contraste bien, por ejemplo el azul Unicauca */
-    transform: translateY(-2px); /* Pequeño efecto de elevación */
-}
-
-/* MODIFICADO: Aplicar ::after de hover también al estado activo */
-nav ul li a::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 3px;
-    background: var(--unicauca-rojo);
-    transition: all 0.3s ease;
-}
 
 nav ul li a:hover::after,
 nav ul li.active > a::after { /* Cuando el LI tiene la clase 'active' */
@@ -607,7 +588,7 @@ nav { /* Esta regla CSS puede ser más específica si tienes otras etiquetas <na
 /* ESTILOS DE HOVER Y ACTIVO PARA MENU PRINCIPAL */
 nav ul li a:hover,
 nav ul li.active > a {
-    background-color: var(--unicauca-azul); /* Fondo azul Unicauca al pasar el mouse o activo */
+    background-color: var(--unicauca-azul_br); /* Fondo azul Unicauca al pasar el mouse o activo */
     color: var(--unicauca-blanco); /* Letra blanca en hover/activo */
     transform: none; /* Eliminar la elevación para este estilo */
     border-radius: 4px; /* Mantener bordes redondeados */
@@ -693,7 +674,29 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
     font-size: 1.5em;    /* <--- Ajusta este valor para el tamaño de la letra. Puedes usar 'em', 'px', o 'rem' */
     color: #333; /* <--- (Opcional) Puedes ajustar el color para que sea menos prominente, por ejemplo, un gris oscuro */
     }
+    /* Styles for "Vicerrectoría Académica" */
+.logo-and-title h1 {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; /* Consistent with login */
+    font-size: 2.2rem; /* Slightly larger for prominence */
+    color: #0051C6 ; /* Primary blue from the user-avatar or a slightly darker shade */
+    margin-left: 15px; /* Adjust as needed for spacing from the logo */
+    font-weight: 600; /* A bit bolder for emphasis */
+    letter-spacing: -0.5px; /* Subtle tightening of letters */
+}
+
+/* Styles for "Solicitud Aval - Profesores Temporales" */
+.header-bottom-row h1 {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; /* Consistent font */
+    font-size: 1.8rem; /* Appropriately sized for a section title */
+    color: #343a40; /* A darker neutral color for good readability */
+    font-weight: 500; /* Regular weight */
+    text-align: left; /* Align to the left, or center if preferred for the overall layout */
+    padding: 15px 40px; /* Add some padding for spacing */
+    margin: 0; /* Remove default margin */
+    border-bottom: 1px solid #e9ecef; /* A subtle line at the bottom */
+}
 </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 <header>
@@ -720,37 +723,159 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
         </a>
     <?php endif; ?>
 
-    <div id="user-info-dropdown" class="dropdown">
-        <?php
-        if (!empty($_SESSION['loggedin'])) {
-            // ► Mostrar facultad o departamento según rol
-            if (!empty($departamentos)) {
-                $facultad_impresa = false;
-                foreach ($departamentos as $dept) {
-                    if ($tipo_usuario == 2 && !$facultad_impresa) {
-                        echo '<b>Facultad: ' . htmlspecialchars($dept['nombre_fac_min']) . '</b> - ';
-                        $facultad_impresa = true;
-                    }
-                    if ($tipo_usuario == 3) {
-                        echo '<i>Depto: ' . htmlspecialchars($dept['depto_nom_propio']) . '</i> - ';
-                    }
-                }
-            }
-            ?>
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-user-circle me-2"></i> <?php echo htmlspecialchars($_SESSION['name']); ?>
+      <div id="user-info-dropdown" class="dropdown">
+    <?php if (!empty($_SESSION['loggedin'])): ?>
+        <div class="user-info-container">
+         
+            
+            <button class="user-menu-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-name">
+                    <?php echo htmlspecialchars($_SESSION['name']); ?>
+                    <i class="fas fa-chevron-down dropdown-arrow"></i>
+                </div>
             </button>
+            
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
-                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">Perfil</a></li>
-                <li><a class="dropdown-item" href="../../temporales/logout.php">Cerrar sesión</a></li>
+                <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">
+                        <i class="fas fa-user me-2"></i> Perfil
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                   <li>
+                    <a class="dropdown-item" href="cambiar_password.php">
+                        <i class="fas fa-key me-2"></i> Cambiar contraseña
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="../../temporales/logout.php">
+                        <i class="fas fa-sign-out-alt me-2"></i> Cerrar sesión
+                    </a>
+                </li>
             </ul>
-        <?php } else { ?>
-            <div class="alert alert-danger mt-4" role="alert">
-                <h4>Necesitas iniciar sesión para acceder.</h4>
-                <p><a href="/temporales/index.html">Ir al login</a></p>
+        </div>
+    <?php else: ?>
+        <div class="login-alert">
+            <i class="fas fa-exclamation-circle alert-icon"></i>
+            <div class="alert-content">
+                <h4>Acceso requerido</h4>
+                <p>Necesitas iniciar sesión para acceder a esta área</p>
+                <a href="/temporales/index.html" class="btn btn-primary btn-sm">
+                    <i class="fas fa-sign-in-alt me-1"></i> Ir al login
+                </a>
             </div>
-        <?php } ?>
-    </div>
+        </div>
+    <?php endif; ?>
+</div>
+
+<style>
+    /* Estilos modernos y limpios */
+    #user-info-dropdown {
+        font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+    
+    .user-info-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+    
+    .user-context {
+        margin-bottom: 4px;
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-align: right;
+    }
+    
+    .user-faculty, .user-department {
+        display: block;
+        line-height: 1.3;
+    }
+    
+    .user-menu-toggle {
+        background: none;
+        border: none;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .user-menu-toggle:hover {
+        opacity: 0.9;
+    }
+    
+    .user-avatar {
+        font-size: 1.8rem;
+        color: #4a6baf;
+        margin-right: 10px;
+    }
+    
+    .user-name {
+        font-weight: 500;
+        color: #343a40;
+    }
+    
+    .dropdown-arrow {
+        font-size: 0.7rem;
+        margin-left: 5px;
+        color: #6c757d;
+        transition: transform 0.2s ease;
+    }
+    
+    .dropdown-menu {
+        border: none;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border-radius: 8px;
+        padding: 8px 0;
+        min-width: 200px;
+    }
+    
+    .dropdown-item {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        color: #495057;
+        border-radius: 4px;
+        margin: 2px 8px;
+        width: auto;
+    }
+    
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+        color: #4a6baf;
+    }
+    
+    .login-alert {
+        display: flex;
+        align-items: center;
+        background-color: #fff3f3;
+        padding: 12px;
+        border-radius: 8px;
+        border-left: 4px solid #dc3545;
+    }
+    
+    .alert-icon {
+        font-size: 1.5rem;
+        color: #dc3545;
+        margin-right: 12px;
+    }
+    
+    .alert-content h4 {
+        font-size: 1rem;
+        margin-bottom: 4px;
+        color: #dc3545;
+    }
+    
+    .alert-content p {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+        color: #6c757d;
+    }
+</style>
 </div>
 
         

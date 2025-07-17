@@ -170,8 +170,8 @@ class PDF extends FPDF
 
     // ───── Imagen de firma (opcional) ─────
     $imgX = $this->GetPageWidth() - 35;
-    $imgY = $this->GetY() - 10;
-    $this->Image($this->footer_image_path, $imgX, $imgY, 20);
+    $imgY = $this->GetY() - 0;
+    $this->Image($this->footer_image_path, $imgX, $imgY, 25);
 }
 
 

@@ -217,7 +217,6 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
     <meta charset="UTF-8">
     <title>Consulta por Profesor y Sede</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
@@ -470,32 +469,32 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
   .fa-times.text-danger {
         color: #dc3545 !important;
     }
-  .btn-success {
-    background-color: #249337; /* Color institucional 6 */
-    border-color: #249337;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
+      .btn-success {
+        background-color: #249337; /* Color institucional 6 */
+        border-color: #249337;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
 
-.btn-success:hover {
-    background-color: #1e7a2e; /* 10% más oscuro que #249337 */
-    border-color: #1e7a2e;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-.btn-danger {
-    background-color: #E52724; /* Color institucional exacto */
-    border-color: #E52724;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
+    .btn-success:hover {
+        background-color: #1e7a2e; /* 10% más oscuro que #249337 */
+        border-color: #1e7a2e;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .btn-danger {
+        background-color: #E52724; /* Color institucional exacto */
+        border-color: #E52724;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
 
-.btn-danger:hover {
-    background-color: #C21F1D; /* 10% más oscuro */
-    border-color: #C21F1D;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
+    .btn-danger:hover {
+        background-color: #C21F1D; /* 10% más oscuro */
+        border-color: #C21F1D;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
     .text-success {
         color: #00843D !important;
     }
@@ -1153,8 +1152,7 @@ h2.section-title {
         padding: 0.75rem;
     }
 }
-</style>
-<style>
+
 /* Paleta institucional */
 :root {
     --unicauca-primary: #000066;
@@ -1832,6 +1830,67 @@ document.addEventListener('DOMContentLoaded', function () {
 .observacion-corta, .observacion-completa {
     display: inline;
 }
+                <style>
+    /* Estilo para el botón Aceptar */
+    .btn.btn-sm.btn-success {
+        background-color: #28a745; /* Verde Unicauca mejorado */
+        border-color: #28a745;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        border-radius: 0.25rem;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn.btn-sm.btn-success:hover:not(:disabled) {
+        background-color: #218838;
+        border-color: #1e7e34;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    }
+    
+    .btn.btn-sm.btn-success:before {
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        content: "\f00c"; /* Icono check */
+        margin-right: 5px;
+    }
+    
+    /* Estilo para el botón Devolver */
+    .btn.btn-sm.btn-danger {
+        background-color: #dc3545; /* Rojo Unicauca mejorado */
+        border-color: #dc3545;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        border-radius: 0.25rem;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn.btn-sm.btn-danger:hover:not(:disabled) {
+        background-color: #c82333;
+        border-color: #bd2130;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+    }
+    
+    .btn.btn-sm.btn-danger:before {
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        content: "\f2ea"; /* Icono undo-alt */
+        margin-right: 5px;
+    }
+    
+    /* Estilo para botones deshabilitados */
+    .btn.btn-sm:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+</style>
 </style>
 <div class="col-md-4">
     <div class="content-sidebar bg-unicauca-light p-4 rounded-3 border border-unicauca h-100 shadow-sm" style="font-family: 'Open Sans', sans-serif !important;">
@@ -1994,11 +2053,11 @@ document.addEventListener('DOMContentLoaded', function () {
             class="btn btn-unicauca-success">
             <i class="fas fa-file-excel me-2"></i> Reporte General
         </a>
-        
-        <a href="excel_temporales_fac.php?tipo_usuario=<?= htmlspecialchars($tipo_usuario) ?>&facultad_id=<?= htmlspecialchars($facultad_id) ?>&anio_semestre=<?= htmlspecialchars($anio_semestre) ?>" 
+      <!--
+        <a href="excel_temporales_fac.php?tipo_usuario=<?//= htmlspecialchars($tipo_usuario) ?>&facultad_id=<?//= htmlspecialchars($facultad_id) ?>&anio_semestre=<?//= htmlspecialchars($anio_semestre) ?>" 
             class="btn btn-unicauca-success">
             <i class="fas fa-file-pdf me-2"></i> Reporte Imprimible
-        </a>
+        </a>-->
         
         <?php if ($tipo_usuario == '1') : ?>
             <a href="excel_temporales_novedades.php?tipo_usuario=<?= htmlspecialchars($tipo_usuario) ?>&facultad_id=<?= htmlspecialchars($facultad_id) ?>&anio_semestre=<?= htmlspecialchars($anio_semestre) ?>" 
@@ -2028,7 +2087,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 
 <div id="fondoModalInput" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
-            
+ </div>           
      <script>
 var idDeptoPeriodoGlobal = null;
 var estadoGlobal = null;
@@ -2248,7 +2307,6 @@ function confirmarDeshacerEnvio(facultadId, anioSemestre) {
 </script>
 
 
-</body>
 <!-- Modal -->
 
 <div class="modal fade" id="oficioModal" tabindex="-1" aria-labelledby="oficioModalLabel" aria-hidden="true">

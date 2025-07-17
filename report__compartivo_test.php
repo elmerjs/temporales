@@ -1044,7 +1044,7 @@ WITH ProfessorFinancials AS (
         s.horas_r,
         s.tipo_dedicacion,
         s.tipo_dedicacion_r,
-        -- Parámetros dinámicos desde PHP
+        -- Parámetros dinámicos pasados directamente
         ? AS valor_punto_dyn,
         ? AS smlv_dyn,
         ? AS dias_catedra_dyn,
@@ -1057,7 +1057,27 @@ WITH ProfessorFinancials AS (
         ? AS porcentaje_icbf_dyn,
         ? AS ajuste_catedra_dyn,
         ? AS ajuste_ocasional_dyn,
--- NUEVA LÓGICA PARA total_horas_calculado
+        
+        -- Lógica para determinar el anio_semestre anterior
+        -- Se usa para la subconsulta de puntos_periodo_anterior
+        SUBSTRING_INDEX(s.anio_semestre, '-', 1) AS anio_actual_aux, -- Renombrado para evitar conflictos
+        CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) AS semestre_actual_aux, -- Renombrado
+        
+        -- Puntos del período anterior para el mismo profesor
+        (SELECT p_ant.puntos
+         FROM solicitudes p_ant
+         WHERE p_ant.cedula = s.cedula
+           AND p_ant.anio_semestre = 
+               CASE
+                   WHEN CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) = 2 THEN CONCAT(SUBSTRING_INDEX(s.anio_semestre, '-', 1), '-1')
+                   WHEN CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) = 1 THEN CONCAT(CAST(SUBSTRING_INDEX(s.anio_semestre, '-', 1) AS UNSIGNED) - 1, '-2')
+                   ELSE NULL
+               END
+           AND (p_ant.estado <> 'an' OR p_ant.estado IS NULL)
+         LIMIT 1
+        ) AS puntos_periodo_anterior, -- Esta columna auxiliar es necesaria internamente y NO se propaga
+
+        -- LÓGICA PARA total_horas_calculado
         CASE
             WHEN s.tipo_docente = 'Catedra' THEN (COALESCE(s.horas, 0) + COALESCE(s.horas_r, 0))
             WHEN s.tipo_docente = 'Ocasional' THEN
@@ -1070,11 +1090,12 @@ WITH ProfessorFinancials AS (
         END AS horas_por_profesor_calc, -- Horas por cada profesor individual
 
         -- Paso 1: Calcular Asignacion_Mensual y Asignacion_Total por profesor
+        -- APLICACIÓN DE LA LÓGICA DE COALESCE Y VALORES POR DEFECTO AQUÍ
         CASE
             WHEN s.tipo_docente = 'Catedra' THEN
-                (s.puntos * ? * (COALESCE(s.horas, 0) + COALESCE(s.horas_r, 0)) * 4)
+                (COALESCE(NULLIF(s.puntos, 0), (SELECT puntos_prev.puntos FROM solicitudes puntos_prev WHERE puntos_prev.cedula = s.cedula AND puntos_prev.anio_semestre = (CASE WHEN CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) = 2 THEN CONCAT(SUBSTRING_INDEX(s.anio_semestre, '-', 1), '-1') WHEN CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) = 1 THEN CONCAT(CAST(SUBSTRING_INDEX(s.anio_semestre, '-', 1) AS UNSIGNED) - 1, '-2') ELSE NULL END) AND (puntos_prev.estado <> 'an' OR puntos_prev.estado IS NULL) LIMIT 1), 3.5) * ? * (COALESCE(s.horas, 0) + COALESCE(s.horas_r, 0)) * 4)
             WHEN s.tipo_docente = 'Ocasional' THEN
-                (s.puntos * ? * (
+                (COALESCE(NULLIF(s.puntos, 0), (SELECT puntos_prev.puntos FROM solicitudes puntos_prev WHERE puntos_prev.cedula = s.cedula AND puntos_prev.anio_semestre = (CASE WHEN CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) = 2 THEN CONCAT(SUBSTRING_INDEX(s.anio_semestre, '-', 1), '-1') WHEN CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) = 1 THEN CONCAT(CAST(SUBSTRING_INDEX(s.anio_semestre, '-', 1) AS UNSIGNED) - 1, '-2') ELSE NULL END) AND (puntos_prev.estado <> 'an' OR puntos_prev.estado IS NULL) LIMIT 1), 380) * ? * (
                     CASE
                         WHEN s.tipo_dedicacion = 'MT' OR s.tipo_dedicacion_r = 'MT' THEN 20
                         WHEN s.tipo_dedicacion = 'TC' OR s.tipo_dedicacion_r = 'TC' THEN 40
@@ -1086,9 +1107,9 @@ WITH ProfessorFinancials AS (
 
         CASE
             WHEN s.tipo_docente = 'Catedra' THEN
-                s.puntos * ? * (COALESCE(s.horas, 0) + COALESCE(s.horas_r, 0)) * ?
+                COALESCE(NULLIF(s.puntos, 0), (SELECT puntos_prev.puntos FROM solicitudes puntos_prev WHERE puntos_prev.cedula = s.cedula AND puntos_prev.anio_semestre = (CASE WHEN CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) = 2 THEN CONCAT(SUBSTRING_INDEX(s.anio_semestre, '-', 1), '-1') WHEN CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) = 1 THEN CONCAT(CAST(SUBSTRING_INDEX(s.anio_semestre, '-', 1) AS UNSIGNED) - 1, '-2') ELSE NULL END) AND (puntos_prev.estado <> 'an' OR puntos_prev.estado IS NULL) LIMIT 1), 3.5) * ? * (COALESCE(s.horas, 0) + COALESCE(s.horas_r, 0)) * ?
             WHEN s.tipo_docente = 'Ocasional' THEN
-                ROUND(s.puntos * ? * (
+                ROUND(COALESCE(NULLIF(s.puntos, 0), (SELECT puntos_prev.puntos FROM solicitudes puntos_prev WHERE puntos_prev.cedula = s.cedula AND puntos_prev.anio_semestre = (CASE WHEN CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) = 2 THEN CONCAT(SUBSTRING_INDEX(s.anio_semestre, '-', 1), '-1') WHEN CAST(SUBSTRING_INDEX(s.anio_semestre, '-', -1) AS UNSIGNED) = 1 THEN CONCAT(CAST(SUBSTRING_INDEX(s.anio_semestre, '-', 1) AS UNSIGNED) - 1, '-2') ELSE NULL END) AND (puntos_prev.estado <> 'an' OR puntos_prev.estado IS NULL) LIMIT 1), 380) * ? * (
                     CASE
                         WHEN s.tipo_dedicacion = 'MT' OR s.tipo_dedicacion_r = 'MT' THEN 20
                         WHEN s.tipo_dedicacion = 'TC' OR s.tipo_dedicacion_r = 'TC' THEN 40
@@ -1100,12 +1121,35 @@ WITH ProfessorFinancials AS (
     FROM
         solicitudes AS s
     WHERE
-        s.anio_semestre = ?
+        s.anio_semestre = ? -- Parámetro dinámico desde PHP
         AND (s.estado <> 'an' OR s.estado IS NULL)
 ),
 DetailedFinancials AS (
     SELECT
-        pf.*,
+        pf.cedula,
+        pf.facultad_id,
+        pf.departamento_id,
+        pf.tipo_docente,
+        pf.horas,
+        pf.horas_r,
+        pf.tipo_dedicacion,
+        pf.tipo_dedicacion_r,
+        pf.valor_punto_dyn,
+        pf.smlv_dyn,
+        pf.dias_catedra_dyn,
+        pf.semanas_catedra_dyn,
+        pf.dias_ocasional_dyn,
+        pf.semanas_ocasional_dyn,
+        pf.meses_ocas_dyn,
+        pf.porcentaje_arl_dyn,
+        pf.porcentaje_caja_dyn,
+        pf.porcentaje_icbf_dyn,
+        pf.ajuste_catedra_dyn,
+        pf.ajuste_ocasional_dyn,
+        pf.horas_por_profesor_calc,
+        pf.asignacion_mes_calc,
+        pf.asignacion_total_calc,
+        
         -- Paso 2: Calcular todos los componentes financieros detallados
         -- Prima Navidad
         CASE
@@ -1213,7 +1257,7 @@ AggregatedTotals AS (
         COUNT(DISTINCT df.cedula) AS total_profesores,
         SUM(CASE WHEN df.tipo_docente = 'Ocasional' AND (df.tipo_dedicacion = 'TC' OR df.tipo_dedicacion_r = 'TC') THEN 1 ELSE 0 END) AS total_ocasional_tc,
         SUM(CASE WHEN df.tipo_docente = 'Ocasional' AND (df.tipo_dedicacion = 'MT' OR df.tipo_dedicacion_r = 'MT') THEN 1 ELSE 0 END) AS total_ocasional_mt,
-        SUM(df.horas_por_profesor_calc) AS total_horas_agregadas, -- NUEVA COLUMNA AGREGADA
+        SUM(df.horas_por_profesor_calc) AS total_horas_agregadas,
         SUM(df.asignacion_mes_calc) AS total_asignacion_mensual_agregada,
         SUM(df.asignacion_total_calc) AS total_asignacion_total_agregada,
         SUM(
@@ -1245,7 +1289,7 @@ AggregatedTotals AS (
         df.ajuste_ocasional_dyn
 )
 SELECT
-     ata.nombre_facultad,
+    ata.nombre_facultad,
     ata.nombre_departamento,
     ata.PK_DEPTO,
     ata.FK_FAC,
@@ -1253,7 +1297,7 @@ SELECT
     ata.total_ocasional_tc,
     ata.total_ocasional_mt,
     ata.total_profesores,
-    ata.total_horas_agregadas, -- NUEVA COLUMNA EN LA SELECCIÓN FINAL
+    ata.total_horas_agregadas,
     ata.total_asignacion_mensual_agregada,
     ata.total_asignacion_total_agregada,
     -- Aplicar el ajuste final al gran_total_sin_ajuste con los porcentajes corregidos
@@ -1269,7 +1313,6 @@ ORDER BY
     ata.nombre_departamento,
     ata.tipo_docente;
 ";
-
 // --- Preparar y ejecutar la consulta para el PERIODO ACTUAL ---
 // MODIFIED: $facultad_id for the current query might be null if "General" is selected by admin.
 // The SQL query handles NULL gracefully.
