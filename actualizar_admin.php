@@ -245,16 +245,18 @@ $conn->close();
 <select name="tipo_reemplazo" id="tipo_reemplazo" required>
     <option value="">-- Seleccione una opción --</option>
     <option value="Ajuste de Matrículas">Ajuste de Matrículas</option>
-    <option value="Necesidad docente">Necesidad docente</option>
-    <option value="No puede asumir labor">No puede asumir labor</option>
     <option value="Otras fuentes de financiacion">Otras fuentes de financiación</option>
-    <option value="Reemplazo por enfermedad gral">Reemplazo por enfermedad gral</option>
+    <option value="Reemplazo por ajuste de labor y/o necesidad docente (+)">Reemplazo por ajuste de labor y/o necesidad docente (+)</option>
+    <option value="Reemplazo por Jubilación">Reemplazo por Jubilación</option>
     <option value="Reemplazo por Fallecimiento">Reemplazo por Fallecimiento</option>
-    <option value="Reemplazos NN">Reemplazos NN</option>
-    <option value="Ajuste Puntos">Ajuste Puntos</option>
-    <option value="Ajuste por VRA">Ajuste por VRA</option>
-
+    <option value="Reemplazor por Licencias de Maternidad">Reemplazor por Licencias de Maternidad</option>
+    <option value="Reemplazo por enfermedad general">Reemplazo por enfermedad general</option>
+    <option value="Reemplazo por renuncia">Reemplazo por renuncia</option>
+    <option value="Reemplazo NN">Reemplazo NN</option>
+    <option value="Ajuste de puntaje">Ajuste de puntaje</option>
     <option value="Otro">Otro</option>
+    <option value="No puede asumir labor">No puede asumir labor</option>
+    <option value="Ajustes VRA">Ajustes VRA</option>
 </select>
         <button type="submit">Actualizar</button>
         <button type="button" onclick="redirectToConsulta()">Regresar</button>
@@ -267,31 +269,61 @@ function detectarTipoReemplazo() {
     const observacion = document.getElementById('observacion').value.toLowerCase();
     const selectTipo = document.getElementById('tipo_reemplazo');
     
-    // Palabras clave para cada tipo (actualizadas)
     const keywords = {
-        'matrículas': 'Ajuste de Matrículas',
-        'matriculas': 'Ajuste de Matrículas',
-        'necesidad docente': 'Necesidad docente',
-        'requerimiento docente': 'Necesidad docente',
-        'falta de docente': 'Necesidad docente',
-        'no puede asumir': 'No puede asumir labor',
-        'no asume': 'No puede asumir labor',
-        'no continuará': 'No puede asumir labor',
-        'financiación': 'Otras fuentes de financiacion',
-        'financiamiento': 'Otras fuentes de financiacion',
-        'enfermedad': 'Reemplazo por enfermedad gral',
-        'incapacidad': 'Reemplazo por enfermedad gral',
-        'fallecimiento': 'Reemplazo por Fallecimiento',
-        'falleció': 'Reemplazo por Fallecimiento',
-        'murió': 'Reemplazo por Fallecimiento',
-        'puntos': 'Ajuste Puntos',
-        'reajuste puntos': 'Ajuste Puntos',
-        'reemplazo': 'Reemplazos NN',
-        'sustitución': 'Reemplazos NN',
-        'sustitucion': 'Reemplazos NN',
-         '4-31/': 'Ajuste por VRA'
-     
-    };
+    'matrículas': 'Ajuste de Matrículas',
+    'matriculas': 'Ajuste de Matrículas',
+    // Ahora apunta a la opción más descriptiva
+    'necesidad docente': 'Reemplazo por ajuste de labor y/o necesidad docente (+)',
+    'requerimiento docente': 'Reemplazo por ajuste de labor y/o necesidad docente (+)',
+    'falta de docente': 'Reemplazo por ajuste de labor y/o necesidad docente (+)',
+    
+    'no puede asumir': 'No puede asumir labor',
+    'no asume': 'No puede asumir labor',
+    'no continuará': 'No puede asumir labor',
+    
+    'financiación': 'Otras fuentes de financiacion',
+    'financiamiento': 'Otras fuentes de financiacion',
+    
+    // Apunta a la opción actualizada
+    'enfermedad': 'Reemplazo por enfermedad general',
+    'incapacidad': 'Reemplazo por enfermedad general',
+    
+    'fallecimiento': 'Reemplazo por Fallecimiento',
+    'falleció': 'Reemplazo por Fallecimiento',
+    'murió': 'Reemplazo por Fallecimiento',
+
+    // Nuevas para "Reemplazo por Jubilación"
+    'jubilación': 'Reemplazo por Jubilación',
+    'jubilado': 'Reemplazo por Jubilación',
+    'jubiló': 'Reemplazo por Jubilación',
+    'jubilada': 'Reemplazo por Jubilación',
+
+    // Nuevas para "Reemplazor por Licencias de Maternidad"
+    'maternidad': 'Reemplazor por Licencias de Maternidad',
+    'licencia maternidad': 'Reemplazor por Licencias de Maternidad',
+
+    // Nuevas para "Reemplazo por renuncia"
+    'renuncia': 'Reemplazo por renuncia',
+    'renunció': 'Reemplazo por renuncia',
+    
+    // Apunta a la opción actualizada
+    'puntos': 'Ajuste de puntaje',
+    'reajuste puntos': 'Ajuste de puntaje',
+    'puntaje': 'Ajuste de puntaje', // Añadida, por si se usa
+
+    // 'reemplazo' y 'sustitución' podrían apuntar a 'Reemplazo NN' si es el default para casos genéricos,
+    // o a 'Reemplazo' si esa opción genérica existe.
+    // Dadas tus últimas opciones, 'Reemplazo NN' parece el general.
+    'NN': 'Reemplazo NN', // Aseguramos que 'NN' apunte aquí
+    'reemplazo': 'Reemplazo NN', 
+    'sustitución': 'Reemplazo NN', 
+    'sustitucion': 'Reemplazo NN', 
+    
+    // Apunta a la opción actualizada
+    '4-31/': 'Ajustes VRA',
+    'VRA': 'Ajustes VRA', // Añadida, por si se usa
+    'ajustes VRA': 'Ajustes VRA' // Añadida, por si se usa
+};
     
     // Buscar coincidencias
     for (const [keyword, value] of Object.entries(keywords)) {

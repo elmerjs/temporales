@@ -1,51 +1,83 @@
 <?php
 $active_menu_item = 'video_tutorial';
-
-
 require('include/headerz.php');
 
-// Define the default video URL
-$loom_video_url = "https://www.loom.com/embed/c063bc951bbe42788cfac2f0390bd60b?sid=0d56cf27-9f8c-4275-8b72-b16055b780b4"; // Default for tipo_usuario = 3
+// Obtener tipo de usuario (sanitizado)
+$tipo_usuario = isset($_GET['tipo_usuario']) ? (int)$_GET['tipo_usuario'] : 3;
 
-// Check if 'tipo_usuario' parameter exists in the URL
-if (isset($_GET['tipo_usuario'])) {
-    $tipo_usuario_recibido = $_GET['tipo_usuario'];
-
-    // Sanitize the input to ensure it's a safe integer
-    $tipo_usuario_sanitized = filter_var($tipo_usuario_recibido, FILTER_VALIDATE_INT);
-
-    // Check the value of the sanitized user type
-    if ($tipo_usuario_sanitized == 2) {
-        $loom_video_url = "https://www.loom.com/embed/7436c0ed129749f5b1b2526833239672?sid=9ad293f5-0ec7-4538-8829-bb66fcd344ae";
-    }
-    // Puedes agregar más condiciones si hay más tipos de usuario
-}
+// Definir URLs de video según tipo de usuario
+$video_url_aceptacion_envio = "https://www.youtube.com/embed/YlYGvVT5SiQ?si=0fzXKrahc9-hrDtm";
+$video_url_devolucion = "https://www.youtube.com/embed/J_G73KqmPi0?si=xDtCNPz1NyssT8r6"; // Versión embed
+$video_url_tipo_3 = "https://www.youtube.com/embed/K9xK_DY7JIE?si=NoIwuSQAobIdhPQ1";
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Video tutorial</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Tutorial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 20px; /* Añadido margen inferior para separación entre videos/secciones */
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        /* Ajuste para que los videos en columnas ocupen el 100% del ancho de la columna */
+        .col-md-6 .video-container {
+            margin: 0 auto; /* Centrar si hay espacio adicional */
+        }
+    </style>
 </head>
 <body>
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-12 text-center"> <h2 class="mb-4">Video Tutorial</h2>
 
-<div class="container mt-4">
-    <h2 class="text-center">Video tutorial</h2>
-    <div style="position: relative; padding-bottom: 56.25%; height: 0;">
-        <iframe 
-            src="<?php echo htmlspecialchars($loom_video_url); ?>" 
-            frameborder="0" 
-            webkitallowfullscreen 
-            mozallowfullscreen 
-            allowfullscreen 
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-        </iframe>
+                <?php if ($tipo_usuario == 2): ?>
+                    <div class="row">
+                        <div class="col-md-6"> <h4 class="mb-3">Aceptación y Envío</h4>
+                            <div class="video-container">
+                                <iframe src="<?php echo htmlspecialchars($video_url_aceptacion_envio); ?>" allowfullscreen loading="lazy"></iframe>
+                            </div>
+                        </div>
+                        <div class="col-md-6"> <h4 class="mb-3">Devolución (Rechazo)</h4>
+                            <div class="video-container">
+                                <iframe src="<?php echo htmlspecialchars($video_url_devolucion); ?>" allowfullscreen loading="lazy"></iframe>
+                            </div>
+                        </div>
+                    </div>
+
+                <?php elseif ($tipo_usuario == 3): ?>
+                    <div class="video-container"> <iframe src="<?php echo htmlspecialchars($video_url_tipo_3); ?>"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                allowfullscreen loading="lazy">
+                        </iframe>
+                    </div>
+
+                <?php else: ?>
+                    <div class="video-container"> <iframe src="<?php echo htmlspecialchars($video_url_aceptacion_envio); ?>" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                <?php endif; ?>
+
+            </div>
+        </div>
     </div>
-</div>
 
-
+    <script src="https://kit.fontawesome.com/your-fontawesome-code.js" crossorigin="anonymous"></script>
 </body>
 </html>

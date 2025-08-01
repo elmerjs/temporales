@@ -112,19 +112,17 @@ $semanas_ocasant = ceil($dias_ocasant / 7);
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <!-- jQuery y Bootstrap JS -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
          <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
    
     
 <!-- Cargar Bootstrap 5 y Font Awesome -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
 <!-- jQuery (si es necesario) -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
-<!-- Cargar solo Bootstrap 5 JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     
     <style>
       
@@ -918,14 +916,19 @@ function obtenerTRDDepartamento($departamento_id) {
 
 
         <div class="d-flex align-items-baseline gap-2">
-            <h2 class="mb-0" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                Fac. <?= mb_strimwidth(obtenerNombreFacultad($departamento_id), 0, 65, '...') ?>
-            </h2>
-            <span class="text-muted-white">/</span>
-            <h2 class="mb-0" style="color: var(--unicauca-blanco); font-weight: 500;">
-                <?= mb_strimwidth(obtenerNombreDepartamento($_POST['departamento_id']), 0, 65, '...') ?>
-            </h2>
-        </div>
+    <h2 class="mb-0" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        Fac. <?= mb_strimwidth(obtenerNombreFacultad($departamento_id), 0, 65, '...') ?>
+    </h2>
+    <span class="text-muted-white">/</span>
+    <h2 class="mb-0" style="color: var(--unicauca-blanco); font-weight: 500;">
+        <?= mb_strimwidth(obtenerNombreDepartamento($_POST['departamento_id']), 0, 65, '...') ?>
+        <?php if (!empty($anio_semestre) && !empty($periodo_anterior)): ?>
+            <span style="font-size: 1.2em; font-weight: 400; color: var(--unicauca-blanco-claro);">
+                <?= htmlspecialchars($anio_semestre, ENT_QUOTES, 'UTF-8') ?> vs <?= htmlspecialchars($periodo_anterior, ENT_QUOTES, 'UTF-8') ?>
+            </span>
+        <?php endif; ?>
+    </h2>
+</div>
         <div>
            <a href="#seccionGraficos"
    class="btn btn-sm d-flex align-items-center gap-1"
@@ -1962,7 +1965,7 @@ HTML;
 ?>
 </div>    
    
-   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.20/dist/js/bootstrap.bundle.min.js"></script>
+
             
 <script>
     
@@ -1986,20 +1989,24 @@ document.querySelectorAll('.delete-form').forEach(function(form) {
     // 3. Mostrar selector de tipo de eliminación
     const tipoEliminacion = `
       <div style="padding:10px;background:#f8f9fa;border-radius:5px;">
-        <h4 style="margin-top:0;">Tipo de Eliminación</h4>
-        <select id="tipoEliminacionSelect" style="width:100%;padding:8px;margin-bottom:10px;">
-          <option value="">-- Seleccione --</option>
-          <option value="Ajuste de Matrículas">Ajuste de Matrículas</option>
-          <option value="Fallecimiento">Fallecimiento</option>
-          <option value="No legalizó">No legalizó</option>
-          <option value="Otro">Otro</option>
-          <option value="Reemplazos NN">Reemplazos NN</option>
-          <option value="Renuncia">Renuncia</option>
-<option value="Ajuste por VRA">Ajuste por VRA</option>
-        </select>
-        <button onclick="confirmarEliminacion()" style="background:#dc3545;color:white;border:none;padding:8px 15px;border-radius:4px;">Confirmar</button>
-        <button onclick="cancelarEliminacion()" style="background:#6c757d;color:white;border:none;padding:8px 15px;border-radius:4px;margin-left:5px;">Cancelar</button>
-      </div>
+    <h4 style="margin-top:0;">Tipo de Eliminación</h4>
+    <select id="tipoEliminacionSelect" style="width:100%;padding:8px;margin-bottom:10px;">
+        <option value="">-- Seleccione --</option>
+        <option value="Ajuste de Matrículas">Ajuste de Matrículas</option>
+        <option value="Decisión de no vincularse">Decisión de no vincularse</option>
+        <option value="No necesidad docente">No necesidad docente</option>
+        <option value="Jubilacion">Jubilacion</option>
+        <option value="Fallecimiento">Fallecimiento</option>
+        <option value="Enfermedad general">Enfermedad general</option>
+        <option value="Renuncia">Renuncia</option>
+        <option value="NN solicitado">NN solicitado</option>
+        <option value="Otro">Otro</option>
+        <option value="Por Decision de Consejo de Facultad">Por Decision de Consejo de Facultad</option>
+        <option value="Ajustes VRA">Ajustes VRA</option>
+    </select>
+    <button onclick="confirmarEliminacion()" style="background:#dc3545;color:white;border:none;padding:8px 15px;border-radius:4px;">Confirmar</button>
+    <button onclick="cancelarEliminacion()" style="background:#6c757d;color:white;border:none;padding:8px 15px;border-radius:4px;margin-left:5px;">Cancelar</button>
+</div>
     `;
 
     // Crear modal temporal

@@ -331,7 +331,7 @@ foreach ($versiones_ordenadas as $index => $version) {
     </style>
 </head>
 <body>
-<div class="container-fluid py-0">
+<div class="container py-0">
     <div class="card shadow-lg">
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">

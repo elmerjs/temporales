@@ -1220,8 +1220,8 @@ echo "<td class='td-simple centered-column'>";
 
 
 // Nuevo botón para la vista web
-echo "<a href='" . $web_view_url . "' target='_blank' class='btn btn-sm btn-info' title='Ver en Web' style='padding-top: 0rem; padding-bottom: 0rem;'>
-          <i class='fa-solid fa-eye' style='color: white; font-size: 0.8em;'></i>
+echo "<a href='" . $web_view_url . "' target='_blank' class=' btn-info' title='Ver en Web' style='padding-top: 0rem; padding-bottom: 0rem;'>
+          <i class='fa-solid fa-eye' style='color: ; font-size: 0.8em;'></i>
       </a>";    
            }
 
@@ -1543,8 +1543,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     'MAESTRIA EN', 'MAESTRÍA EN', 'MAGISTER EN', 'MASTER EN',
                     'MAGISTER', 'MAESTRO', 'MASTER', 'MAGÍSTER', 'MAESTRÍA', 'MAESTRA', 'MÁSTER' 
                 ],
-                especializacion: ['ESPECIALIZACION EN', 'ESPECIALIZACIÓN EN', 'ESP.', 'ESPECIALISTA'],
+                especializacion: ['ESPECIALIZACION', 'ESPECIALIZACIÓN', 'ESP.', 'ESPECIALISTA'],
                 pregrado: [ // Palabras clave para pregrado, adaptadas para startsWith()
+                   'TECNÓLOGA ', 'TECNÓLOGO ',
                     'LICENCIADO EN', 'LICENCIADA EN', 'LICENCIATURA EN', 
                     'PROFESIONAL EN', 'INGENIERO EN', 'INGENIERA EN',
                     'ABOGADO', 'ABOGADA', 'ADMINISTRADOR DE', 'ADMINISTRADORA DE', 

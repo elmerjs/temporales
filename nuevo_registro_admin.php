@@ -294,20 +294,21 @@ require('include/headerz.php');
     <!-- Nuevo campo de pestaña -->
     <label for="tipo_reemplazo">Tipo de Reemplazo/Justificación</label>
     <select name="tipo_reemplazo" id="tipo_reemplazo" required>
-        <option value="">-- Seleccione una opción --</option>
-        <option value="Ajuste de Matrículas">Ajuste de Matrículas</option>
-        <option value="No legalizó">No legalizó</option>
-        <option value="Otras fuentes de financiacion">Otras fuentes de financiación</option>
-        <option value="Reemplazo">Reemplazo</option>
-        <option value="Reemplazo jubilación">Reemplazo jubilación</option>
-        <option value="Reemplazo necesidad docente">Reemplazo necesidad docente</option>
-        <option value="Reemplazo por Fallecimiento">Reemplazo por Fallecimiento</option>
-        <option value="Reemplazo por Licencia">Reemplazo por Licencia</option>
-        <option value="Reemplazo renuncia">Reemplazo renuncia</option>
-        <option value="Reemplazos NN">Reemplazos NN</option>
-    <option value="Ajuste Puntos">Ajuste Puntos</option>
+     <option value="">-- Seleccione una opción --</option>
+    <option value="Ajuste de Matrículas">Ajuste de Matrículas</option>
+    <option value="Otras fuentes de financiacion">Otras fuentes de financiación</option>
+    <option value="Reemplazo">Reemplazo</option>
+    <option value="Reemplazo por Jubilación">Reemplazo por Jubilación</option>
+    <option value="Reemplazo por Necesidad Docente">Reemplazo por Necesidad Docente</option>
+    <option value="Reemplazo por Fallecimiento">Reemplazo por Fallecimiento</option>
+    <option value="Reemplazo por Licencia">Reemplazo por Licencia</option>
+    <option value="Reemplazo por Renuncia">Reemplazo por Renuncia</option>
+    <option value="Reemplazos NN">Reemplazos NN</option>
+    <option value="Necesidad docente">Necesidad docente</option>
+    <option value="Reemplazo por enfermedad general">Reemplazo por enfermedad general</option>
+    <option value="Ajustes VRA">Ajustes VRA</option>
+    <option value="Otro">Otro</option>
 
-        <option value="Otro">Otro</option>
     </select>
 
         <div class="button-container">
@@ -334,36 +335,47 @@ function detectarTipoReemplazo() {
     
     // Palabras clave para cada tipo
     const keywords = {
-         'NN': 'Reemplazos NN',
-        'jubilación': 'Reemplazo jubilación',
-        'jubilado': 'Reemplazo jubilación',
-        'jubiló': 'Reemplazo jubilación',
-        'jubilada': 'Reemplazo jubilación',
-        'licencia': 'Reemplazo por Licencia',
-        'maternidad': 'Reemplazo por Licencia',
-        'paternidad': 'Reemplazo por Licencia',
-        'enfermedad': 'Reemplazo por Licencia',
-        'fallecimiento': 'Reemplazo por Fallecimiento',
-        'falleció': 'Reemplazo por Fallecimiento',
-        'murió': 'Reemplazo por Fallecimiento',
-        'renuncia': 'Reemplazo renuncia',
-        'renunció': 'Reemplazo renuncia',
-        'necesidad docente': 'Reemplazo necesidad docente',
-        'requerimiento docente': 'Reemplazo necesidad docente',
-        'falta de docente': 'Reemplazo necesidad docente',
-        'no legalizó': 'No legalizó',
-        'no legalizo': 'No legalizó',
-        'legalizar': 'No legalizó',
-        'financiación': 'Otras fuentes de financiacion',
-        'financiamiento': 'Otras fuentes de financiacion',
-        'matrículas': 'Ajuste de Matrículas',
-        'ajuste': 'Ajuste de Matrículas',
-        'matriculas': 'Ajuste de Matrículas',
-        'reemplazo': 'Reemplazo',
-        'sustitución': 'Reemplazo',
-        'sustitucion': 'Reemplazo',
-            '4-31/': 'Ajuste por VRA'
-    };
+    'NN': 'Reemplazos NN',
+    // Ahora apuntan a 'Reemplazo por Jubilación'
+    'jubilación': 'Reemplazo por Jubilación',
+    'jubilado': 'Reemplazo por Jubilación',
+    'jubiló': 'Reemplazo por Jubilación',
+    'jubilada': 'Reemplazo por Jubilación',
+    // 'licencia', 'maternidad', 'paternidad' apuntan a 'Reemplazo por Licencia'
+    'licencia': 'Reemplazo por Licencia',
+    'maternidad': 'Reemplazo por Licencia',
+    'paternidad': 'Reemplazo por Licencia',
+    // 'enfermedad' sigue apuntando a la opción más específica
+    'enfermedad': 'Reemplazo por enfermedad general', 
+    'fallecimiento': 'Reemplazo por Fallecimiento',
+    'falleció': 'Reemplazo por Fallecimiento',
+    'murió': 'Reemplazo por Fallecimiento',
+    // Ahora apuntan a 'Reemplazo por Renuncia'
+    'renuncia': 'Reemplazo por Renuncia',
+    'renunció': 'Reemplazo por Renuncia',
+    // Ahora apuntan a 'Reemplazo por Necesidad Docente'
+    'necesidad docente': 'Reemplazo por Necesidad Docente',
+    'requerimiento docente': 'Reemplazo por Necesidad Docente',
+    'falta de docente': 'Reemplazo por Necesidad Docente',
+    // Eliminadas porque no están en el select
+    // 'no legalizó': 'No legalizó',
+    // 'no legalizo': 'No legalizó',
+    // 'legalizar': 'No legalizó',
+    'financiación': 'Otras fuentes de financiacion',
+    'financiamiento': 'Otras fuentes de financiacion',
+    'matrículas': 'Ajuste de Matrículas',
+    'ajuste': 'Ajuste de Matrículas',
+    'matriculas': 'Ajuste de Matrículas',
+    'reemplazo': 'Reemplazo',
+    'sustitución': 'Reemplazo',
+    'sustitucion': 'Reemplazo',
+    // Apunta a 'Ajustes VRA'
+    '4-31/': 'Ajustes VRA', 
+    // Eliminada porque no está en el select
+    // 'Cambio vinculacion': 'Cambio vinculacion',
+    // Mantenemos 'Necesidad docente' como un valor directo si no lleva "Reemplazo por"
+    'Necesidad docente': 'Necesidad docente'
+};
     
     // Buscar coincidencias
     for (const [keyword, value] of Object.entries(keywords)) {

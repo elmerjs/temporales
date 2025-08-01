@@ -1,13 +1,9 @@
 <?php
-echo "<div id='seccionTablas'></div>";
+
+$active_menu_item = 'gestion_depto';
 
 require('include/headerz.php');
 require 'funciones.php';
-// Conexión a la base de datos (ajusta los parámetros según tu configuración)
-$conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-if ($conn->connect_error) {
-    die("Conexión fallida: " . $conn->connect_error);
-}
 //require 'actualizar_usuario.php'; // <-- Incluir aquí
  if (!isset($_SESSION['name']) || empty($_SESSION['name'])) {
     // Si no hay sesión activa, muestra un mensaje y redirige
@@ -17,16 +13,1093 @@ if ($conn->connect_error) {
     exit(); // Detener toda la ejecución del script
 }
 
-// Obtener los parámetros de la URL o asignar valores por defecto
-$facultad_id = $_POST['facultad_id'] ?? 1;
-$departamento_id = $_POST['departamento_id'] ?? 1;
-$anio_semestre = $_POST['anio_semestre'] ?? '2025-2';
-$periodo_anterior = $_POST['anio_semestre_anterior'] ?? null; // si quieres también darle un valor, puedes
-$origen = $_POST['origen'] ?? null;
-
-
+    // Obtener los parámetros de la URL
+$facultad_id = isset($_POST['facultad_id']) ? $_POST['facultad_id'] : null;
+$anio_semestre = $_POST['anio_semestre'] ?? $_GET['anio_semestre'] ?? null;
+$departamento_id = $_POST['departamento_id'] ?? $_GET['departamento_id'] ?? null;
  $aniose= $anio_semestre;
-function obtenerPeriodoAnterior($anio_semestre) {
+        $cierreperiodo = obtenerperiodo($anio_semestre);
+
+?>
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Consulta de Solicitudes</title>
+    
+         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<!-- jQuery y Bootstrap JS -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    
+    
+<!-- Cargar Bootstrap 5 y Font Awesome -->
+
+<!-- jQuery (si es necesario) -->
+
+<!-- Cargar solo Bootstrap 5 JS -->
+
+            <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+    ..</style>
+    <script>
+        function confirmarEnvio(count, tipo) {
+            return confirm(` Se confirman ${count} profesores de  ${tipo}. ¿Desea continuar?`);
+        }
+    </script>
+    
+</head>
+<body>
+   <!-- Barra superior -->
+    <div style="max-width: 1800px; width: 100%; margin: auto;">
+
+<div class="top-nav">
+    <div class="container position-relative d-flex align-items-center justify-content-center"> <?php if ($tipo_usuario != 3): ?>
+            <a href="report_depto_full.php?anio_semestre=<?= urlencode($anio_semestre) ?>" 
+               class="btn-unicauca-light position-absolute start-0" title="Regresar a 'Gestión facultad'">
+                <i class="fas fa-arrow-left me-2"></i> Regresar
+            </a>
+        <?php endif; ?>
+        
+        <div class="text-white fw-bold"> <i class="fas fa-university me-2"></i> Gestión Departamento
+        </div>
+        </div>
+</div>
+    <div class="container">
+        
+ <div class="institutional-card">
+                 <div class="card-header-unicauca">
+<div class="summary-header">
+<div class="summary-container">
+    <ul class="summary-data-list">
+        <li>
+            <span class="label-heading">Facultad:</span>
+            <span class="data-value"><?php echo obtenerNombreFacultad($departamento_id); ?></span>
+        </li>
+        <li>
+            <span class="label-heading">Departamento:</span>
+            <span class="data-value"><?php echo obtenerNombreDepartamento($_POST['departamento_id']); ?></span>
+        </li>
+        <li>
+            <span class="label-heading">Periodo:</span>
+            <span class="data-value"><?php echo htmlspecialchars($_POST['anio_semestre']); ?></span>
+        </li>
+    </ul>
+</div>
+</div>
+
+
+    <?php
+                    $nombre_fac=obtenerNombreFacultad($departamento_id);
+
+$facultad_id = obtenerIdFacultad($departamento_id);
+
+    // Establecer conexión a la base de datos
+    $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+    if ($conn->connect_error) {
+        die("Conexión fallida: " . $conn->connect_error);
+    }
+
+    require 'cn.php';
+    // Consulta SQL para obtener los tipos de docentes
+$consulta_tipo = "SELECT DISTINCT tipo_docente AS tipo_d
+                  FROM solicitudes  where solicitudes.estado <> 'an' OR solicitudes.estado IS NULL;";
+
+$resultadotipo = $con->query($consulta_tipo);
+
+if (!$resultadotipo) {
+    die('Error en la consulta: ' . $con->error);
+}
+       
+     $todosCerrados = true; // Inicializar bandera
+            
+            
+    $obtenerDeptoCerrado = obtenerDeptoCerrado($departamento_id,$anio_semestre); // si cero   no cerrado si 1  cerrado
+if ($obtenerDeptoCerrado!=1 && $tipo_usuario == 3) {
+    echo "<div style='text-align: right;'>
+            <label for='selectAll' style='cursor: pointer;'>
+                <input type='checkbox' id='selectAll' 
+                       title='Aplique este checkbox solo si está seguro de marcar masivamente los profesores' 
+                       onclick='confirmSelection(this)'>
+                <i>Visado masivo</i>
+            </label>
+          </div>";
+}
+  $totalItems = 0; // Inicializar el acumulador fuera del bucle principal
+   $contadorHV = 0; // 🔹 Inicializar el contador
+$acepta_vra = null;
+while ($rowtipo = $resultadotipo->fetch_assoc()) {
+    $tipo_docente = $rowtipo['tipo_d'];
+
+    $sql = "SELECT solicitudes.*, facultad.nombre_fac_minb AS nombre_facultad, deparmanentos.depto_nom_propio AS nombre_departamento
+            FROM solicitudes
+            JOIN deparmanentos ON (deparmanentos.PK_DEPTO = solicitudes.departamento_id)
+            JOIN facultad ON (facultad.PK_FAC = solicitudes.facultad_id)
+            WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' and tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL) order by solicitudes.nombre asc";
+
+    $result = $conn->query($sql);
+
+    // Generate a unique ID for the section that will be hidden/shown
+    // Replace spaces and special characters to ensure a valid HTML ID
+    $section_id = "section-" . strtolower(preg_replace('/[^a-zA-Z0-9\-]/', '', str_replace(' ', '-', $tipo_docente)));
+
+    echo "<div class='box-gray'>";
+    echo "<div class='estado-container'>";
+    // Add onclick and an icon with a unique ID for rotation
+echo "<h4 style='color: #000066; cursor: pointer;' onclick=\"toggleSection('" . htmlspecialchars($section_id) . "')\" title=\"Ocultar/Mostrar Detalles\">
+            <i id=\"icon_" . htmlspecialchars($section_id) . "\" class=\"fas fa-caret-down\"></i>
+            Vinculación: " . htmlspecialchars($tipo_docente) . " ("; // Applied style here
+if ($tipo_docente == 'Catedra') {
+    $estadoDepto = obtenerCierreDeptoCatedra($departamento_id, $aniose);
+    echo "<strong>" . ucfirst(strtolower($estadoDepto)) . "</strong>";
+} else {
+    $estadoDepto = obtenerCierreDeptoOcasional($departamento_id, $aniose);
+    echo "<strong>" . ucfirst(strtolower($estadoDepto)) . "</strong>";
+}
+echo ")</h4>";
+
+    if ($estadoDepto != 'CERRADO') {
+        if ($tipo_usuario == 3) {
+            echo "
+            <form action='nuevo_registro.php' method='GET'>
+                <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
+                <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
+                <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
+                <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
+
+                <div class='d-flex gap-2'>
+                    <button type='submit' class='btn btn-success'>
+                        <i class='fas fa-plus'></i> Agregar Profesor
+                    </button>
+
+                    <button type='button' class='btn btn-danger'
+                        onclick=\"eliminarRegistros(
+                            '" . htmlspecialchars($tipo_docente) . "',
+                            '" . htmlspecialchars($facultad_id) . "',
+                            '" . htmlspecialchars($departamento_id) . "',
+                            '" . htmlspecialchars($anio_semestre) . "'
+                        )\">
+                        <i class='fas fa-trash-alt'></i> Eliminar todos
+                    </button>
+                </div>
+            </form>";
+        }
+
+        $todosCerrados = false;
+    }
+
+    echo "</div>"; // Close estado-container
+
+    // Obtener el conteo de profesores
+    $sqlCount = "SELECT COUNT(*) as count FROM solicitudes WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' and tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
+    $resultCount = $conn->query($sqlCount);
+    $count = $resultCount->fetch_assoc()['count'];
+
+    // Wrap the table content in a div with the unique ID
+    echo "<div id='" . htmlspecialchars($section_id) . "' style='display: block;'>"; // Initially visible
+
+    if ($result->num_rows > 0) {
+        echo "<table border='1'>
+                <tr>
+                    <th rowspan='2'>Ítem</th>
+                    <th rowspan='2'>Cédula</th>
+                    <th rowspan='2'>Nombre</th>";
+
+        if ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra") {
+            echo "<th colspan='2'>Dedicación</th>";
+        }
+        echo "<th colspan='2'>Hojas de vida</th>";
+
+        if ($estadoDepto != "CERRADO") {
+            echo "<th colspan='3'>Acciones</th>";
+        } else {
+            echo "<th colspan='3' ></th>";
+        }
+
+        echo "</tr>";
+
+        if ($tipo_docente == "Ocasional") {
+            echo "<tr>
+                    <th title='Sede Popayán'>Pop</th>
+                    <th title='Sede Regionalización'>Reg</th>";
+        } elseif ($tipo_docente == "Catedra") {
+            echo "<tr>
+                    <th title='Horas en Sede Popayán'>Horas Pop</th>
+                    <th title='Horas en Sede Regionalización'>Horas Reg</th>";
+        }
+        echo "
+            <th title='Anexa Hoja de Vida para nuevos aspirantes'>Anexa (nuevo)</th>
+            <th title='Actualiza Hoja de Vida para aspirantes antiguos'>Actualiza (antiguo)</th>";
+
+        if ($estadoDepto != "CERRADO") {
+            echo "<th>Eliminar</th>
+                  <th>Editar</th>";
+            if ($tipo_usuario == 3) {
+                echo "<th>Visado</th>";
+                if ($tipo_usuario == 3) {
+                    echo "<th style='display:none;'>FOR.45</th>";
+                }
+            } else {
+                echo "<th>Visado</th>";
+            }
+        } else {
+            echo "<th style='display:none;'>Eliminar</th>
+                  <th style='display:none;'>Editar</th>
+                  <th>Visado</th>";
+           // if ($tipo_usuario == 3) {
+                echo "<th style='text-align: center; vertical-align: middle;' title='Formato FOR 45 - Revisión Requisitos Vinculación Docente'>FOR.45</th>";
+            //}
+        }
+
+        echo "</tr>";
+
+        $item = 1;
+        $todosLosRegistrosValidos = true;
+        $datos_acta = obtener_acta($anio_semestre, $departamento_id);
+
+        $num_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['acta_periodo']) : "";
+        $fecha_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['fecha_acta']) : "";
+
+      while ($row = $result->fetch_assoc()) {
+    if ($row["anexa_hv_docente_nuevo"] == 'si' || $row["actualiza_hv_antiguo"] == 'si') {
+        $contadorHV++;
+    }
+  // Obtenemos los datos del profesor (array asociativo o false)
+$datosProfesor = datosProfesorCompleto($row["cedula"], $anio_semestre);
+
+// Preparamos el tooltip
+$tooltip = '';
+
+if ($datosProfesor !== false) {
+    // Escapamos todos los valores para HTML
+    $datosSeguros = array_map('htmlspecialchars', $datosProfesor);
+    
+    // Construimos el tooltip con formato legible
+    //quite del tootlip          <strong>postulado en Departamento(s):</strong> {$datosSeguros['departamento']}<br>        <strong>Teléfono:</strong> {$datosSeguros['telefono']}<br>
+
+
+    $tooltip = "
+     
+        <strong>Email:</strong> {$datosSeguros['email']}<br>
+        <strong>Títulos:</strong> {$datosSeguros['titulos']}<br>
+        <strong>Celular:</strong> {$datosSeguros['celular']}<br>
+        <strong>Trabaja actualmente:</strong> {$datosSeguros['trabaja_actualmente']}<br>
+        <strong>Cargo actual:</strong> {$datosSeguros['cargo_actual']}
+    ";
+}
+// Generamos la fila de la tabla
+echo "<tr>
+    <td class='td-simple'>" . $item . "</td> 
+    <td class='td-simple' style='text-align: left;'>" . htmlspecialchars($row["cedula"]) . "</td>
+    <td class='td-simple' style='text-align: left;' 
+      data-toggle='tooltip' 
+      data-html='true' 
+      title='" . $tooltip . "'>
+      " . htmlspecialchars($row["nombre"]) . "
+    </td>
+";
+
+    if ($tipo_docente == "Ocasional") {
+        echo "<td class='td-simple'>" . htmlspecialchars($row["tipo_dedicacion"]) . "</td>
+              <td class='td-simple'>" . htmlspecialchars($row["tipo_dedicacion_r"]) . "</td>";
+    }
+    if ($tipo_docente == "Catedra") {
+        $horas = ($row["horas"] == 0) ? "" : htmlspecialchars($row["horas"]);
+        $horas_r = ($row["horas_r"] == 0) ? "" : htmlspecialchars($row["horas_r"]);
+
+        echo "<td class='td-simple'>" . $horas . "</td>
+              <td class='td-simple'>" . $horas_r . "</td>";
+    }
+
+    // Verificar si hay un enlace válido en 'anexos'
+    $anexos = trim($row["anexos"]);
+    $hasValidLink = !empty($anexos) && preg_match('/^(https?:\/\/|www\.)/i', $anexos);
+    
+    // Mostrar anexa_hv_docente_nuevo como enlace si hay un enlace válido
+    if ($row["anexa_hv_docente_nuevo"] == 'si' && $hasValidLink) {
+        echo "<td class='td-simple'><a href='" . htmlspecialchars($anexos) . "' target='_blank' class='link-hv'>si</a></td>";
+    } else {
+        echo "<td class='td-simple'>" . htmlspecialchars($row["anexa_hv_docente_nuevo"]) . "</td>";
+    }
+    
+    // Mostrar actualiza_hv_antiguo como enlace si hay un enlace válido
+    if ($row["actualiza_hv_antiguo"] == 'si' && $hasValidLink) {
+        echo "<td class='td-simple'><a href='" . htmlspecialchars($anexos) . "' target='_blank' class='link-hv'>si</a></td>";
+    } else {
+        echo "<td class='td-simple'>" . htmlspecialchars($row["actualiza_hv_antiguo"]) . "</td>";
+    }
+    
+       if ($estadoDepto != "CERRADO") {
+                echo "<td class='td-simple'>";
+                if ($tipo_usuario == 3) {
+                    echo "
+                        <form action='eliminar.php' method='POST' style='display:inline;'>
+                            <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row["id_solicitud"]) . "'>
+                            <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
+                            <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
+                            <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
+                            <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
+                            <button type='submit' class='delete-btn'><i class='fa-regular fa-trash-can'></i></button>
+                        </form>";
+                }
+                echo "</td><td class='td-simple'>";
+                if ($tipo_usuario == 3) {
+                    echo "
+                        <form action='actualizar.php' method='GET' style='display:inline;'>
+                            <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row["id_solicitud"]) . "'>
+                            <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
+                            <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
+                            <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
+                            <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
+                            <button type='submit' class='update-btn'><i class='fas fa-edit'></i></button>
+                        </form>";
+                }
+                echo "</td><td class='td-simple'>";
+                $disabled = ($tipo_usuario == 3) ? "" : "disabled";
+                echo "
+                    <form class='vistoBuenoForm' style='display:inline;'>
+                        <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row['id_solicitud']) . "'>
+                        <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
+                        <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
+                        <input type='checkbox' class='individualCheckbox' name='visto_bueno' value='1' " . ($row['visado'] ? 'checked' : '') . " $disabled>
+                    </form>";
+                echo "</td>";
+
+            } else {
+                echo "<td class='td-simple' style='display:none;'>
+                            <form action='eliminar.php' method='POST' style='display:inline;'>
+                                <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row["id_solicitud"]) . "'>
+                                <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
+                                <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
+                                <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
+                                <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
+                                <button type='submit' class='delete-btn'><i class='fas fa-trash'></i></button>
+                            </form>
+                        </td>
+                        <td class='td-simple' style='display:none;'>
+                            <form action='actualizar.php' method='GET' style='display:inline;'>
+                                <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row["id_solicitud"]) . "'>
+                                <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
+                                <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
+                                <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
+                                <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
+                                <button type='submit' class='update-btn'><i class='fas fa-edit'></i></button>
+                            </form>
+                        </td>
+                        <td class='td-simple'>
+                            <form action='update_visto_bueno.php' method='POST' style='display:inline;'>
+                                <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row["id_solicitud"]) . "'>
+                                <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
+                                <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
+                                <input type='checkbox' disabled name='visto_bueno' value='1' " . ($row["visado"] ? "checked" : "") . " onchange='this.form.submit()'>
+                            </form>
+                        </td>";
+
+                if ($tipo_usuario == 3) {
+            echo "<td class='td-simple centered-column'>
+        <button type='button' class='download-btn btn btn-sm'
+            id='btn-solicitud-" . htmlspecialchars($row["id_solicitud"]) . "'
+            data-id-solicitud='" . htmlspecialchars($row["id_solicitud"]) . "'
+            data-departamento-id='" . htmlspecialchars($departamento_id) . "'
+            data-anio-semestre='" . htmlspecialchars($anio_semestre) . "'
+            data-numero-acta='" . htmlspecialchars($num_acta) . "'
+            data-fecha-acta='" . htmlspecialchars($fecha_acta) . "'
+            data-pregrado='" . htmlspecialchars($row["pregrado"] ?? '') . "'
+            data-especializacion='" . htmlspecialchars($row["especializacion"] ?? '') . "'
+            data-maestria='" . htmlspecialchars($row["maestria"] ?? '') . "'
+            data-doctorado='" . htmlspecialchars($row["doctorado"] ?? '') . "'
+            data-otro_estudio='" . htmlspecialchars($row["otro_estudio"] ?? '') . "'
+            data-experiencia-docente='" . htmlspecialchars($row["experiencia_docente"] ?? '') . "'
+            data-experiencia-profesional='" . htmlspecialchars($row["experiencia_profesional"] ?? '') . "'
+            data-otra-experiencia='" . htmlspecialchars($row["otra_experiencia"] ?? '') . "'
+            data-cedula-profesor='" . htmlspecialchars($row["cedula"] ?? '') . "'  data-bs-toggle='modal'
+            data-bs-target='#actaModal'>
+            <i class='fa-solid fa-file-arrow-down' style='font-size:16px; color:#1A73E8;'></i>
+        </button>
+    </td>";
+                }
+           else {
+               
+// Construir la URL con todas las variables
+$web_view_url = "for45web.php?" .
+    "id_solicitud=" . htmlspecialchars($row["id_solicitud"]) . "&" .
+    "departamento_id=" . htmlspecialchars($departamento_id) . "&" .
+    "anio_semestre=" . htmlspecialchars($anio_semestre) . "&" .
+    "numero_acta=" . htmlspecialchars($num_acta) . "&" .
+    "fecha_actab=" . htmlspecialchars($fecha_acta) . "&" . // Usar 'fecha_actab' para coincidir con el GET
+    "pregrado=" . urlencode(htmlspecialchars($row["pregrado"] ?? '')) . "&" .
+    "especializacion=" . urlencode(htmlspecialchars($row["especializacion"] ?? '')) . "&" .
+    "maestria=" . urlencode(htmlspecialchars($row["maestria"] ?? '')) . "&" .
+    "doctorado=" . urlencode(htmlspecialchars($row["doctorado"] ?? '')) . "&" .
+    "otro_estudio=" . urlencode(htmlspecialchars($row["otro_estudio"] ?? '')) . "&" .
+    "experiencia_docente=" . urlencode(htmlspecialchars($row["experiencia_docente"] ?? '')) . "&" .
+    "experiencia_profesional=" . urlencode(htmlspecialchars($row["experiencia_profesional"] ?? '')) . "&" .
+    "otra_experiencia=" . urlencode(htmlspecialchars($row["otra_experiencia"] ?? '')) . "&" .
+    "cedula_profesor=" . urlencode(htmlspecialchars($row["cedula"] ?? ''));
+
+// Aquí puedes usar este $web_view_url donde lo necesites, por ejemplo:
+
+// Opción 1: Un botón o enlace al lado del botón de descarga de Word
+echo "<td class='td-simple centered-column'>";
+
+
+// Nuevo botón para la vista web
+echo "<a href='" . $web_view_url . "' target='_blank' class=' btn-info' title='Ver en Web' style='padding-top: 0rem; padding-bottom: 0rem;'>
+          <i class='fa-solid fa-eye' style='color: ; font-size: 0.8em;'></i>
+      </a>";    
+           }
+
+            }
+            echo "</tr>";
+            $item++;
+        }
+        $totalItems += ($item - 1);
+
+        echo "</table>";
+
+    } else {
+        echo "<p style='text-align: center;'>No se encontraron resultados.</p>";
+        if ($tipo_usuario == 3) {
+            if ($tipo_usuario == 3 && $estadoDepto != 'CERRADO') {
+                echo '
+                <div class="row mt-3">
+                    <div class="col-md-12 text-center">
+                        <a href="indexsolicitud.php?tipo_docente=' . urlencode($tipo_docente) . '&anio_semestre=' . urlencode($anio_semestre) . '" class="btn btn-cargue-masivo">
+                            <i class="fas fa-upload"></i> Cargue Masivo - Tipo: ' . htmlspecialchars($tipo_docente) . '
+                        </a>
+                    </div>
+                </div>';
+            }
+        }
+    }
+
+    echo "</div>"; // Close the section-id div
+    ?>
+    <div class="d-flex justify-content-between mt-3">
+
+        <?php
+        if ($estadoDepto == "ABIERTO" && $tipo_usuario == 3) {
+            $mostrarFormulario = true;
+        } else {
+            $mostrarFormulario = false;
+        }
+
+        if ($mostrarFormulario):
+            ?>
+            <form id="confirmForm" action="confirmar_tipo_d_depto.php" method="GET" onsubmit="return confirmarEnvio(<?php echo $count; ?>, '<?php echo $tipo_docente; ?>');">
+                <input type="hidden" name="facultad_id" value="<?php echo htmlspecialchars($facultad_id); ?>">
+                <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($departamento_id); ?>">
+                <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($anio_semestre); ?>">
+                <input type="hidden" name="tipo_docente" value="<?php echo htmlspecialchars($tipo_docente); ?>">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-unlock"></i> Confirmar Profesores</button>
+            </form>
+        <?php endif; ?>
+
+        <?php if ($estadoDepto == "CERRADO") {
+            $envio_fac = obtenerenviof($facultad_id, $anio_semestre);
+            $acepta_vra = obteneraceptacionvra($facultad_id, $anio_semestre);
+            if ($tipo_usuario == 3) {
+                ?>
+
+                <form action="abrir_estado.php" method="POST">
+                    <input type="hidden" name="facultad_id" value="<?php echo htmlspecialchars($facultad_id); ?>">
+                    <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($departamento_id); ?>">
+                    <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($anio_semestre); ?>">
+                    <input type="hidden" name="tipo_docente" value="<?php echo htmlspecialchars($tipo_docente); ?>">
+                    <input type="hidden" name="tipo_usuario" value="<?php echo htmlspecialchars($tipo_usuario); ?>">
+
+                    <button type="submit" class="btn btn-warning" title="Lista cerrada — haga clic para abrir y editar.">
+                        <i class="fas fa-lock"></i>
+                    </button>
+                </form>
+            <?php
+            }
+        }
+        // Moved the modal for FOR.45 and its script outside the main loop or ensure it's rendered only once
+        // Also ensure the "Novedad" modal and its script are correctly placed.
+        ?>
+
+        <?php if ($acepta_vra === '2' && ($tipo_usuario == 3)) { ?>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novedadModal_<?php echo htmlspecialchars($tipo_docente); ?>" style="display: inline-block;">
+                <i class="fas fa-file-alt"></i> Novedad
+            </button>
+
+       
+        <?php } ?>
+    </div></div><br>
+<?php
+} // End of while ($rowtipo = $resultadotipo->fetch_assoc())
+?> <!-- Modal Rediseñado -->
+    <div class='modal fade' id='actaModal' tabindex='-1' aria-labelledby='actaModalLabel' aria-hidden='true'>
+        <div class='modal-dialog modal-lg'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='actaModalLabel'>FOR-45. Información del Acta y Datos Adicionales</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <form id='actaForm' action='for_45.php' method='GET'>
+                        <input type='hidden' name='id_solicitud' id='modal_id_solicitud'>
+                        <input type='hidden' name='departamento_id' id='modal_departamento_id'>
+                        <input type='hidden' name='anio_semestre' id='modal_anio_semestre'>
+
+                        <div class='row mb-4'>
+                            <div class='col-md-6'>
+                                <div class="mb-3">
+                                    <label for='numero_acta' class='form-label'>No. de Acta</label>
+                                    <input type='text' class='form-control' id='numero_acta' name='numero_acta' required>
+                                </div>
+                            </div>
+                            <div class='col-md-6'>
+                                <div class="mb-3">
+                                    <label for='fecha_actab' class='form-label'>Fecha Acta</label>
+                                    <input type='date' class='form-control' id='fecha_actab' name='fecha_actab' required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Columna de Información Académica -->
+                            <div class="col-md-7">
+                                <div class="info-section">
+                                    <div class="card-header mb-3">Información Académica (Verificar)</div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='pregrado' class='form-label'>Pregrado</label>
+                                        <input type='text' class='form-control' id='pregrado' name='pregrado' placeholder="Título obtenido">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='especializacion' class='form-label'>Especialización</label>
+                                        <input type='text' class='form-control' id='especializacion' name='especializacion' placeholder="Título obtenido">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='maestria' class='form-label'>Maestría</label>
+                                        <input type='text' class='form-control' id='maestria' name='maestria' placeholder="Título obtenido">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='doctorado' class='form-label'>Doctorado</label>
+                                        <input type='text' class='form-control' id='doctorado' name='doctorado' placeholder="Título obtenido">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='otro_estudio' class='form-label'>Otro Estudio*</label>
+                                        <input type='text' class='form-control' id='otro_estudio' name='otro_estudio' placeholder="Especificar">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Columna de Experiencia -->
+                            <div class="col-md-5 experience-col">
+                                <div class="info-section">
+                                    <div class="card-header mb-3">Experiencia (Años)</div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='experiencia_docente' class='form-label'>Experiencia Docente</label>
+                                        <input type='text' class='form-control' id='experiencia_docente' name='experiencia_docente' placeholder="Años">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='experiencia_profesional' class='form-label'>Experiencia Profesional</label>
+                                        <input type='text' class='form-control' id='experiencia_profesional' name='experiencia_profesional' placeholder="Años ">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for='otra_experiencia' class='form-label'>Otra Experiencia</label>
+                                        <input type='text' class='form-control' id='otra_experiencia' name='otra_experiencia' placeholder="Años">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 text-muted small">
+                            * Por favor especificar cualquier otro estudio relevante no incluido en las categorías anteriores.
+                        </div>
+                    </form>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cerrar</button>
+                    <button type='submit' form='actaForm' class='btn btn-primary'>Guardar y Descargar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+    // JavaScript function to toggle the visibility of the table and rotate the icon
+    function toggleSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        const icon = document.getElementById('icon_' + sectionId);
+
+        if (section.style.display === 'none') {
+            section.style.display = 'block'; // Show the section
+            icon.classList.remove('fa-caret-right'); // Change icon to down arrow
+            icon.classList.add('fa-caret-down');
+        } else {
+            section.style.display = 'none'; // Hide the section
+            icon.classList.remove('fa-caret-down'); // Change icon to right arrow
+            icon.classList.add('fa-caret-right');
+        }
+    }
+
+</script>
+        
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const actaModal = document.getElementById('actaModal');
+
+    if (actaModal) {
+        actaModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            actaModal.currentButton = button; // Guardar referencia al botón que abrió el modal
+
+            // Campos de la solicitud
+            const id_solicitud = button.getAttribute('data-id-solicitud');
+            const departamento_id = button.getAttribute('data-departamento-id');
+            const anio_semestre = button.getAttribute('data-anio-semestre');
+            const numero_acta = button.getAttribute('data-numero-acta');
+            const fecha_acta = button.getAttribute('data-fecha-acta');
+
+            // Campos de estudio y experiencia desde el botón (prioridad 1)
+            let pregrado = button.getAttribute('data-pregrado');
+            let especializacion = button.getAttribute('data-especializacion');
+            let maestria = button.getAttribute('data-maestria');
+            let doctorado = button.getAttribute('data-doctorado');
+            let otro_estudio = button.getAttribute('data-otro_estudio');
+            let exp_docente = button.getAttribute('data-experiencia-docente');
+            let exp_profesional = button.getAttribute('data-experiencia-profesional');
+            let otra_exp = button.getAttribute('data-otra-experiencia');
+
+            // Obtener la cédula del profesor del nuevo data-attribute
+            const cedulaProfesor = button.getAttribute('data-cedula-profesor'); 
+
+            // Verificar si TODOS los campos de estudio están vacíos
+            const allStudyFieldsEmpty =
+                !pregrado && !especializacion && !maestria && !doctorado && !otro_estudio;
+
+            // Si todos los campos de estudio están vacíos Y tenemos la cédula, hacemos la llamada AJAX
+            if (allStudyFieldsEmpty && cedulaProfesor) {
+                fetch(`get_profesor_data.php?cedula=${cedulaProfesor}&anioSemestre=${anio_semestre}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.titulos) {
+                            const titulosStr = data.titulos;
+                            const parsedTitulos = parseTitulos(titulosStr);
+
+                            // Asignar los valores parseados solo si el campo correspondiente está vacío
+                            document.getElementById('pregrado').value = parsedTitulos.pregrado || '';
+                            document.getElementById('especializacion').value = parsedTitulos.especializacion || '';
+                            document.getElementById('maestria').value = parsedTitulos.maestria || '';
+                            document.getElementById('doctorado').value = parsedTitulos.doctorado || '';
+                            // 'otro_estudio' de la función no se está parseando, se mantiene el comportamiento original
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al obtener datos del profesor:', error);
+                    });
+            }
+
+            // Setear valores en el formulario (siempre se asignan los que vienen del botón primero)
+            document.getElementById('modal_id_solicitud').value = id_solicitud;
+            document.getElementById('modal_departamento_id').value = departamento_id;
+            document.getElementById('modal_anio_semestre').value = anio_semestre;
+            document.getElementById('numero_acta').value = numero_acta || '';
+            document.getElementById('fecha_actab').value = fecha_acta || '';
+
+            // Setear campos de estudio y experiencia desde los data-attributes del botón
+            document.getElementById('pregrado').value = pregrado || '';
+            document.getElementById('especializacion').value = especializacion || '';
+            document.getElementById('maestria').value = maestria || '';
+            document.getElementById('doctorado').value = doctorado || '';
+            document.getElementById('otro_estudio').value = otro_estudio || '';
+            document.getElementById('experiencia_docente').value = exp_docente || '';
+            document.getElementById('experiencia_profesional').value = exp_profesional || '';
+            document.getElementById('otra_experiencia').value = otra_exp || '';
+        });
+
+        // Función para parsear el string de títulos (¡AHORA USA startsWith() Y PRIORIZA!)
+        function parseTitulos(titulosStr) {
+            const parsed = {
+                pregrado: '',
+                especializacion: '',
+                maestria: '',
+                doctorado: ''
+            };
+
+            // Definir palabras clave para cada tipo de estudio
+            // Se han ajustado para ser más efectivas con startsWith()
+            const keywords = {
+                doctorado: ['DOCTORADO EN', 'DOCTOR', 'DOCTORA', 'PH.D.', 'PHD'],
+                maestria: [
+                    'MAESTRIA EN', 'MAESTRÍA EN', 'MAGISTER EN', 'MASTER EN',
+                    'MAGISTER', 'MAESTRO', 'MASTER', 'MAGÍSTER', 'MAESTRÍA', 'MAESTRA', 'MÁSTER' 
+                ],
+                especializacion: ['ESPECIALIZACION', 'ESPECIALIZACIÓN', 'ESP.', 'ESPECIALISTA'],
+                pregrado: [ // Palabras clave para pregrado, adaptadas para startsWith()
+                   'TECNÓLOGA ', 'TECNÓLOGO ',
+                    'LICENCIADO EN', 'LICENCIADA EN', 'LICENCIATURA EN', 
+                    'PROFESIONAL EN', 'INGENIERO EN', 'INGENIERA EN',
+                    'ABOGADO', 'ABOGADA', 'ADMINISTRADOR DE', 'ADMINISTRADORA DE', 
+                    'BIOLOGO', 'BIOLOGA', 'QUIMICO', 'QUÍMICO', 'CIRUJANO', 'ANTROPOLOGO', 
+                    'ENFERMERO', 'ENFERMERA', 'TECNICO EN', 'TÉCNICO EN', 'TECNOLOGO EN', 'TECNÓLOGO EN',
+                    'MEDICO', 'MÉDICO', 'MATEMATICO', 'MATEMÁTICO', 'CONTADOR', 'ECONOMISTA', 
+                    'BACHILLER', 'NORMALISTA', 'ARQUITECTO', 'ARQUITECTA', 'FILOSOFO', 'FILOSOFA', 
+                    'PSICOLOGO', 'PSICOLOGA', 'CITOHISTOTECNOLOGO', 'BACTERIOLOGO', 'BACTERIOLOGA',
+                    'LABORATORISTA', 'GEOTECNOLOGO', 'GEOTECNOLOGA', 'GEOGRAFO', 'GEOGRAFA', 
+                    'ODONTOLOGO', 'ODONTOLOGA', 'NUTRICIONISTA', 'FISIOTERAPEUTA',
+                    'COMUNICADOR', 'PERIODISTA', 'DISEÑADOR', 'SOCIOLOGO', 'HISTORIADOR',
+                    'POLITOLOGO', 'QUÍMICO FARMACÉUTICO', 'ZOOTECNISTA', 'AGRONOMO',
+                    // Palabras clave más cortas que son comunes al inicio de un título, pero menos genéricas que 'ARTE'
+                    'INGENIERO', 'INGENIERA', // Aunque hay 'Ingeniero en', estas son genéricas al inicio
+                    'LICENCIADO', 'LICENCIADA', 'LICENCIATURA',
+                    'TECNICO', 'TÉCNICO', 'TECNOLOGO', 'TECNÓLOGO',
+                    'ADMINISTRADOR', 'ADMINISTRADORA',
+                    'BACHILLER', 'NORMALISTA',
+                    'MÚSICA', 'ARTE', // Para casos donde el pregrado es simplemente "Música" o "Arte"
+                    'GUIA' // Para Guianza Turística Bilingüe
+                ]
+            };
+
+            // Dividir el string por saltos de línea, lo que nos dará cada título o frase
+            const titlesArray = titulosStr.split(/[\r\n]+/); 
+
+            for (const title of titlesArray) {
+                const trimmedTitle = title.trim();
+                if (!trimmedTitle) continue;
+
+                const upperTrimmedTitle = trimmedTitle.toUpperCase();
+
+                // 1. Intentar detectar Doctorado (máxima prioridad)
+                if (!parsed.doctorado) { 
+                    for (const keyword of keywords.doctorado) {
+                        // Usar startsWith para exigir que la palabra clave esté al inicio
+                        if (upperTrimmedTitle.startsWith(keyword.toUpperCase())) {
+                            parsed.doctorado = trimmedTitle;
+                            break; 
+                        }
+                    }
+                    if (parsed.doctorado) continue; // Si se encontró, pasa al siguiente título del array y no busca más
+                }
+
+                // 2. Intentar detectar Maestría
+                if (!parsed.maestria) { 
+                    for (const keyword of keywords.maestria) {
+                        // Usar startsWith para exigir que la palabra clave esté al inicio
+                        if (upperTrimmedTitle.startsWith(keyword.toUpperCase())) {
+                            parsed.maestria = trimmedTitle;
+                            break; 
+                        }
+                    }
+                    if (parsed.maestria) continue; // Si se encontró, pasa al siguiente título del array y no busca más
+                }
+
+                // 3. Intentar detectar Especialización
+                if (!parsed.especializacion) { 
+                    for (const keyword of keywords.especializacion) {
+                        // Usar startsWith para exigir que la palabra clave esté al inicio
+                        if (upperTrimmedTitle.startsWith(keyword.toUpperCase())) {
+                            parsed.especializacion = trimmedTitle;
+                            break; 
+                        }
+                    }
+                    if (parsed.especializacion) continue; // Si se encontró, pasa al siguiente título del array y no busca más
+                }
+
+                // 4. Intentar detectar Pregrado (última prioridad)
+                if (!parsed.pregrado) { 
+                    for (const keyword of keywords.pregrado) {
+                        // Usar startsWith para exigir que la palabra clave esté al inicio
+                        if (upperTrimmedTitle.startsWith(keyword.toUpperCase())) {
+                            parsed.pregrado = trimmedTitle;
+                            break; 
+                        }
+                    }
+                }
+            }
+            return parsed;
+        }
+
+        // El resto de tu script (envío de formulario, etc.) permanece igual.
+        document.getElementById('actaForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = this;
+
+            const newData = {
+                numero_acta: document.getElementById('numero_acta').value,
+                fecha_actab: document.getElementById('fecha_actab').value,
+                pregrado: document.getElementById('pregrado').value,
+                especializacion: document.getElementById('especializacion').value,
+                maestria: document.getElementById('maestria').value,
+                doctorado: document.getElementById('doctorado').value,
+                otro_estudio: document.getElementById('otro_estudio').value,
+                experiencia_docente: document.getElementById('experiencia_docente').value,
+                experiencia_profesional: document.getElementById('experiencia_profesional').value,
+                otra_experiencia: document.getElementById('otra_experiencia').value
+            };
+
+            if (actaModal.currentButton) {
+                const button = actaModal.currentButton;
+
+                button.setAttribute('data-numero-acta', newData.numero_acta);
+                button.setAttribute('data-fecha-acta', newData.fecha_actab);
+                button.setAttribute('data-pregrado', newData.pregrado);
+                button.setAttribute('data-especializacion', newData.especializacion);
+                button.setAttribute('data-maestria', newData.maestria);
+                button.setAttribute('data-doctorado', newData.doctorado);
+                button.setAttribute('data-otro_estudio', newData.otro_estudio);
+                button.setAttribute('data-experiencia-docente', newData.experiencia_docente);
+                button.setAttribute('data-experiencia-profesional', newData.experiencia_profesional);
+                button.setAttribute('data-otra-experiencia', newData.otra_experiencia);
+            }
+
+            setTimeout(() => {
+                form.submit();
+            }, 500);
+        });
+    }
+});
+</script>
+       
+    </div>    </div>
+
+      
+<!-- Botón "Ver Departamento" -->
+        <div class="institutional-cardb" >
+        
+            
+
+   <script>
+  // Mostrar el valor de la variable $tipo_docente en la consola
+  console.log("Tipo de Docente: <?php echo htmlspecialchars($tipo_docente); ?>");
+</script>         
+    <?php        
+            
+// Consulta SQL para obtener los datos
+$sqlb = "SELECT 
+    depto_periodo.fk_depto_dp, 
+    deparmanentos.depto_nom_propio AS nombre_departamento,
+
+    -- Docente Ocasional por sede
+    SUM(CASE WHEN solicitudes.tipo_docente = 'Ocasional' AND solicitudes.sede = 'Popayán' THEN 1 ELSE 0 END) AS total_ocasional_popayan,
+    SUM(CASE WHEN solicitudes.tipo_docente = 'Ocasional' AND solicitudes.sede = 'Regionalización' THEN 1 ELSE 0 END) AS total_ocasional_regionalizacion,
+    SUM(CASE WHEN solicitudes.tipo_docente = 'Ocasional' AND solicitudes.sede = 'Popayán-Regionalización' THEN 1 ELSE 0 END) AS total_ocasional_popayan_regionalizacion,
+
+    depto_periodo.dp_estado_ocasional,
+    depto_periodo.dp_estado_total,
+
+    -- Docente Cátedra por sede
+    SUM(CASE WHEN solicitudes.tipo_docente = 'Catedra' AND solicitudes.sede = 'Popayán' THEN 1 ELSE 0 END) AS total_catedra_popayan,
+    SUM(CASE WHEN solicitudes.tipo_docente = 'Catedra' AND solicitudes.sede = 'Regionalización' THEN 1 ELSE 0 END) AS total_catedra_regionalizacion,
+    SUM(CASE WHEN solicitudes.tipo_docente = 'Catedra' AND solicitudes.sede = 'Popayán-Regionalización' THEN 1 ELSE 0 END) AS total_catedra_popayan_regionalizacion,
+
+    depto_periodo.dp_estado_catedra
+
+FROM 
+    depto_periodo
+JOIN
+    solicitudes ON solicitudes.anio_semestre = depto_periodo.periodo 
+    AND solicitudes.departamento_id = depto_periodo.fk_depto_dp
+JOIN 
+    deparmanentos ON deparmanentos.PK_DEPTO = depto_periodo.fk_depto_dp
+
+WHERE 
+    fk_depto_dp = '$departamento_id' 
+    AND depto_periodo.periodo = '$anio_semestre'
+    AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)
+
+GROUP BY 
+    depto_periodo.fk_depto_dp, 
+    deparmanentos.depto_nom_propio,
+    depto_periodo.dp_estado_ocasional,
+    depto_periodo.dp_estado_total,
+    depto_periodo.dp_estado_catedra;
+";
+
+
+$resultb = $conn->query($sqlb);
+//echo "consulta". $sql;
+?>
+
+
+<div class="">
+    <div class="row">
+        <div class="col-12">
+            <!-- Encabezado del resumen -->
+            <div class="summary-header">
+                <div>
+                    <h2 class="summary-title">
+                        <i class="fas fa-building"></i>
+                        <?php 
+                        // Variables iniciales
+                        $nombre_departamento = "Resumen Departamento";
+                        $estado = null;
+                        
+                        if ($resultb->num_rows > 0) {
+                            $row = $resultb->fetch_assoc();
+                            $nombre_departamento = htmlspecialchars($row['nombre_departamento']);
+                            $estado = $row['dp_estado_total'];
+                        }
+                        echo $nombre_departamento; 
+                        ?>
+                    </h2>
+                </div>
+                <div>
+                    <?php 
+                    // Mostrar siempre el estado cuando hay datos
+                    if ($resultb->num_rows > 0): 
+                        $clase_estado = ($estado == 1) ? 'status-success' : 'status-warning';
+                        $icono = ($estado == 1) ? 'fa-check-circle' : 'fa-exclamation-circle';
+                        $texto = ($estado == 1) ? 'ENVIADO' : 'PENDIENTE';
+                    ?>
+                        <div class="status-badge <?= $clase_estado ?>">
+                            <i class="fas <?= $icono ?> me-2"></i>
+                            <?= $texto ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+      
+                    <?php
+// Inicializar acumuladores por columna
+$total_popayan = 0;
+$total_regional = 0;
+$total_ambas = 0;
+$gran_total = 0;
+?>
+
+<table class="table-unicauca">
+    <thead>
+        <tr>
+            <th></th>
+            <th title="Profesores únicamente en la sede Popayán">Pop</th>
+            <th title="Profesores únicamente en la sede Regionalización">Reg</th>
+            <th title="Profesores que laboran en ambas sedes">Pop_Reg</th>
+            <th title="Total profesores por tipo de vinculación">Total_tipo</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td  class="td-simple">Ocasional</td>
+            <?php
+            if ($resultb->num_rows > 0) {
+                $estado_ocasional = ($row['dp_estado_ocasional'] == 'ce') 
+                    ? '<i class="fas fa-lock text-success" title="Cerrado"></i>' 
+                    : '<i class="fas fa-unlock text-danger" title="Abierto"></i>';
+
+                $popayan = (int)$row['total_ocasional_popayan'];
+                $regional = (int)$row['total_ocasional_regionalizacion'];
+                $ambas = (int)$row['total_ocasional_popayan_regionalizacion'];
+                $total_ocasional = $popayan + $regional + $ambas;
+
+                $total_popayan += $popayan;
+                $total_regional += $regional;
+                $total_ambas += $ambas;
+                $gran_total += $total_ocasional;
+
+                echo "<td class='td-simple'>$popayan</td>";
+                echo "<td class='td-simple'>$regional</td>";
+                echo "<td class='td-simple'>$ambas</td>";
+                echo "<td class='fw-bold'>$total_ocasional</td>";
+                echo "<td class='td-simple'>$estado_ocasional</td>";
+            }
+            ?>
+        </tr>
+        <tr>
+            <td class="td-simple">Cátedra</td>
+            <?php
+            if ($resultb->num_rows > 0) {
+                $icono_catedra = ($row['dp_estado_catedra'] == 'ce') 
+                    ? '<i class="fas fa-lock text-success" title="Cerrado"></i>' 
+                    : '<i class="fas fa-unlock text-danger" title="Abierto"></i>';
+
+                $popayan = (int)$row['total_catedra_popayan'];
+                $regional = (int)$row['total_catedra_regionalizacion'];
+                $ambas = (int)$row['total_catedra_popayan_regionalizacion'];
+                $total_catedra = $popayan + $regional + $ambas;
+
+                $total_popayan += $popayan;
+                $total_regional += $regional;
+                $total_ambas += $ambas;
+                $gran_total += $total_catedra;
+
+                echo "<td class='td-simple'>$popayan</td>";
+                echo "<td class='td-simple'>$regional</td>";
+                echo "<td class='td-simple'>$ambas</td>";
+                echo "<td class='fw-bold'>$total_catedra</td>";
+                echo "<td class='td-simple'> $icono_catedra</td>";
+            }
+            ?>
+        </tr>
+        <!-- Fila de Totales por columna -->
+        <tr class="table-secondary">
+            <td class="td-simple">Total_x_sede</td>
+            <td class="td-simple"><?= $total_popayan ?></td>
+            <td class="td-simple">  <?= $total_regional ?></td>
+            <td class="td-simple"><?= $total_ambas ?></td>
+            <td class="td-simple"><?= $total_popayan + $total_regional + $total_ambas ?></td>
+            <td></td>
+        </tr>
+    </tbody>
+</table>
+            </div>
+        </div>
+</div>    
+<div class="row mt-3 unacauca-actions-section">
+<?php if ($todosCerrados && $cierreperiodo != '1') { ?>
+    <div class="col-md-12 text-center mb-3 d-grid">
+        <?php if ($resultb->num_rows > 0) {
+            if ($row['dp_estado_total'] == 1) {
+                if ($tipo_usuario != 2) { ?>
+                    <button class="btn unacauca-btn-reprint" onclick="reimprOficio_depto()" style="border-radius: 30px;">
+                        Reimprimir Oficio
+                    </button>
+                <?php }
+            } elseif ($acepta_vra == '2' && $tipo_usuario == 3) { ?>
+                <button class="btn unacauca-btn-reprint" onclick="reimprOficio_depto()" style="border-radius: 30px;">
+                    Reimprimir Oficio
+                </button>
+            <?php } elseif ($acepta_vra != '2' && $tipo_usuario == 3) { ?>
+                <button class="btn btn-unicauca-primary btn-lg" data-bs-toggle="modal" data-bs-target="#myModal" style="border-radius: 30px;">
+                    <i class="fas fa-file-download me-2"></i> Enviar a Facultad (Descargar Oficio)
+                </button>
+            <?php }
+        } ?>
+    </div>
+<?php } else { ?>
+    
+        <div class="col-md-12 text-center mb-3 d-grid">
+            <?php if ($tipo_usuario == 3) {
+                // Mostrar botón de Reimprimir incluso si el periodo está cerrado
+                if ($resultb->num_rows > 0 && ($acepta_vra == '2' || $row['dp_estado_total'] == 1)) { ?>
+                    <button class="btn unacauca-btn-reprint" onclick="reimprOficio_depto()" style="border-radius: 30px;">
+                        (solicitud enviada) Reimprimir Oficio
+                    </button>
+                <?php } elseif (!$todosCerrados) { ?>
+                    <div data-bs-toggle="tooltip" data-bs-placement="top" title="Confirmar profesores para poder enviar">
+                        <button class="btn btn-unicauca-primary btn-lg disabled" disabled style="border-radius: 30px;">
+                            <i class="fas fa-file-download me-2"></i> Enviar a Facultad (Descargar Oficio)
+                        </button>
+                    </div>
+                <?php } elseif ($cierreperiodo == '1') { ?>
+                    <div data-bs-toggle="tooltip" data-bs-placement="top" title="Periodo <?= $anio_semestre ?> cerrado">
+                        <button class="btn btn-unicauca-primary btn-lg disabled" disabled style="border-radius: 30px;">
+                            <i class="fas fa-file-download me-2"></i> Enviar a Facultad (Descargar Oficio)
+                        </button>
+                    </div>
+                <?php }
+            } ?>
+        </div>
+   
+<?php } 
+    
+    function obtenerPeriodoAnterior($anio_semestre) {
     list($anio, $semestre) = explode('-', $anio_semestre);
     if ($semestre == '1') {
         $anio--;
@@ -36,1768 +1109,377 @@ function obtenerPeriodoAnterior($anio_semestre) {
     }
     return $anio . '-' . $semestre;
 }
-//$periodo_anterior= obtenerPeriodoAnterior($aniose);
-
-        $cierreperiodo = obtenerperiodo($anio_semestre);
-
-$consultaper = "SELECT * FROM periodo where periodo.nombre_periodo ='$anio_semestre'";
-$resultadoper = $conn->query($consultaper);
-while ($rowper = $resultadoper->fetch_assoc()) {
-    $fecha_ini_cat = $rowper['inicio_sem'];
-    $fecha_fin_cat = $rowper['fin_sem'];
-    $fecha_ini_ocas = $rowper['inicio_sem_oc'];
-    $fecha_fin_ocas = $rowper['fin_sem_oc'];
-    $valor_punto = $rowper['valor_punto'];
-    $smlv = $rowper['smlv'];
-  
-}
-
-
-$consultaperant = "SELECT * FROM periodo where periodo.nombre_periodo ='$periodo_anterior'";
-$resultadoperant = $conn->query($consultaperant);
-while ($rowper = $resultadoperant->fetch_assoc()) {
-
-    $fecha_ini_catant = !empty($rowper['inicio_sem']) ? $rowper['inicio_sem'] : null;
-    $fecha_fin_catant = !empty($rowper['fin_sem']) ? $rowper['fin_sem'] : null;
-    
-    $fecha_ini_ocasant = !empty($rowper['inicio_sem_oc']) ? $rowper['inicio_sem_oc'] : null;
-    $fecha_fin_ocasant = !empty($rowper['fin_sem_oc']) ? $rowper['fin_sem_oc'] : null;
-
-    $valor_puntoant = isset($rowper['valor_punto']) ? $rowper['valor_punto'] : null;
-    $smlvant = isset($rowper['smlv']) ? $rowper['smlv'] : null;
-
-    // Aquí podrías poner lógica adicional si alguno no viene
-    if (is_null($fecha_ini_catant) || is_null($fecha_fin_catant)) {
-        echo "<strong>Faltan datos de fechas de Cátedra para el análisis.</strong>";
-        continue; // pasa al siguiente registro sin procesar este
-    }
-
-    if (is_null($fecha_ini_ocasant) || is_null($fecha_fin_ocasant)) {
-        echo "<strong>Faltan datos de fechas de Ocasional para el análisis.</strong>";
-        continue;
-    }
-
-    // Puedes seguir usando $fecha_ini_catant, $fecha_fin_catant, etc. aquí...
-}
-
-  // Semanas catedra
-    $fecha_inicio = new DateTime($fecha_ini_cat);
-$fecha_fin = new DateTime($fecha_fin_cat);
-  $intervalo = $fecha_inicio->diff($fecha_fin);
-
-// Obtener el total de días y convertir a semanas
-$dias = $intervalo->days -1;
-$semanas_cat = ceil($dias / 7); // redondea hacia arriba
-// Semanas ocasionales
-$inicio_ocas = new DateTime($fecha_ini_ocas);
-$fin_ocas = new DateTime($fecha_fin_ocas);
-$dias_ocas = $inicio_ocas->diff($fin_ocas)->days-2;
-$semanas_ocas = ceil($dias_ocas / 7);
-    
-     // Semanas catedra anterior
-try {
-    if (empty($fecha_ini_catant)) {
-        throw new Exception("No se puede comparar");
-    }
-
-    $fecha_inicioant = new DateTime($fecha_ini_catant);
-
-} catch (Exception $e) {
-    echo "<strong>" . $e->getMessage() . "</strong>";
-    return; // o exit; si estás fuera de una función
-}
-$fecha_finant = new DateTime($fecha_fin_catant);
-  $intervaloant = $fecha_inicioant->diff($fecha_finant);
-
-// Obtener el total de días y convertir a semanas
-$diasant = $intervaloant->days - 1;
-$semanas_catant = ceil($diasant / 7); // redondea hacia arriba
-// Semanas ocasionales
-$inicio_ocasant = new DateTime($fecha_ini_ocasant);
-$fin_ocasant = new DateTime($fecha_fin_ocasant);
-$dias_ocasant = $inicio_ocasant->diff($fin_ocasant)->days-1;
-$semanas_ocasant = ceil($dias_ocasant / 7);
-  
-?>
-
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Consulta de Solicitudes</title>
-         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<!-- jQuery y Bootstrap JS -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-         <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-   
-    
-<!-- Cargar Bootstrap 5 y Font Awesome -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-<!-- jQuery (si es necesario) -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
-<!-- Cargar solo Bootstrap 5 JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        function confirmarEnvio(count, tipo) {
-            return confirm(` Se confirman ${count} profesores de  ${tipo}. ¿Desea continuar?`);
-        }
-    </script>
-    
-</head>
-<body>
-   <?php if ($tipo_usuario != 4): ?>
-   <?php
-if (isset($_POST['envia'])) {
-    switch ($_POST['envia']) {
-        case 'rcc':
-            $archivo_regreso = 'report_depto_comparativo_costos.php';
-            break;
-        case 'ce':
-            $archivo_regreso = 'comparativo_espejo.php';
-            break;
-        case 'rcec':
-            $archivo_regreso = 'report_depto_comparativo_costos_espejo.php';
-            break;
-        case 'consulta_todo_depto':  // ¡Nuevo caso!
-            $archivo_regreso = 'consulta_todo_depto.php';
-            break;
-        default:
-            $archivo_regreso = 'report_depto_comparativo.php';
-    }
-} else {
-    $archivo_regreso = 'report_depto_comparativo.php';
-}
-?>
-
-
-<?php endif; 
-                   $huboCambioVinculacion = false; // <-- DECLARA E INICIALIZA LA BANDERA AQUÍ
- 
-    
-    // Función para obtener el nombre de la facultad
-    function obtenerNombreFacultad($departamento_id) {
-        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-        $sql = "SELECT nombre_fac_min FROM facultad,deparmanentos WHERE
-        PK_FAC = FK_FAC AND 
-        deparmanentos.PK_DEPTO = '$departamento_id'";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            return $row['nombre_fac_min'];
-        } else {
-            return "Facultad Desconocida";
-        }
-    }
-             // Función para obtener el nombre de la facultad
-    function obtenerIdFacultad($departamento_id)  {
-        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-        $sql = "SELECT deparmanentos.FK_FAC  FROM deparmanentos WHERE PK_DEPTO = '$departamento_id'";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            return $row['FK_FAC'];
-        } else {
-            return "Departamento Desconocido";
-        }
-    }
-
-    // Función para obtener el nombre del departamento
-    function obtenerNombreDepartamento($departamento_id) {
-        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-        $sql = "SELECT depto_nom_propio FROM deparmanentos WHERE PK_DEPTO = '$departamento_id'";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            return $row['depto_nom_propio'];
-        } else {
-            return "Departamento Desconocido";
-        }
-    }
-function obtenerTRDDepartamento($departamento_id) {
-        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-        $sql = "SELECT trd_depto FROM deparmanentos WHERE PK_DEPTO = '$departamento_id'";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            return $row['trd_depto'];
-        } else {
-            return "Departamento Desconocido";
-        }
-    }
-
+$anio_semestre_anterior= obtenerPeriodoAnterior($anio_semestre);
     ?>
-     <style>
-        /* Definición de colores Unicauca (asegúrate de que estén aquí o en tu archivo CSS principal) */
-       
-       
-        /* --- NUEVOS ESTILOS PARA EL ENCABEZADO DE NAVEGACIÓN --- */
-        .navigation-header {
-            background-color: var(--unicauca-azul); /* Fondo azul Unicauca */
-            color: var(--unicauca-blanco); /* Texto blanco */
-            padding: 10px 20px; /* Ajusta el padding para que se vea bien */
-            border-radius: 8px; /* Bordes redondeados */
-            margin-bottom: 20px; /* Espacio debajo del encabezado */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra sutil */
-        }
 
-        .navigation-header .btn-back {
-            background-color: #FDB12D; /* Azul más oscuro para el botón */
-            color: var(--unicauca-blanco);
-            border: 1px solid var(--unicauca-azul-oscuro);
-            padding: 8px 15px; /* Ajusta el padding del botón */
-            border-radius: 5px;
-            text-decoration: none;
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-            font-size: 0.9em; /* Tamaño de fuente ligeramente más pequeño */
-            display: inline-flex; /* Para alinear icono y texto */
-            align-items: center;
-        }
 
-        .navigation-header .btn-back:hover {
-            background-color: var(--unicauca-primary); /* Vuelve al azul principal en hover */
-            border-color: var(--unicauca-primary);
-        }
-
-        .navigation-header h2 {
-            color: var(--unicauca-blanco); /* Asegura que el texto h2 sea blanco */
-            margin-bottom: 0; /* Elimina margen inferior por defecto de h2 */
-        }
-        /* Ajuste para el color del departamento si tiene otro color, pero dentro del encabezado azul */
-        .navigation-header .text-muted-white {
-            color: rgba(255, 255, 255, 0.7) !important; /* Gris claro para el slash y nombre facultad */
-        }
-         .puntos-no-actualizados {
-    background-color: #FFF3CD; /* Un tono amarillo/naranja suave para indicar alerta */
-    color: #856404; /* Color de texto más oscuro para contraste */
-    font-weight: bold; /* Opcional: para que el texto resalte */
-}
-         /* Estilos para el botón "Agregar Profesor" - Naranja Unicaucano */
-.btn-agregar-profesor {
-    background-color: #FF6600; /* Un naranja vibrante y fuerte */
-    border-color: #E65C00;     /* Un borde ligeramente más oscuro */
-    color: #FFFFFF;            /* Texto blanco para un excelente contraste */
+<div class="col-md-12 text-center mb-3 d-grid">
+    <a href="excel_temporales_fac.php?tipo_usuario=<?php echo htmlspecialchars($tipo_usuario); ?>&departamento_id=<?php echo htmlspecialchars($departamento_id); ?>&facultad_id=<?php echo htmlspecialchars($facultad_id); ?>&anio_semestre=<?php echo htmlspecialchars($anio_semestre); ?>" 
+       class="btn btn-unicauca-success"
+       style="border-radius: 30px; padding: 0.6rem 1.2rem;">
+        <i class="fas fa-file-excel me-2"></i> Descargar Reporte XLS
+    </a>
     
-    /* Para asegurar el "alto super mínimo": */
-    /* Bootstrap's btn-sm ya aplica un padding reducido. Si necesitas que sea
-       aún más compacto, puedes descomentar y ajustar la siguiente línea: */
-    /* padding: .15rem .4rem; /* Ejemplo de padding aún más pequeño */
-}
-
-.btn-agregar-profesor:hover {
-    background-color: #E65C00; /* Naranja ligeramente más oscuro al pasar el ratón */
-    border-color: #CC5200;
-    color: #FFFFFF;
-}
-
-.btn-agregar-profesor:active {
-    background-color: #CC5200; /* Naranja más oscuro al hacer clic */
-    border-color: #B34700;
-    color: #FFFFFF;
-}
-
-/* Ajuste para el ícono para asegurar "alto super mínimo" */
-.btn-agregar-profesor .fas {
-    /* Asegura que la altura de línea del ícono no genere espacio vertical extra. */
-    /* '1' hace que la altura de línea sea igual al font-size del ícono. */
-    line-height: 1; 
+    <!-- Botón "Ver Comparativo" (estilo similar al TD de departamento_comparativo.php) -->
+<form action="depto_comparativo.php" method="POST" class="d-inline mt-2">
+    <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($departamento_id); ?>">
+    <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($anio_semestre); ?>">
+    <input type="hidden" name="anio_semestre_anterior" value="<?php echo htmlspecialchars($anio_semestre_anterior); ?>">
+    <!-- Bandera oculta para identificar el origen -->
+    <input type="hidden" name="envia" value="consulta_todo_depto">  <!-- ¡Nuevo campo! -->
     
-    /* Si el ícono aún se ve que agranda el botón, podrías intentar: */
-    /* font-size: 0.9em; /* Para reducir ligeramente el tamaño del ícono relativo al texto */
-}
-         /* Mantener altura mínima consistente */
-.estado-container {
-    min-height: 38px; /* Altura de un input estándar */
-    padding: 5px 0; /* Espaciado vertical mínimo */
-}
+    <form action="<?= $archivo_regreso ?>" method="post">
+    <input type="hidden" name="anio_semestre" value="<?= htmlspecialchars($anio_semestre) ?>">
+    <input type="hidden" name="departamento_id" value="<?= htmlspecialchars($departamento_id) ?>">
 
-/* Ajustes específicos para el botón */
-.btn-agregar-profesor {
-    padding-top: 0.15rem !important;
-    padding-bottom: 0.15rem !important;
-    line-height: 1.2;
-}
+    <button type="submit" 
+            class="btn btn-outline-primary" 
+            style="border-radius: 30px; 
+                   padding: 0.5rem 1.5rem;
+                   position: relative;
+                   transition: all 0.2s;
+                   border: 1px solid #0d6efd;
+                   background: none;
+                   width: 100%;">
+        <i class="fas fa-chart-bar me-2"></i>  
+        Comparativo (<?= htmlspecialchars($anio_semestre) ?> vs <?= htmlspecialchars($anio_semestre_anterior) ?>)
+        <span class="badge bg-primary bg-opacity-10 text-primary ms-2" 
+              style="font-size: 0.7em; 
+                     position: absolute;
+                     right: 15px;
+                     top: 50%;
+                     transform: translateY(-50%);
+                     opacity: 0;
+                     transition: opacity 0.3s;">
+            →
+        </span>
+    </button>
+</form>
 
-.btn-agregar-profesor .fas {
-    font-size: 0.8em;
-    vertical-align: middle;
-    margin-top: -2px;
-}
-
-/* Alinear verticalmente el texto del botón */
-.btn-agregar-profesor span {
-    display: inline-block;
-    vertical-align: middle;
-}
-         /* --- ESTILOS PARA ENCABEZADOS DE TABLAS --- */
-
-/* Contenedor principal del título de vinculación */
-.estado-container {
-    background: linear-gradient(135deg, #005c97, #003366);
-    border-left: 5px solid #ffcc00;
-    color: white;
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Texto del título */
-.estado-container h5 {
-    font-weight: 600;
-    font-size: 1.05rem;
-    margin: 0;
-    color: white;
-}
-
-/* Texto resaltado (tipo de docente) */
-.estado-container h5 strong {
-    color: #ffcc00;
-}
-
-/* Badge de semanas */
-.estado-container .badge-semanas {
-    background-color: white;
-    color: #003366;
-    font-size: 0.8rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 1rem;
-    margin-left: 0.5rem;
-    font-weight: 600;
-}
-
-/* Botón de agregar profesor */
-.btn-agregar-profesor {
-    background-color: #ff6600;
-    border: none;
-    color: white;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.8rem;
-    border-radius: 0.3rem;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-.btn-agregar-profesor:hover {
-    background-color: #e65c00;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.btn-agregar-profesor:active {
-    background-color: #cc5200;
-    transform: translateY(0);
-}
-
-/* Icono del botón */
-.btn-agregar-profesor .fas {
-    font-size: 0.8em;
-}
-
-/* --- ESTILOS PARA ENCABEZADO SUPERIOR (Facultad/Departamento) --- */
-.navigation-header {
-    background: linear-gradient(135deg, #005c97, #003366);
-    color: white;
-    padding: 1rem 1.5rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-left: 5px solid #ffcc00;
-}
-
-.navigation-header h2 {
-    font-weight: 600;
-    margin: 0;
-    color: white;
-}
-
-/* Botón de regresar */
-.btn-back {
-    background-color: #ffcc00;
-    color: #003366;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 0.3rem;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-}
-
-.btn-back:hover {
-    background-color: #e6b800;
-    color: #002b4d;
-    text-decoration: none;
-}
-
-/* Texto secundario */
-.text-muted-white {
-    color: rgba(255, 255, 255, 0.7) !important;
-}
-
-/* Botón de gráficos */
-.btn-graficos {
-    background-color: #696FC7;
-    border: none;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 0.3rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-}
-
-.btn-graficos:hover {
-    background-color: #5a5fb3;
-    color: white;
-}
-
-/* --- ESTILOS PARA ENCABEZADOS DE PERIODO --- */
-.grid-header h4 {
-    font-weight: 600;
-    color: #003366;
-    padding: 0.75rem 1rem;
-    background-color: #f8f9fa;
-    border-radius: 0.5rem;
-    border-left: 4px solid #005c97;
-    margin-bottom: 1rem;
-}
-
-/* --- RESPONSIVE --- */
-@media (max-width: 768px) {
-    .navigation-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-    
-    .estado-container {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-    
-    .btn-agregar-profesor {
-        width: 100%;
-        justify-content: center;
-    }
-}
-     /* --- Nuevas variables para colores de estado (si no las tienes) --- */
-:root {
-    --unicauca-azul: #0066cc;
-    --unicauca-azul-oscuro: #004080;
-    --unicauca-gris-medio: #6c757d; /* Usado para bordes y texto secundario */
-    --unicauca-gris-claro-bg: #f8f9fa; /* Fondo degradado 1 */
-    --unicauca-gris-mas-claro-bg: #e9ecef; /* Fondo degradado 2 */
-    --unicauca-verde-exito: #28a745; /* Color para estado "Abierto" */
-    --unicauca-rojo-peligro: #dc3545; /* Color para estado "Cerrado" */
-    --unicauca-azul-vinculacion: #005c97; /* Color específico para el tipo de vinculación */
-    --unicauca-amarillo-boton: #FF6600; /* Naranja del botón */
-    --unicauca-amarillo-boton-hover: #E65C00;
-    --unicauca-negro: #111827; /* Para texto principal */
-    --unicauca-blanco: #FFFFFF;
-}
-
-/* Contenedor general para el encabezado del período (revisión y anterior) */
-.periodo-info-container {
-    background: linear-gradient(135deg, var(--unicauca-gris-claro-bg), var(--unicauca-gris-mas-claro-bg));
-    border-radius: 8px; /* Redondeo general para el contenedor */
-    padding: 15px 20px; /* Más padding para contenido */
-    margin-bottom: 20px; /* Espacio debajo del contenedor */
-    display: flex;
-    justify-content: space-between; /* Para espaciar el título y el botón */
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* Sombra sutil */
-    flex-wrap: wrap; /* Para responsividad */
-    gap: 15px; /* Espacio entre elementos flexibles */
-}
-
-/* Borde izquierdo específico para cada período */
-.periodo-actual-box {
-    border-left: 4px solid var(--unicauca-azul); /* Borde azul para período actual */
-}
-
-.periodo-anterior-box {
-    border-left: 4px solid var(--unicauca-gris-medio); /* Borde gris para período anterior */
-}
-
-/* Estilo para el título H5 dentro del contenedor */
-.periodo-title-h5 {
-    font-size: 1.15rem; /* Tamaño de fuente ligeramente más grande */
-    margin: 0;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap; /* Permite que los elementos se envuelvan */
-    gap: 8px; /* Espacio entre los elementos del título */
-    color: var(--unicauca-negro); /* Color de texto general para el título */
-}
-
-/* Iconos dentro del título */
-.periodo-title-h5 .fas {
-    font-size: 1.3em; /* Tamaño del icono */
-    color: var(--unicauca-azul); /* Icono azul para el periodo actual */
-}
-
-.periodo-anterior-box .periodo-title-h5 .fas {
-    color: var(--unicauca-gris-medio); /* Icono gris para el periodo anterior */
-}
-
-/* Estilos para las partes del texto dentro del título */
-.periodo-label,
-.vinculacion-label {
-    font-weight: 600; /* Más negrita para las etiquetas */
-    color: #343a40; /* Color oscuro para las etiquetas */
-}
-
-.periodo-value {
-    font-weight: 700; /* Más negrita para el valor del período */
-    color: var(--unicauca-azul-oscuro); /* Azul oscuro para el valor del período */
-}
-
-.vinculacion-type {
-    font-weight: 700;
-    color: var(--unicauca-azul-vinculacion); /* Azul específico de vinculación */
-}
-
-/* Separador */
-.periodo-separator {
-    color: var(--unicauca-gris-medio);
-    margin: 0 0.5rem; /* Ajuste el margen si es necesario */
-}
-
-/* Badge para semanas (se aplica a .semanas-badge, no a .badge-secondary directamente) */
-.semanas-badge {
-    background-color: var(--unicauca-gris-medio); /* Fondo gris */
-    color: var(--unicauca-blanco);
-    padding: 0.25em 0.6em;
-    font-size: 0.85em;
-    font-weight: 600;
-    border-radius: 10rem; /* Muy redondeado */
-    white-space: nowrap; /* Evita que el badge se rompa en varias líneas */
-}
-
-/* Estilos para el estado "Abierto" y "Cerrado" */
-.estado {
-    font-weight: 700;
-    padding: 0.2em 0.5em; /* Un poco de padding para que se vea como un tag */
-    border-radius: 4px;
-    white-space: nowrap;
-}
-
-.estado-abierto {
-    color: var(--unicauca-verde-exito);
-    background-color: rgba(40, 167, 69, 0.1); /* Fondo muy suave verde */
-}
-
-.estado-cerrado {
-    color: var(--unicauca-rojo-peligro);
-    background-color: rgba(220, 53, 69, 0.1); /* Fondo muy suave rojo */
-}
-
-/* Botón Agregar Profesor */
-.btn-agregar-profesor {
-    background-color: var(--unicauca-amarillo-boton);
-    border: none;
-    color: var(--unicauca-blanco);
-    padding: 8px 15px; /* Ajuste padding */
-    font-size: 0.9em;
-    border-radius: 5px;
-    transition: all 0.3s ease;
-    font-weight: 600;
-    display: flex; /* Para alinear icono y texto */
-    align-items: center;
-    gap: 5px; /* Espacio entre icono y texto */
-}
-
-.btn-agregar-profesor:hover {
-    background-color: var(--unicauca-amarillo-boton-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-    color: var(--unicauca-blanco); /* Asegurar color de texto blanco en hover */
-}
-
-.btn-agregar-profesor .fas {
-    font-size: 1em;
-    vertical-align: middle;
-    margin-top: -1px; /* Ajuste fino de alineación */
-}
-
-/* Responsividad para títulos largos */
-@media (max-width: 768px) {
-    .periodo-title-h5 {
-        font-size: 1rem; /* Reducir tamaño de fuente en móviles */
-        flex-direction: column; /* Apilar los elementos en pantallas pequeñas */
-        align-items: flex-start; /* Alinear a la izquierda */
-        gap: 5px;
-    }
-    .periodo-title-h5 .fas {
-        margin-right: 5px; /* Pequeño margen para el icono */
-    }
-    .periodo-separator {
-        display: none; /* Ocultar el separador vertical en móviles si se apilan */
-    }
-    .btn-agregar-profesor {
-        width: 100%; /* Botón a ancho completo */
-        justify-content: center; /* Centrar texto y icono */
-        margin-top: 10px;
-    }
-}
-
-/* --- ESTILOS ORIGINALES DE TU PROPORCIONADO, AHORA AJUSTADOS O ELIMINADOS SI SE SUPERPONEN --- */
-/* Estas reglas se vuelven redundantes o menos específicas si usas las nuevas clases más arriba */
-/*
-.periodo-anterior-container {
-    padding: 0.75rem 1rem; // Ya cubierto por .periodo-info-container
-    border-radius: 0.5rem; // Ya cubierto por .periodo-info-container
-    margin-bottom: 1rem; // Ya cubierto por .periodo-info-container
-    display: flex; // Ya cubierto por .periodo-info-container
-    align-items: center; // Ya cubierto por .periodo-info-container
-}
-
-.periodo-anterior-title {
-    color: #495057; // Ya cubierto por .periodo-title-h5
-    font-size: 1.05rem; // Ya cubierto por .periodo-title-h5
-    margin: 0; // Ya cubierto por .periodo-title-h5
-    display: flex; // Ya cubierto por .periodo-title-h5
-    align-items: center; // Ya cubierto por .periodo-title-h5
-    flex-wrap: wrap; // Ya cubierto por .periodo-title-h5
-    gap: 0.5rem; // Ya cubierto por .periodo-title-h5
-}
-
-.badge-secondary { // Esta clase sigue siendo válida si la usas en otros lugares, pero para el badge de semanas, usa .semanas-badge
-    background-color: #6c757d; // Cubierto por .semanas-badge
-    color: white; // Cubierto por .semanas-badge
-    padding: 0.25em 0.6em; // Cubierto por .semanas-badge
-    font-size: 0.85em; // Cubierto por .semanas-badge
-    font-weight: 600; // Cubierto por .semanas-badge
-    border-radius: 10rem; // Cubierto por .semanas-badge
-}
-*/
-    </style>
-<div class="card card-plazo mb-4" >
-    <div class="navigation-header">
-       <div>
-    <?php if (isset($_POST['envia']) && $_POST['envia'] === 'consulta_todo_depto'): ?>
-        <form action="<?= $archivo_regreso ?>" method="post" style="display:inline;">
-            <input type="hidden" name="anio_semestre" value="<?= htmlspecialchars($anio_semestre) ?>">
-            <input type="hidden" name="departamento_id" value="<?= htmlspecialchars($departamento_id) ?>">
-            <button type="submit">Volver</button>
-        </form>
-    <?php else: ?>
-        <a href="<?= $archivo_regreso ?>?anio_semestre=<?= urlencode($anio_semestre) ?>&departamento_id=<?= urlencode($departamento_id) ?>" class="btn-back">
-            <i class="fas fa-arrow-left me-2"></i> Regresar
-        </a>
-    <?php endif; ?>
+</form>
 </div>
-
-        <div class="d-flex align-items-baseline gap-2">
-            <h2 class="mb-0" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                Fac. <?= mb_strimwidth(obtenerNombreFacultad($departamento_id), 0, 65, '...') ?>
-            </h2>
-            <span class="text-muted-white">/</span>
-            <h2 class="mb-0" style="color: var(--unicauca-blanco); font-weight: 500;">
-                <?= mb_strimwidth(obtenerNombreDepartamento($_POST['departamento_id']), 0, 65, '...') ?>
-            </h2>
-        </div>
-        <div>
-           <a href="#seccionGraficos"
-   class="btn btn-sm d-flex align-items-center gap-1"
-   style="background-color: #696FC7; border-color: #696FC7; color: white;"
-   title="Ir a la sección de gráficos">
-    <i class="fas fa-chart-bar"></i> Ver Tablero  -  Gráficos
-</a>
-            </div>
-    </div>
-
-   <!-- NUEVA ESTRUCTURA CON GRID PARA ALINEACIÓN -->
-    <div class="grid-container" id="contentToToggle">
-       <?php
-/*
-    echo '<div class="grid-col">
-            <div class="grid-header">
-                <h4 class=""><strong>Periodo en revisión: ' . htmlspecialchars($_POST['anio_semestre']) . '.</strong></h4>
-            </div>
-        </div>
-        <div class="grid-col">
-            <div class="grid-header">
-                <h4 class=""><strong>Periodo anterior: ' . htmlspecialchars($periodo_anterior) . '</strong></h4>
-            </div>
-        </div>';
-*/
-?>
-
-        
-        <?php
-        $facultad_id = obtenerIdFacultad($departamento_id);
-        require 'cn.php';
-        
-        // Consulta SQL para obtener los tipos de docentes
-        $consulta_tipo = "SELECT DISTINCT tipo_docente AS tipo_d
-                          FROM solicitudes  where solicitudes.estado <> 'an' OR solicitudes.estado IS NULL;";
-        $resultadotipo = $con->query($consulta_tipo);
-        
-        if (!$resultadotipo) {
-            die('Error en la consulta: ' . $con->error);
-        }
-        
-        $todosCerrados = true;
-        $obtenerDeptoCerrado = obtenerDeptoCerrado($departamento_id,$anio_semestre);
-        $totalItems = 0;
-        $contadorHV = 0;
-        $contadorVerdes = 0;
-        $contadorVerdesOc = 0;
-        $contadorVerdesCa = 0;
-        
-        // Variables globales para ambos periodos
-        $cedulasPeriodoAnteriorGlobal = [];
-        $sqlPrevGlobal = "SELECT cedula, tipo_docente FROM solicitudes
-                          WHERE facultad_id = '$facultad_id'
-                          AND departamento_id = '$departamento_id'
-                          AND anio_semestre = '$periodo_anterior'
-                          AND (estado <> 'an' OR estado IS NULL)";
-        $resultPrevGlobal = $conn->query($sqlPrevGlobal);
-        if ($resultPrevGlobal) {
-            while ($rowPrevGlobal = $resultPrevGlobal->fetch_assoc()) {
-                $cedulasPeriodoAnteriorGlobal[$rowPrevGlobal['cedula']] = $rowPrevGlobal['tipo_docente'];
-            }
-        }
-        
-        $total_consolidado = 0;
-        $contadorVerdes = 0;
-        $contadorVerdesOc = 0;
-        $contadorVerdesCa = 0;
-        $totalProfesoresOcasional = 0;
-        $totalProfesoresCatedra = 0;
-        $totalProyectadoOcasional = 0;
-        $totalProyectadoCatedra = 0;
-        
-        // Variables para periodo anterior
-        $cedulasGlobalesPeriodoActual = [];
-        $sqlCedulasGlobalesActuales = "SELECT cedula FROM solicitudes  
-                              WHERE facultad_id = '$facultad_id' 
-                              AND departamento_id = '$departamento_id' 
-                              AND anio_semestre = '$anio_semestre'
-                              AND (estado <> 'an' OR estado IS NULL)";
-        $resultGlobales = $conn->query($sqlCedulasGlobalesActuales);
-        while ($rowCedula = $resultGlobales->fetch_assoc()) {
-            $cedulasGlobalesPeriodoActual[] = $rowCedula['cedula'];
-        }       
-        
-        $totalProfesoresOcasionalAnterior = 0;
-        $totalProfesoresCatedraAnterior = 0;
-        $totalProyectadoOcasionalAnterior = 0;
-        $totalProyectadoCatedraAnterior = 0;          
-        $total_cosolidado_ant = 0;
-        $contadorRojos = 0;
-        $contadorRojosOc = 0;
-        $contadorRojosCa = 0;
-        
-        // --- LOOP THROUGH EACH DOCENTE TYPE ---
-        while ($rowtipo = $resultadotipo->fetch_assoc()) {
-            $tipo_docente = $rowtipo['tipo_d'];
-            
-            echo '<div class="grid-row">'; // Inicio de fila de grid para este tipo
-            
-            // ================= COLUMNA PERIODO ACTUAL =================
-            echo '<div class="grid-col">';
-            
-            // --- Data specific to the CURRENT $tipo_docente for THIS loop iteration ---
-            $cedulasPeriodoActualPorTipo = [];
-            $sqlCedulasActualesPorTipo = "SELECT cedula FROM solicitudes
-                                          WHERE facultad_id = '$facultad_id'
-                                          AND departamento_id = '$departamento_id'
-                                          AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_docente'
-                                          AND (estado <> 'an' OR estado IS NULL)";
-            $resultCedulasActualesPorTipo = $conn->query($sqlCedulasActualesPorTipo);
-            if ($resultCedulasActualesPorTipo) {
-                while ($rowCedula = $resultCedulasActualesPorTipo->fetch_assoc()) {
-                    $cedulasPeriodoActualPorTipo[] = $rowCedula['cedula'];
-                }
-            }
-            
-            $cedulasPeriodoAnteriorPorTipoActual = [];
-            $sqlCedulasAnterioresPorTipo = "SELECT cedula FROM solicitudes
-                                            WHERE facultad_id = '$facultad_id'
-                                            AND departamento_id = '$departamento_id'
-                                            AND anio_semestre = '$periodo_anterior' AND tipo_docente = '$tipo_docente'
-                                            AND (estado <> 'an' OR estado IS NULL)";
-            $resultCedulasAnterioresPorTipo = $conn->query($sqlCedulasAnterioresPorTipo);
-            if ($resultCedulasAnterioresPorTipo) {
-                while ($rowCedula = $resultCedulasAnterioresPorTipo->fetch_assoc()) {
-                    $cedulasPeriodoAnteriorPorTipoActual[] = $rowCedula['cedula'];
-                }
-            }
-         $periodo_ant_real= obtenerPeriodoAnterior($anio_semestre);   
-           // --- MAIN QUERY TO GET PROFESSORS FOR THE CURRENT TABLE ---
-$sql = "SELECT
-    s_actual.*,
-    facultad.nombre_fac_minb AS nombre_facultad,
-    deparmanentos.depto_nom_propio AS nombre_departamento,
-    s_actual.puntos AS puntos_periodo_actual,
-    COALESCE(
-        s_anterior.puntos,
-        CASE s_actual.tipo_docente
-            WHEN 'Ocasional' THEN 380
-            WHEN 'Catedra' THEN 3.5
-            ELSE NULL -- O un valor por defecto si existen otros tipos de docente
-        END
-    ) AS puntos_periodo_anterior, -- Puntos del periodo anterior con valor por defecto
-    s_anterior.tipo_docente AS tipo_docente_periodo_anterior
-FROM
-    solicitudes AS s_actual
-JOIN
-    deparmanentos ON (deparmanentos.PK_DEPTO = s_actual.departamento_id)
-JOIN
-    facultad ON (facultad.PK_FAC = s_actual.facultad_id)
-LEFT JOIN
-    solicitudes AS s_anterior ON (
-        s_anterior.cedula = s_actual.cedula
-        AND s_anterior.departamento_id = s_actual.departamento_id
-        AND s_anterior.facultad_id = s_actual.facultad_id
-        AND s_anterior.anio_semestre = '$periodo_ant_real'
-                AND s_anterior.tipo_docente = s_actual.tipo_docente -- ¡NUEVA CONDICIÓN!
-
-        AND (s_anterior.estado <> 'an' OR s_anterior.estado IS NULL)
-    )
-WHERE
-    s_actual.facultad_id = '$facultad_id'
-    AND s_actual.departamento_id = '$departamento_id'
-    AND s_actual.anio_semestre = '$anio_semestre'
-    AND s_actual.tipo_docente = '$tipo_docente' -- ¡CORREGIDO: Usando la variable PHP $tipo_docente!
-    AND (s_actual.estado <> 'an' OR s_actual.estado IS NULL)
-ORDER BY
-    s_actual.nombre ASC;";
-            
-            $result = $conn->query($sql);
-          // --- HTML OUTPUT FOR THE SECTION HEADER AND BUTTON ---
-echo "<div class='box-gray'>";
-// ================= COLUMNA PERIODO ACTUAL =================
-echo '<div class="grid-col">';
-echo "<div class='periodo-info-container periodo-actual-box'>"; // Usamos el contenedor unificado y el borde específico
-echo "<h5 class='periodo-title-h5'>"; // Nueva clase para el h5
-echo "<i class='fas fa-calendar-alt'></i>"; // Icono para el período actual (ajustado en CSS)
-echo "<span class='periodo-label'>Período en revisión:</span> ";
-echo "<span class='periodo-value'>" . htmlspecialchars($_POST['anio_semestre']) . "</span>";
-echo "<span class='periodo-separator'>|</span>"; // Separador
-echo "<span class='vinculacion-label'>Vinculación:</span> ";
-echo "<span class='vinculacion-type'>" . $tipo_docente . "</span> (";
-
-if ($tipo_docente == 'Catedra') {
-    $estadoDepto = obtenerCierreDeptoCatedra($departamento_id, $aniose);
-    $estadoClass = strtolower($estadoDepto) == 'abierto' ? 'estado-abierto' : 'estado-cerrado';
-    echo "<span class='estado " . $estadoClass . "'>" . ucfirst(strtolower($estadoDepto)) . "</span>) - ";
-    echo "<span class='semanas-badge'>" . $semanas_cat . " semanas</span>";
-} else {
-    $estadoDepto = obtenerCierreDeptoOcasional($departamento_id, $aniose); // Usar función correcta para Ocasional si existe
-    $estadoClass = strtolower($estadoDepto) == 'abierto' ? 'estado-abierto' : 'estado-cerrado';
-    echo "<span class='estado " . $estadoClass . "'>" . ucfirst(strtolower($estadoDepto)) . "</span>) - ";
-    echo "<span class='semanas-badge'>" . $semanas_ocas . " semanas</span>";
-}
-
-echo "</h5>";
-
-if ($tipo_usuario == 1) {
-    echo "
-    <div class='btn-container'>"; // Envuelve el botón en un div para mejor control flexbox
-    echo "
-        <form action='nuevo_registro_admin.php' method='GET' class='mb-0'>
-            <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
-            <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
-            <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
-            <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
-            <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
-            <button type='submit' class='btn-agregar-profesor' title='Agregar Profesor'>
-                <i class='fas fa-user-plus'></i> <span>Agregar Profesor</span>
-            </button>
-        </form>";
-    echo "</div>"; // Cierre btn-container
-}
-echo "</div>"; // Cierre periodo-info-container
-echo '</div>'; // Cierre grid-col
-            
-            // Obtener el conteo de profesores para este tipo_docente
-            $sqlCount = "SELECT COUNT(*) as count FROM solicitudes WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
-            $resultCount = $conn->query($sqlCount);
-            $count = $resultCount->fetch_assoc()['count'];
-            if ($tipo_docente == 'Ocasional') {
-                $totalProfesoresOcasional += $count;
-            } elseif ($tipo_docente == 'Catedra') {
-                $totalProfesoresCatedra += $count;
-            }
-            
-            // --- TABLE STRUCTURE AND HEADERS ---
-            if ($result && $result->num_rows > 0) {
-                echo "<table border='1'>
-                <thead>
-                    <tr>
-                        <th rowspan='2'>Ítem</th>
-                        <th rowspan='2'>Cédula</th>
-                        <th rowspan='2'>Nombre</th>";
-            
-                if ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra") {
-                    echo "<th colspan='2'>Dedicación</th>";
-                }
-                if ($tipo_usuario == 1) {
-                    echo "<th colspan='2'>Acciones</th>";
-                }
-                echo "<th rowspan='2'>Puntos</th>";
-                echo "<th rowspan='2'>Proyec</th>";
-                echo "</tr>
-                <tr>";
-            
-                if ($tipo_docente == "Ocasional") {
-                    echo "
-                        <th title='Sede Popayán'>Pop</th>
-                        <th title='Sede Regionalización'>Reg</th>
-                    ";
-                } elseif ($tipo_docente == "Catedra") {
-                    echo "
-                        <th title='Horas en Sede Popayán'>Pop</th>
-                        <th title='Horas en Sede Regionalización'>Reg</th>
-                    ";
-                }
-                if ($tipo_usuario == 1) {
-                    echo "
-                        <th>Supr</th>
-                        <th>Edit</th>
-                    ";
-                }
-                echo "</tr>
-                </thead>
-                <tbody>"; // Added tbody for better HTML structure
-            
-                $item = 1; // Initialize item counter for this table
-                $todosLosRegistrosValidos = true; // Assuming this flag's purpose remains
-                $datos_acta = obtener_acta($anio_semestre, $departamento_id);
-                $num_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['acta_periodo']) : "";
-                $fecha_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['fecha_acta']) : "";
-                $total_proyect = 0; // Initialize variable for accumulating total
-            $contadorCambioAOcasional = 0; // Contará los profesores que eran Cátedra y ahora son Ocasional
-                    $contadorCambioACatedra = 0;   // Contará los profesores que eran Ocasional y ahora son Cátedra
-
-                // --- LOOP TO DISPLAY EACH PROFESSOR'S ROW ---
-                while ($row = $result->fetch_assoc()) {
-                    $cedula = $row['cedula'];
-                    $claseFila = '';    // Reset for each row
-                    $claseTexto = '';   // Reset for each row
-                    $tooltipText = '';  // Reset for each row
-            
-                    // --- DETERMINE PROFESSOR'S STATUS FOR THIS ROW ---
-                    $cambioTipo = false;
-                    if (isset($cedulasPeriodoAnteriorGlobal[$cedula])) {
-                        if ($cedulasPeriodoAnteriorGlobal[$cedula] !== $tipo_docente) {
-                            $cambioTipo = true;
-                        }
-                    }
-            
-                    // 2. Is this professor "new" to this specific type of vinculación in the current period?
-                    $esNueva = !in_array($cedula, $cedulasPeriodoAnteriorPorTipoActual);
-            
-                    // --- APPLY CSS CLASSES AND SET THE SINGLE TOOLTIP BASED ON PRIORITY ---
-                    if ($cambioTipo) {
-                        $claseFila = 'fondo-amarillo';
-                        $claseTexto = 'cedula-nueva';
-                        $tooltipText = 'Este profesor tuvo vinculación temporal diferente en el periodo anterior ('.$periodo_anterior.')';
-       
-
-                    } elseif ($esNueva) {
-                        $claseTexto = 'cedula-nueva';
-                        $tooltipText = 'Profesor nuevo para este periodo, no registrado en el periodo anterior ('.$periodo_anterior.')';
-            
-                        $contadorVerdes++;
-                        if ($tipo_docente == 'Ocasional') {
-                            $contadorVerdesOc++;
-                        } else {
-                            $contadorVerdesCa++;
-                        }
-                    }
-                    
-                    $titleAttribute = '';
-                    if (!empty($tooltipText)) {
-                        $titleAttribute = "title=\"" . htmlspecialchars($tooltipText) . "\"";
-                    }
-            
-                    // --- OUTPUT THE TABLE ROW AND ITS CELLS ---
-                    echo "<tr class='$claseFila' $titleAttribute>";
-                    echo "<td>" . $item . "</td>";
-                    echo "<td style='text-align: left;' class='$claseTexto'>" . htmlspecialchars($cedula) . "</td>";
-                    echo "<td style='text-align: left;' class='$claseTexto'>" . htmlspecialchars($row["nombre"]) . "</td>";
-                    if ($tipo_docente == "Ocasional") {
-                        echo "<td>" . htmlspecialchars($row["tipo_dedicacion"]) . "</td>
-                              <td>" . htmlspecialchars($row["tipo_dedicacion_r"]) . "</td>";
-                    }
-                    
-                    if ($tipo_docente == "Catedra") {
-                        $horas = ($row["horas"] == 0) ? "" : htmlspecialchars($row["horas"]);
-                        $horas_r = ($row["horas_r"] == 0) ? "" : htmlspecialchars($row["horas_r"]);
-                        echo "<td>" . $horas . "</td>
-                              <td>" . $horas_r . "</td>";
-                    }
-                    if ($tipo_usuario == 1) {
-                        echo "<td>";
-                        echo "
-                        <form action='eliminar_admin.php' method='POST' class='delete-form' style='display:inline;'>
-                            <input type='hidden' name='id_solicitud' value='".htmlspecialchars($row["id_solicitud"])."'>
-                            <input type='hidden' name='facultad_id' value='".htmlspecialchars($facultad_id)."'>
-                            <input type='hidden' name='departamento_id' value='".htmlspecialchars($departamento_id)."'>
-                            <input type='hidden' name='anio_semestre' value='".htmlspecialchars($anio_semestre)."'>
-                            <input type='hidden' name='anio_semestre_anterior' value='".htmlspecialchars($periodo_anterior)."'>
-                            <input type='hidden' name='tipo_docente' value='".htmlspecialchars($tipo_docente)."'>
-                            <input type='hidden' name='motivo_eliminacion' class='motivo-input' value=''>
-                            <button type='submit' class='delete-btn' title='Eliminar registro'>
-                                <i class='fas fa-trash fa-sm'></i>
-                            </button>
-                        </form>";
-                        echo "</td><td>";
-                        echo "
-                            <form action='actualizar_admin.php' method='GET' style='display:inline;'>
-                                <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row["id_solicitud"]) . "'>
-                                <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
-                                <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
-                                <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
-                                <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
-                                <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
-                                <button type='submit' class='update-btn'><i class='fas fa-edit'></i></button>
-                            </form></td>";
-                    }   
-                        // --- Lógica para mostrar Puntos con indicadores de actualización ---
-    $valorPuntos = 0; // Inicializar para evitar posibles advertencias
-    $puntosCellClass = ''; // Clase CSS para la celda de puntos
-    $puntosTooltip = ''; // Tooltip específico para la celda de puntos
-
-                    // Si $row["puntos"] (que corresponde a puntos_periodo_actual) está vacío o es cero,
-                    // se usa $row["puntos_periodo_anterior"]. De lo contrario, se usa $row["puntos"].
-if (empty($row["puntos_periodo_actual"]) || $row["puntos_periodo_actual"] == 0) {
-        $valorPuntos = $row["puntos_periodo_anterior"];
-        $puntosCellClass = " puntos-no-actualizados"; // Clase para el color de alerta
-        $puntosTooltip = "Puntos tomados del periodo anterior (" . htmlspecialchars($periodo_ant_real) . "). Pendientes de actualización.";
-        
-        // Incrementar el contador global si se usa el valor anterior
-        // Asegúrate de que $contadorPuntosPendientes se inicializa a 0 antes del bucle
-        if (isset($contadorPuntosPendientes)) { // Verificar si la variable existe
-            $contadorPuntosPendientes++;
-        }
-        
-    } else {
-        $valorPuntos = $row["puntos_periodo_actual"];
-        // Si quieres un tooltip incluso cuando está actualizado:
-        $puntosTooltip = "Puntos actualizados para el periodo actual.";
-        // $puntosCellClass permanece vacío, sin color especial
-    }
-    
-    // Imprimir la celda de Puntos con su clase y tooltip
-    echo "<td class='" . $puntosCellClass . "' title='" . htmlspecialchars($puntosTooltip) . "'>" . $valorPuntos . "</td>";
-                    
-                    // Cálculos de proyección
-                    if ($tipo_docente == "Catedra")  {
-
-                  $asignacion_total= $valorPuntos*$valor_punto *($row["horas"]+$row["horas_r"])*$semanas_cat;
-                $asignacion_mes=$valorPuntos*$valor_punto*($row["horas"] +$row["horas_r"])*4;
-                $prima_navidad = $asignacion_mes*3/12;
-                $indem_vacaciones = $asignacion_mes*$dias/360;
-                $indem_prima_vacaciones = $indem_vacaciones*2/3;
-                $cesantias =($asignacion_total + $prima_navidad)/12;
-                $total_devengos=$asignacion_total + $prima_navidad+$indem_vacaciones+$indem_prima_vacaciones+$cesantias;
-             //eps
-                if ($asignacion_mes < $smlv){
-                $valor_base = ($smlv * $dias / 30) * 8.5 / 100;
+    <?php if ($tipo_usuario == 3) {
+        $aceptacion_fac = obteneraceptacionfac($departamento_id, $anio_semestre);
+        $aceptacion_vra = obteneraceptacionvra($facultad_id, $anio_semestre);
+        $osbservacion_fac = obtenerobs_fac($departamento_id, $anio_semestre);
+        $osbservacion_vra = obtenerobs_vra($facultad_id, $anio_semestre);
+    ?>
+    <div class="col-md-12 text-center unacauca-status-section d-flex justify-content-center flex-wrap align-items-stretch gap-4 mb-4">
+     <div class="unacauca-status-item p-3">
+        <h6 class="unacauca-status-label mb-2">Respuesta Facultad:</h6>
+        <div class="unacauca-status-badge-container d-flex align-items-center">
+            <?php
+            if ($aceptacion_fac === 'aceptar') {
+                echo "<span class='unacauca-status-badge status-accepted'><i class='fas fa-check-circle me-2'></i> Aceptado</span>";
+            } elseif ($aceptacion_fac === 'rechazar') {
+                // Apply htmlspecialchars just ONCE for attribute safety
+                echo "<span class='unacauca-status-badge status-rejected'>Devuelto</span>
+                      <button class='btn unacauca-btn-icon btn-sm ms-2' data-bs-toggle='modal' data-bs-target='#modalObservacion' data-obs=\"" . htmlspecialchars($osbservacion_fac, ENT_QUOTES, 'UTF-8') . "\">
+                          <i class='fa-solid fa-info-circle fa-lg'></i>
+                      </button>";
             } else {
-                $valor_base = round($asignacion_total * 8.5 / 100, 0);
+                echo "<span class='unacauca-status-badge status-pending'><i class='fas fa-hourglass-half me-2'></i> Pendiente</span>";
             }
-
-            // Redondear al múltiplo de 100 más cercano
-            $eps = round($valor_base, -2);
-
-                    //pension
-
-            // Cálculo principal
-            if ($asignacion_mes < $smlv) {
-                $valor_base = (($smlv * $dias) / 30) * (12 / 100);
-            } else {
-                $valor_base = round($asignacion_total * (12 / 100), 0);
-            }
-
-            // Redondear al múltiplo de 100 más cercano
-            $afp = round($valor_base, -2);
-
-                    //arp
-                    $porcentaje = 0.522 / 100;
-
-            // Lógica del cálculo
-            if ($asignacion_mes < $smlv) {
-                $valor_base = (($smlv * $dias) / 30) * $porcentaje;
-            } else {
-                $valor_base = round($asignacion_total * $porcentaje, 0);
-            }
-
-            // Redondeo al múltiplo de 100 más cercano
-            $arl = round($valor_base, -2);
-
-                    //comfaucaua
-            // Porcentaje a aplicar
-            $porcentaje = 4 / 100;
-
-            // Cálculo condicional
-            if ($asignacion_mes < $smlv) {
-                $valor_base = (($smlv * $dias) / 30) * $porcentaje;
-            } else {
-                $valor_base = round($asignacion_total * $porcentaje, 0);
-            }
-
-            // Redondear al múltiplo de 100 más cercano
-            $cajacomp = round($valor_base, -2);
-
-                    // icbf
-            $porcentaje = 3 / 100;
-
-            // Cálculo condicional
-            if ($asignacion_mes < $smlv) {
-                $valor_base = (($smlv * $dias) / 30) * $porcentaje;
-            } else {
-                $valor_base = round($asignacion_total * $porcentaje, 0);
-            }
-
-            // Redondear al múltiplo de 100 más cercano (como REDONDEAR(...;-2) en Excel)
-            $icbf = round($valor_base, -2);
-                    $total_aportes= $eps +$afp+$arl+$cajacomp+$icbf;
-                    $gran_total = $total_devengos+$total_aportes;
-
-    }
-   else {        
-             //calculo  si $tipo_docente <> "Catedra"
-
-                $horas = 0;
-                $mesesocas = intval($semanas_ocas / 4.33)-1; // 4.33 semanas ≈ 1 mes
-                // Asegurarse que los índices existen y son iguales a "MT" o "TC"
-                if (($row["tipo_dedicacion"] == "MT") || ($row["tipo_dedicacion_r"] == "MT")) {
-                    $horas = 20;
-                } elseif (($row["tipo_dedicacion"] == "TC") || ($row["tipo_dedicacion_r"] == "TC")) {
-                    $horas = 40;
-                }
-
-                // Calculo de la asignación mensual y total
-$asignacion_mes = round($valorPuntos * $valor_punto * ($horas / 40), 0);
-                $asignacion_total = $asignacion_mes * $dias_ocas / 30;
-
-
-                $prima_navidad = $asignacion_mes*$mesesocas/12;
-                $indem_vacaciones = $asignacion_mes*($dias_ocas)/360;
-                $indem_prima_vacaciones = $asignacion_mes*(2/3)*(($dias_ocas)/360);
-                $cesantias = round(($asignacion_total + $prima_navidad) / 12);
-                $total_empleado=$asignacion_total + $prima_navidad+$indem_vacaciones+$indem_prima_vacaciones;
-             //eps
-                $eps = round(($asignacion_total * 8.5) / 100);
-
-                    //pension
-
-
-
-            // Redondear al múltiplo de 100 más cercano
-             $afp = round(($asignacion_total * 12) / 100);
-
-
-            // Redondeo al múltiplo de 100 más cercano
-            $arl =round(($asignacion_total * 0.522) / 100,-2);
-
-                    //comfaucaua
-
-            // Redondear al múltiplo de 100 más cercano
-            $cajacomp = round(($asignacion_total * 4) / 100,-2);
-
-                    // icbf
-
-            // Redondear al múltiplo de 100 más cercano (como REDONDEAR(...;-2) en Excel)
-                    $icbf = round(($asignacion_total * 3) / 100,-2);
-                        $total_entidades=$cesantias+ $eps +$afp+$arl+$cajacomp+$icbf;
-
-
-                    $gran_total = $total_empleado+$total_entidades;
-    
-    }
-   // Asignar valores condicionales si es de cátedra
-if ($tipo_docente == "Catedra") {
-    $total_empleado_mostrar = $total_devengos;
-    $total_entidades_mostrar = $total_aportes;
-} else {
-    $total_empleado_mostrar = $total_empleado;
-    $total_entidades_mostrar = $total_entidades;
-}
-
-$title =
-
-    "Detalle salarial\n" .
-
-        "mese ocasionaels: " .$dias_ocas . "\n" .
-
-    "Asignación mensual: $" . number_format($asignacion_mes, 0, ',', '.') . "\n" .
-    "Asignación total: $" . number_format($asignacion_total, 0, ',', '.') . "\n" .
-    "Prima de Navidad: $" . number_format($prima_navidad, 0, ',', '.') . "\n" .
-    "Indem. Vacaciones: $" . number_format($indem_vacaciones, 0, ',', '.') . "\n" .
-    "Indem. Prima Vacaciones: $" . number_format($indem_prima_vacaciones, 0, ',', '.') . "\n" .
-    "Total empleado: $" . number_format($total_empleado_mostrar, 0, ',', '.') . "\n\n" .
-    "Cesantías: $" . number_format($cesantias, 0, ',', '.') . "\n" .
-
-    "Aportes a entidades\n" .
-    "EPS: $" . number_format($eps, 0, ',', '.') . "\n" .
-    "Pensión: $" . number_format($afp, 0, ',', '.') . "\n" .
-    "ARL: $" . number_format($arl, 0, ',', '.') . "\n" .
-    "Caja Compensación: $" . number_format($cajacomp, 0, ',', '.') . "\n" .
-    "ICBF: $" . number_format($icbf, 0, ',', '.') . "\n" .
-    "Total entidades: $" . number_format($total_entidades_mostrar, 0, ',', '.') . "\n\n" .
-
-    "GRAN TOTAL: $" . number_format($gran_total, 0, ',', '.');
-echo '<td  data-placement="right" title="' . htmlspecialchars($title, ENT_QUOTES) . '">
-$' . number_format($gran_total / 1000000, 2) . ' M</td>';
-
-$total_proyect += $gran_total;
-    echo "</tr>";
-    $item++;
-}
-    
-                // Fila de subtotal
-                echo "<tr style='font-weight: bold; background-color: #f2f2f2;'>";
-                echo "<td colspan='".($tipo_usuario == 1 ? ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra" ? 8 : 6) : ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra" ?  6: 4))."'>Subtotal</td>";
-                echo "<td>$".number_format($total_proyect/1000000, 2)." M</td>";
-                echo "</tr>";
-                echo "</table>";
-                
-                // Acumular el total proyectado por tipo de nómina
-                if ($tipo_docente == 'Ocasional') {
-                    $totalProyectadoOcasional += $total_proyect;
-                } elseif ($tipo_docente == 'Catedra') {
-                    $totalProyectadoCatedra += $total_proyect;
-                }
-            } else {
-                echo "<p style='text-align: center;'>No se encontraron resultados.</p>";
-            }
-$total_consolidado += $total_proyect ?? 0;
-            echo "</div>"; // Cierre de box-gray
-            
-            echo '</div>'; // Cierre de grid-col (periodo actual)
-            
-            // ================= COLUMNA PERIODO ANTERIOR =================
-            echo '<div class="grid-col">';
-            
-            // --- MAIN QUERY TO GET PROFESSORS FOR THE PREVIOUS PERIOD ---
-            $sql = "SELECT solicitudes.*, facultad.nombre_fac_minb AS nombre_facultad, deparmanentos.depto_nom_propio AS nombre_departamento 
-                    FROM solicitudes 
-                    JOIN deparmanentos ON (deparmanentos.PK_DEPTO = solicitudes.departamento_id)
-                    JOIN facultad ON (facultad.PK_FAC = solicitudes.facultad_id)
-                    WHERE facultad_id = '$facultad_id' AND departamento_id = '$departamento_id' AND anio_semestre = '$periodo_anterior' and tipo_docente = '$tipo_docente' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL) 
-                    ORDER BY solicitudes.nombre ASC";
-            
-            $result = $conn->query($sql);
-            
-            // Si hay resultados para este tipo de docente en el periodo anterior, sumar al total
-            if ($result) {
-                $countAnterior = $result->num_rows;
-                if ($tipo_docente == 'Ocasional') {
-                    $totalProfesoresOcasionalAnterior += $countAnterior;
-                } elseif ($tipo_docente == 'Catedra') {
-                    $totalProfesoresCatedraAnterior += $countAnterior;
-                }
-            }
-            
-            echo "<div class='box-gray'>";
-// ================= COLUMNA PERIODO ANTERIOR =================
-echo '<div class="grid-col">';
-echo "<div class='periodo-info-container periodo-anterior-box'>"; // Use unified container and specific border class
-echo "<h5 class='periodo-title-h5'>"; // Use the new general title class
-echo "<i class='fas fa-history'></i>"; // Icon for previous period (style controlled by CSS)
-echo "<span class='periodo-label'>Período anterior:</span> "; // Consistent label
-echo "<span class='periodo-value'>" . htmlspecialchars($periodo_anterior) . "</span>"; // Period value
-echo "<span class='periodo-separator'>|</span>"; // Separator
-echo "<span class='vinculacion-label'>Vinculación:</span> "; // Consistent label
-echo "<span class='vinculacion-type'>" . $tipo_docente . "</span> - "; // Type of docente
-echo "<span class='semanas-badge'>" . (($tipo_docente === "Ocasional") ? $semanas_ocasant : $semanas_catant) . " semanas</span>"; // Weeks badge (using new class)
-echo "</h5>";
-// No button in this section
-echo "</div>"; // Close periodo-info-container
-echo '</div>'; // Close grid-col
-            
-            if ($result->num_rows > 0) {
-                echo "<table border='1'>
-                        <tr>
-                            <th rowspan='2'>Ítem</th>
-                            <th rowspan='2'>Cédula</th>
-                            <th rowspan='2'>Nombre</th>
-                          ";
-            
-                if ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra") {
-                    echo "<th colspan='2'>Dedicación</th>";
-                }
-            
-                echo "<th rowspan='2'>Puntos</th>";
-                echo "<th rowspan='2'>Proyec</th>";
-                echo "</tr>";
-            
-                if ($tipo_docente == "Ocasional") {
-                    echo "<tr><th>Pop</th><th>Reg</th></tr>";
-                } elseif ($tipo_docente == "Catedra") {
-                    echo "<tr><th>Pop</th><th>Reg</th></tr>";
-                }
-                
-                $item = 1;
-                $total_proyectant = 0;
-
-                while ($row = $result->fetch_assoc()) {
-                    $cedula = $row['cedula'];
-                    $cedulaEliminada = !in_array($cedula, $cedulasPeriodoActualPorTipo);
-                    $cedulaEstaEnOtroTipo = $cedulaEliminada && in_array($cedula, $cedulasGlobalesPeriodoActual);
-                    $tooltipText = '';
-                    
-                    if ($cedulaEstaEnOtroTipo) {
-                        $claseRoja = 'cedula-en-otro-tipo';
-                        $tooltipText = 'Cambio de vinculación para el periodo actual ('.$anio_semestre.')';
-                                $huboCambioVinculacion = true; // <-- ACTIVA LA BANDERA SI SE ENCUENTRA UN CAMBIO DE VINCULACIÓN
-
-                    } elseif ($cedulaEliminada) {
-                        $claseRoja = 'cedula-eliminada';
-                        $tooltipText = 'Profesor no vinculado para el periodo actual ('.$anio_semestre.')';
-                    } else {
-                        $claseRoja = '';
-                    }
-                    
-                    if ($cedulaEliminada) {
-                        $contadorRojos++;
-                        if ($tipo_docente == 'Ocasional') {
-                            $contadorRojosOc++;
-                        } else {
-                            $contadorRojosCa++;
-                        }
-                    }
-                    
-                    echo "<tr>";
-                    echo "<td>" . $item . "</td>";
-                    $titleAttribute = !empty($tooltipText) ? "title='" . htmlspecialchars($tooltipText) . "'" : '';
-                    echo "<td style='text-align: left;' class='$claseRoja' $titleAttribute>" . htmlspecialchars($cedula) . "</td>";
-                    echo "<td style='text-align: left;' class='$claseRoja' $titleAttribute>" . htmlspecialchars($row["nombre"]) . "</td>";
-            
-                    if ($tipo_docente == "Ocasional") {
-                        echo "<td>" . htmlspecialchars($row["tipo_dedicacion"]) . "</td>
-                              <td>" . htmlspecialchars($row["tipo_dedicacion_r"]) . "</td>";
-                    }
-                    if ($tipo_docente == "Catedra") {
-                        $horas = $row["horas"] == 0 ? "" : htmlspecialchars($row["horas"]);
-                        $horas_r = $row["horas_r"] == 0 ? "" : htmlspecialchars($row["horas_r"]);
-                        echo "<td>$horas</td><td>$horas_r</td>";
-                    }
-            
-                    echo "<td>" . $row["puntos"] . "</td>";
-                    
-                    // Cálculos de proyección para periodo anterior
-                   if ($tipo_docente == "Catedra") {   
-    //calculo catedra si $tipo_docente == "Catedra"
-   $asignacion_total= $row["puntos"]*$valor_puntoant *($row["horas"] + $row["horas_r"])*$semanas_catant;
-     
-         $mesescat = intval($semanas_catant / 4.33); // 4.33 semanas ≈ 1 mes
-
-    $asignacion_mes=$row["puntos"]*$valor_puntoant *($row["horas"] +$row["horas_r"])*4;
-    $prima_navidad = $asignacion_mes*$mesescat/12;
-    $indem_vacaciones = $asignacion_mes*$diasant/360;
-    $indem_prima_vacaciones = $indem_vacaciones*2/3;
-    $cesantias =($asignacion_total + $prima_navidad)/12;
-    $total_devengos=$asignacion_total + $prima_navidad+$indem_vacaciones+$indem_prima_vacaciones+$cesantias;
- //eps
-    if ($asignacion_mes < $smlvant){
-    $valor_base = ($smlvant * $diasant / 30) * 8.5 / 100;
-} else {
-    $valor_base = round($asignacion_total * 8.5 / 100, 0);
-}
-
-// Redondear al múltiplo de 100 más cercano
-$eps = round($valor_base, -2);
-        
-        //pension
-
-// Cálculo principal
-if ($asignacion_mes < $smlvant) {
-    $valor_base = (($smlvant * $diasant) / 30) * (12 / 100);
-} else {
-    $valor_base = round($asignacion_total * (12 / 100), 0);
-}
-
-// Redondear al múltiplo de 100 más cercano
-$afp = round($valor_base, -2);
-        
-        //arp
-        $porcentaje = 0.522 / 100;
-
-// Lógica del cálculo
-if ($asignacion_mes < $smlvant) {
-    $valor_base = (($smlvant * $diasant) / 30) * $porcentaje;
-} else {
-    $valor_base = round($asignacion_total * $porcentaje, 0);
-}
-
-// Redondeo al múltiplo de 100 más cercano
-$arl = round($valor_base, -2);
-    
-        //comfaucaua
-// Porcentaje a aplicar
-$porcentaje = 4 / 100;
-
-// Cálculo condicional
-if ($asignacion_mes < $smlvant) {
-    $valor_base = (($smlvant * $diasant) / 30) * $porcentaje;
-} else {
-    $valor_base = round($asignacion_total * $porcentaje, 0);
-}
-
-// Redondear al múltiplo de 100 más cercano
-$cajacomp = round($valor_base, -2);
-        
-        // icbf
-$porcentaje = 3 / 100;
-
-// Cálculo condicional
-if ($asignacion_mes < $smlvant) {
-    $valor_base = (($smlvant * $diasant) / 30) * $porcentaje;
-} else {
-    $valor_base = round($asignacion_total * $porcentaje, 0);
-}
-
-// Redondear al múltiplo de 100 más cercano (como REDONDEAR(...;-2) en Excel)
-$icbf = round($valor_base, -2);
-        $total_aportes= $eps +$afp+$arl+$cajacomp+$icbf;
-        $gran_total = $total_devengos+$total_aportes;
-    
- }
-    else {
-    
-    // si no  si ocasioan ::
- //calculo catedra si $tipo_docente <> "Catedra"
-    // Cálculo principal
-// Inicializar horas
-    $horas = 0;
-    $mesesocas = intval($semanas_ocasant / 4.33); // 4.33 semanas ≈ 1 mes
-    // Asegurarse que los índices existen y son iguales a "MT" o "TC"
-    if (($row["tipo_dedicacion"] == "MT") || ($row["tipo_dedicacion_r"] == "MT")) {
-        $horas = 20;
-    } elseif (($row["tipo_dedicacion"] == "TC") || ($row["tipo_dedicacion_r"] == "TC")) {
-        $horas = 40;
-    }
-
-    // Calculo de la asignación mensual y total
-    $asignacion_mes = $row["puntos"] * $valor_puntoant * ($horas / 40);
-    $asignacion_total = $asignacion_mes * $dias_ocasant / 30;
-    
-    
-    $prima_navidad = $asignacion_mes*$mesesocas/12;
-    $indem_vacaciones = $asignacion_mes*$dias_ocasant/360;
-    $indem_prima_vacaciones = $asignacion_mes*(2/3)*($dias_ocasant/360);
-    $cesantias = round(($asignacion_total + $prima_navidad) / 12);
-    $total_empleado=$asignacion_total + $prima_navidad+$indem_vacaciones+$indem_prima_vacaciones;
- //eps
-    $eps = round(($asignacion_total * 8.5) / 100);
-
-        //pension
-
-
-
-// Redondear al múltiplo de 100 más cercano
- $afp = round(($asignacion_total * 12) / 100);
-        
-       
-// Redondeo al múltiplo de 100 más cercano
-$arl =round(($asignacion_total * 0.522) / 100,-2);
-    
-        //comfaucaua
-
-// Redondear al múltiplo de 100 más cercano
-$cajacomp = round(($asignacion_total * 4) / 100,-2);
-        
-        // icbf
-
-// Redondear al múltiplo de 100 más cercano (como REDONDEAR(...;-2) en Excel)
-        $icbf = round(($asignacion_total * 3) / 100,-2);
-            $total_entidades=$cesantias+ $eps +$afp+$arl+$cajacomp+$icbf;
- 
-
-        $gran_total = $total_empleado+$total_entidades;
-    
-    }
-$title =
-    //"Variables base\n" .
-    //"Horas: " . $horas . "\n" .
-    //"Meses ocasionales: " . $mesesocas . "\n" .
-    //"Valor punto: $" . number_format($valor_puntoant, 0, ',', '.') . "\n" .
-    //"Semanas ocasional: " . $semanas_ocas . "\n" .
-    //"días: " . $dias_ocas . "\n\n" .
-
-    "Detalle salarial\n" .
-    "Asignación mensual: $" . number_format($asignacion_mes ?? 0, 0, ',', '.') . "\n" .
-    "Asignación total: $" . number_format($asignacion_total ?? 0, 0, ',', '.') . "\n" .
-    "Prima de Navidad: $" . number_format($prima_navidad ?? 0, 0, ',', '.') . "\n" .
-    "Indem. Vacaciones: $" . number_format($indem_vacaciones ?? 0, 0, ',', '.') . "\n" .
-    "Indem. Prima Vacaciones: $" . number_format($indem_prima_vacaciones ?? 0, 0, ',', '.') . "\n" .
-    "Cesantías: $" . number_format($cesantias ?? 0, 0, ',', '.') . "\n" .
-    ($tipo_docente == "Catedra" ? "Total devengos" : "Total empleado") . ": $" . number_format($total_empleado_mostrar ?? 0, 0, ',', '.') . "\n\n" .
-
-    "Aportes a entidades\n" .
-    "EPS: $" . number_format($eps ?? 0, 0, ',', '.') . "\n" .
-    "Pensión: $" . number_format($afp ?? 0, 0, ',', '.') . "\n" .
-    "ARL: $" . number_format($arl ?? 0, 0, ',', '.') . "\n" .
-    "Caja Compensación: $" . number_format($cajacomp ?? 0, 0, ',', '.') . "\n" .
-    "ICBF: $" . number_format($icbf ?? 0, 0, ',', '.') . "\n" .
-    ($tipo_docente == "Catedra" ? "Total aportes" : "Total entidades") . ": $" . number_format($total_entidades_mostrar ?? 0, 0, ',', '.') . "\n\n" .
-
-    "GRAN TOTAL: $" . number_format($gran_total ?? 0, 0, ',', '.');
-
-
-echo "<td title=\"" . htmlspecialchars($title) . "\">$" . number_format($gran_total / 1000000, 2) . " M</td>";
-    $total_proyectant += $gran_total;
-
-    echo "</tr>";
-    $item++;
-    
-}
-                
-                // Fila de subtotal
-                echo "<tr style='font-weight: bold; background-color: #f2f2f2;'>";
-                echo "<td colspan='".($tipo_usuario == 1 ? ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra" ? 6 : 4) : ($tipo_docente == "Ocasional" || $tipo_docente == "Catedra" ? 6 : 3))."'>Subtotal</td>";
-                echo "<td>$".number_format($total_proyectant/1000000, 2)." M</td>";
-                echo "</tr>";
-                echo "</table>";
-                
-                // Acumular el total proyectado por tipo de nómina para el periodo anterior
-                if ($tipo_docente == 'Ocasional') {
-                    $totalProyectadoOcasionalAnterior += $total_proyectant;
-                } elseif ($tipo_docente == 'Catedra') {
-                    $totalProyectadoCatedraAnterior += $total_proyectant;
-                }
-            } else {
-                echo "<p style='text-align: center;'>No se encontraron resultados para el periodo anterior.</p>";
-            }
-            $total_cosolidado_ant += $total_proyectant;
-            echo "</div>"; // Cierre de box-gray
-            echo '</div>'; // Cierre de grid-col (periodo anterior)
-            
-            echo '</div>'; // Cierre de grid-row (para este tipo de docente)
-        }
-        ?>
-    </div> <!-- Cierre de grid-container -->
-
-</div>    
-   
-   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.20/dist/js/bootstrap.bundle.min.js"></script>
-            
-
-
-<?php       // Función para obtener el cierreo no de departamento
-  
-// Calcular el porcentaje de cambio (manteniendo tus variables exactas)
-$diferencia = $total_consolidado - $total_cosolidado_ant;
-$porcentaje = ($total_cosolidado_ant != 0) 
-    ? round(($diferencia / $total_cosolidado_ant) * 100, 1) 
-    : 0;
-
-// Determinar color y flecha (con colores invertidos como solicitaste)
-if ($porcentaje > 0) {
-    $color = "danger"; // Rojo para incremento
-    $icono = "bi bi-arrow-up";
-    $texto = "Incremento";
-} elseif ($porcentaje < 0) {
-    $color = "success"; // Verde para decremento
-    $icono = "bi bi-arrow-down";
-    $texto = "Decremento";
-} else {
-    $color = "secondary"; // Gris
-    $icono = "bi bi-dash";
-    $texto = "Estable";
-}
-
-?>
-<div>
-    <div class="dashboard-profesores">
-       <h2 class="dashboard-title">
-    Análisis Comparativo (<?= $anio_semestre ?> vs <?= $periodo_anterior ?>)
-    <br>
-    Departamento: <?= mb_strimwidth(obtenerNombreDepartamento($_POST['departamento_id']), 0, 65, '...') ?>
-    / <?= mb_strimwidth(obtenerNombreFacultad($departamento_id), 0, 65, '...') ?>
-</h2>
-
-<div class="card-container">
-    <div class="card">
-        <?php
-        $diffOcasional = $totalProfesoresOcasional - $totalProfesoresOcasionalAnterior;
-        $percentageOcasional = ($totalProfesoresOcasionalAnterior != 0) ? ($diffOcasional / $totalProfesoresOcasionalAnterior) * 100 : 0;
-        $classOcasional = ($diffOcasional >= 0) ? 'positive-alert' : 'negative-favorable';
-
-        // Calcula la discrepancia para Ocasional
-        // Esto representa la cantidad de profesores que entran/salen de Ocasional por CAMBIO DE VINCULACIÓN
-        // (es decir, no son "nuevos" del todo ni "removidos" del todo, sino que cambiaron de Cátedra a Ocasional o viceversa)
-        $discrepanciaOcasional = $diffOcasional - ($contadorVerdesOc - $contadorRojosOc);
-        ?>
-        <div class="card-percentage <?= $classOcasional ?>">
-            <?= ($percentageOcasional >= 0 ? '+' : '') . number_format($percentageOcasional, 1) . '%' ?>
-        </div>
-        <h3 class="card-title">Profesores Ocasionales (<?= $anio_semestre ?>)</h3>
-        <div class="card-main-value">
-            <?= $totalProfesoresOcasional ?>
-            <span class="card-variation <?= $classOcasional ?>">
-                <?= ($diffOcasional >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffOcasional ?>
-            </span>
-        </div>
-        <div class="card-subtext">
-            <span class="new-count positive-alert">+<?= $contadorVerdesOc ?> nuevos</span>
-            <span class="removed-count negative-favorable">-<?= $contadorRojosOc ?> no continúan</span>
-            <?php if ($discrepanciaOcasional !== 0): // Solo muestra si hay una discrepancia real ?>
-                <span class="change-vinculacion">
-                    <?= ($discrepanciaOcasional > 0 ? '+' : '') . $discrepanciaOcasional ?> cambian vinculación
-                </span>
-            <?php endif; ?>
-            <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresOcasionalAnterior ?></span>
+            ?>
         </div>
     </div>
 
-    <div class="card">
-        <?php
-        $diffCatedra = $totalProfesoresCatedra - $totalProfesoresCatedraAnterior;
-        $percentageCatedra = ($totalProfesoresCatedraAnterior != 0) ? ($diffCatedra / $totalProfesoresCatedraAnterior) * 100 : 0;
-        $classCatedra = ($diffCatedra >= 0) ? 'positive-alert' : 'negative-favorable';
-
-        // Calcula la discrepancia para Cátedra
-        $discrepanciaCatedra = $diffCatedra - ($contadorVerdesCa - $contadorRojosCa);
-        ?>
-        <div class="card-percentage <?= $classCatedra ?>">
-            <?= ($percentageCatedra >= 0 ? '+' : '') . number_format($percentageCatedra, 1) . '%' ?>
-        </div>
-        <h3 class="card-title">Profesores Cátedra (<?= $anio_semestre ?>)</h3>
-        <div class="card-main-value">
-            <?= $totalProfesoresCatedra ?>
-            <span class="card-variation <?= $classCatedra ?>">
-                <?= ($diffCatedra >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffCatedra ?>
-            </span>
-        </div>
-        <div class="card-subtext">
-            <span class="new-count positive-alert">+<?= $contadorVerdesCa ?> nuevos</span>
-            <span class="removed-count negative-favorable">-<?= $contadorRojosCa ?> no continúan</span>
-            <?php if ($discrepanciaCatedra !== 0): // Solo muestra si hay una discrepancia real ?>
-                <span class="change-vinculacion">
-                    <?= ($discrepanciaCatedra > 0 ? '+' : '') . $discrepanciaCatedra ?> cambian vinculación
-                </span>
-            <?php endif; ?>
-            <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresCatedraAnterior ?></span>
+        <div class="unacauca-status-item p-3">
+            <h6 class="unacauca-status-label mb-2">Respuesta Vice-Académica:</h6>
+            <div class="unacauca-status-badge-container d-flex align-items-center">
+                <?php
+                if ($aceptacion_vra == 2) {
+                    echo "<span class='unacauca-status-badge status-accepted'><i class='fas fa-check-circle me-2'></i> Aceptado</span>";
+                } elseif ($aceptacion_vra == 1) {
+                    echo "<span class='unacauca-status-badge status-rejected'>Devuelto</span>
+                          <button class='btn unacauca-btn-icon btn-sm ms-2' data-bs-toggle='modal' data-bs-target='#modalObservacion' data-obs=\"" . htmlspecialchars($osbservacion_vra) . "\">
+                              <i class='fa-solid fa-info-circle fa-lg'></i>
+                          </button>";
+                } else {
+                    echo "<span class='unacauca-status-badge status-pending'><i class='fas fa-hourglass-half me-2'></i> Pendiente</span>";
+                }
+                ?>
+            </div>
         </div>
     </div>
+    <?php } ?>
 
-    <div class="card total-card">
-        <?php
-        $totalProfesoresTotal = $totalProfesoresOcasional + $totalProfesoresCatedra;
-        $totalProfesoresTotalAnterior = $totalProfesoresOcasionalAnterior + $totalProfesoresCatedraAnterior;
-        $diffTotalProfesores = $totalProfesoresTotal - $totalProfesoresTotalAnterior;
-        $percentageTotalProfesores = ($totalProfesoresTotalAnterior != 0) ? ($diffTotalProfesores / $totalProfesoresTotalAnterior) * 100 : 0;
-        $classTotalProfesores = ($diffTotalProfesores >= 0) ? 'positive-alert' : 'negative-favorable';
-        ?>
-        <div class="card-percentage <?= $classTotalProfesores ?>">
-            <?= ($percentageTotalProfesores >= 0 ? '+' : '') . number_format($percentageTotalProfesores, 1) . '%' ?>
+<div class="modal fade" id="modalObservacion" tabindex="-1" role="dialog" aria-labelledby="modalObservacionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document"> <div class="modal-content unacauca-modal-content">
+            <div class="modal-header unacauca-modal-header">
+                <h5 class="modal-title" id="modalObservacionLabel">Detalle de Observación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body unacauca-modal-body">
+                <p id="observacionContent" class="unacauca-observation-text text-break"></p>
+            </div>
+            <div class="modal-footer unacauca-modal-footer">
+                <button type="button" class="btn btn-secondary unacauca-btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
         </div>
-        <h3 class="card-title">Total Profesores (<?= $anio_semestre ?>)</h3>
-        <div class="card-main-value">
-            <?= $totalProfesoresTotal ?>
-            <span class="card-variation <?= $classTotalProfesores ?>">
-                <?= ($diffTotalProfesores >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . $diffTotalProfesores ?>
-            </span>
-        </div>
-        <div class="card-subtext">
-            <span class="previous-count">Anterior (<?= $periodo_anterior ?>): <?= $totalProfesoresTotalAnterior ?></span>
+    </div>
+</div>
+    <div id="myModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content unacauca-modal-content">
+                <div class="modal-header unacauca-modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Información Adicional</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body unacauca-modal-body">
+                    <form id="modalForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="num_oficio" class="form-label">Número de Oficio</label>
+                                <input type="text" class="form-control unacauca-input" id="num_oficio" name="num_oficio" value="<?php echo obtenerTRDDepartamento($departamento_id) . '/'; ?>" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="fecha_oficio" class="form-label">Fecha de Oficio</label>
+                                <input type="date" class="form-control unacauca-input" id="fecha_oficio" name="fecha_oficio" value="<?php echo date('Y-m-d', strtotime('next Monday', strtotime(date('Y-m-d')))); ?>" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="elaboro" class="form-label">Jefe de Departamento<sup>*</sup></label>
+                            <input type="text" class="form-control unacauca-input" id="elaboro" name="elaboro" value="<?php echo $profe_en_cargo; ?>" placeholder="Ej. Pedro Perez" required>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="acta" class="form-label">Número de Acta<sup>*</sup></label>
+                                <input type="text" class="form-control unacauca-input" id="acta" name="acta" placeholder="Ej. No. 02" value="<?php echo $num_acta; ?>" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="fecha_acta" class="form-label">Fecha del Acta<sup>*</sup></label>
+                                <input type="date" class="form-control unacauca-input" id="fecha_acta" name="fecha_acta" value="<?php echo $fecha_acta; ?>" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4 unacauca-folio-section">
+                            <h6 class="section-title text-unicauca-primary fw-bold mb-3">Distribución de Folios</h6>
+                            <div class="row mb-2 align-items-center">
+                                <div class="col-md-8 text-start">
+                                    <label for="folios1" class="mb-0 label-italic">FOR-59. Acta de Selección</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" class="form-control folio-input unacauca-input" id="folios1" name="folios1" value="1" min="0" oninput="updateFoliosTotal()" required>
+                                </div>
+                            </div>
+                            <div class="row mb-2 align-items-center">
+                                <div class="col-md-8 text-start">
+                                    <label for="folios2" class="mb-0 label-italic">FOR 45. Revisión Requisitos</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" class="form-control folio-input unacauca-input" id="folios2" name="folios2" value="<?php echo $totalItems; ?>" min="0" oninput="updateFoliosTotal()" required>
+                                </div>
+                            </div>
+                            <div class="row mb-2 align-items-center">
+                                <div class="col-md-8 text-start">
+                                    <label for="folios3" class="mb-0 label-italic">Otros: (hojas de vida y actualizaciones)</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" class="form-control folio-input unacauca-input" id="folios3" name="folios3"
+                                           placeholder="0" min="0" oninput="updateFoliosTotal()"
+                                           onblur="if(this.value === '') this.value = 0;">
+                                </div>
+                            </div>
+                            <div class="mt-3 unacauca-total-folios">
+                                <label class="label-italic">Total de Folios:
+                                    <span id="totalFoliosDisplay" class="label-italic">
+                                        <strong><?php echo $totalItems + 1; ?></strong>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <input type="hidden" id="folios" name="folios">
+                    </form>
+                </div>
+               <div class="modal-footer unacauca-modal-footer">
+    <button type="button" class="btn btn-secondary unacauca-btn-secondary modal-close-btn" data-bs-dismiss="modal">Cerrar</button>
+    <button type="button" class="btn btn-primary unacauca-btn-primary modal-submit-btn" onclick="submitForm()">Enviar</button>
+</div>
+            </div>
         </div>
     </div>
 </div>
 
-        <div class="card-container">
-            <div class="card">
-                <?php
-                $diffProyectadoOcasional = $totalProyectadoOcasional - $totalProyectadoOcasionalAnterior;
-                $percentageProyectadoOcasional = ($totalProyectadoOcasionalAnterior != 0) ? ($diffProyectadoOcasional / $totalProyectadoOcasionalAnterior) * 100 : 0;
-                $classProyectadoOcasional = ($diffProyectadoOcasional >= 0) ? 'positive-alert' : 'negative-favorable';
-                ?>
-                <div class="card-percentage <?= $classProyectadoOcasional ?>">
-                    <?= ($percentageProyectadoOcasional >= 0 ? '+' : '') . number_format($percentageProyectadoOcasional, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Proyección Ocasional (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    $<?= number_format($totalProyectadoOcasional, 0, ',', '.') ?>
-                    <span class="card-variation <?= $classProyectadoOcasional ?>">
-                        <?= ($diffProyectadoOcasional >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diffProyectadoOcasional, 0, ',', '.') ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): $<?= number_format($totalProyectadoOcasionalAnterior, 0, ',', '.') ?></span>
-                </div>
-            </div>
-
-            <div class="card">
-                <?php
-                $diffProyectadoCatedra = $totalProyectadoCatedra - $totalProyectadoCatedraAnterior;
-                $percentageProyectadoCatedra = ($totalProyectadoCatedraAnterior != 0) ? ($diffProyectadoCatedra / $totalProyectadoCatedraAnterior) * 100 : 0;
-                $classProyectadoCatedra = ($diffProyectadoCatedra >= 0) ? 'positive-alert' : 'negative-favorable';
-                ?>
-                <div class="card-percentage <?= $classProyectadoCatedra ?>">
-                    <?= ($percentageProyectadoCatedra >= 0 ? '+' : '') . number_format($percentageProyectadoCatedra, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Proyección Cátedra (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    $<?= number_format($totalProyectadoCatedra, 0, ',', '.') ?>
-                    <span class="card-variation <?= $classProyectadoCatedra ?>">
-                        <?= ($diffProyectadoCatedra >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diffProyectadoCatedra, 0, ',', '.') ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): $<?= number_format($totalProyectadoCatedraAnterior, 0, ',', '.') ?></span>
-                </div>
-            </div>
-
-            <div class="card total-card">
-                <?php
-                $totalProyectadoTotal = $totalProyectadoOcasional + $totalProyectadoCatedra;
-                $totalProyectadoTotalAnterior = $totalProyectadoOcasionalAnterior + $totalProyectadoCatedraAnterior;
-                $diffTotalProyectado = $totalProyectadoTotal - $totalProyectadoTotalAnterior;
-                $percentageTotalProyectado = ($totalProyectadoTotalAnterior != 0) ? ($diffTotalProyectado / $totalProyectadoTotalAnterior) * 100 : 0;
-                $classTotalProyectado = ($diffTotalProyectado >= 0) ? 'positive-alert' : 'negative-favorable';
-                ?>
-                <div class="card-percentage <?= $classTotalProyectado ?>">
-                    <?= ($percentageTotalProyectado >= 0 ? '+' : '') . number_format($percentageTotalProyectado, 1) . '%' ?>
-                </div>
-                <h3 class="card-title">Total Proyectado (<?= $anio_semestre ?>)</h3>
-                <div class="card-main-value">
-                    $<?= number_format($totalProyectadoTotal, 0, ',', '.') ?>
-                    <span class="card-variation <?= $classTotalProyectado ?>">
-                        <?= ($diffTotalProyectado >= 0 ? '<i class="fas fa-arrow-up"></i> +' : '<i class="fas fa-arrow-down"></i> ') . number_format($diffTotalProyectado, 0, ',', '.') ?>
-                    </span>
-                </div>
-                <div class="card-subtext">
-                    <span class="previous-count">Anterior (<?= $periodo_anterior ?>): $<?= number_format($totalProyectadoTotalAnterior, 0, ',', '.') ?></span>
-                </div>
-            </div>
-        </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ... (Tu código existente para otros modales o funciones) ...
+
+    const observacionModal = document.getElementById('modalObservacion');
+
+    if (observacionModal) {
+        observacionModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget; // El botón que disparó el modal
+            let observationText = button.getAttribute('data-obs'); // Obtiene el texto del atributo data-obs
+
+            // *** EL TRUCO ESTÁ AQUÍ ***
+            // Paso 1: Crea un elemento DIV temporal para decodificar cualquier entidad HTML.
+            // Esto convierte "&lt;br /&gt;" a "<br />", "&amp;" a "&", etc.
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = observationText; // Se usa innerHTML para que el navegador decodifique
+            let decodedContent = tempDiv.textContent || tempDiv.innerText || ""; // Obtiene el texto decodificado como texto plano
+
+            // Paso 2: Ahora que tenemos el texto decodificado (con '\n' si existían o con '<br />' si la DB los guardó así),
+            // convierte cualquier '\n' (salto de línea real) a la etiqueta HTML <br />.
+            // Si tu base de datos ya guarda <br />, esta línea no hará cambios en ellos.
+            const finalHtmlToDisplay = decodedContent.replace(/\n/g, '<br>');
+
+            // Paso 3: Asigna el resultado final al innerHTML del párrafo del modal.
+            // Esto hará que <br /> se interprete como un salto de línea HTML.
+            const modalBodyP = observacionModal.querySelector('#observacionContent');
+            modalBodyP.innerHTML = finalHtmlToDisplay;
+        });
+    }
+
+});
+    $(document).ready(function() {
+        // Script for selectAll and individualCheckbox
+        $('#selectAll').change(function() {
+            const isChecked = $(this).is(':checked');
+            $('.individualCheckbox').prop('checked', isChecked).trigger('change');
+        });
+
+        $('.individualCheckbox').change(function() {
+            const form = $(this).closest('form');
+            $.ajax({
+                url: 'update_visto_bueno.php',
+                type: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    console.log('Estado actualizado exitosamente.');
+                },
+                error: function() {
+                    alert('Error al actualizar el estado.');
+                }
+            });
+        });
+
+        // The tooltip initialization using jQuery for Bootstrap 4 was here: $('[data-toggle="tooltip"]').tooltip();
+        // It has been replaced by the vanilla JS Bootstrap 5 initialization in DOMContentLoaded.
+
+        // The observation modal logic using jQuery was here:
+        // $('#modalObservacion').on('show.bs.modal', function(event) { ... });
+        // It has been replaced by vanilla JS in DOMContentLoaded for Bootstrap 5.
+    });
+
+    // This jQuery listener for myModal 'shown.bs.modal' is now handled by vanilla JS in DOMContentLoaded
+    // $('#myModal').on('shown.bs.modal', function (e) {
+    //     updateFoliosTotal();
+    // });
+
+    // The functions below (`eliminarRegistros` and `reimprOficio_depto`)
+    
+</script>
 
 
+<script>
+    $(document).ready(function() {
+        // Script for selectAll and individualCheckbox
+        $('#selectAll').change(function() {
+            const isChecked = $(this).is(':checked');
+            $('.individualCheckbox').prop('checked', isChecked).trigger('change');
+        });
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+        $('.individualCheckbox').change(function() {
+            const form = $(this).closest('form');
+            $.ajax({
+                url: 'update_visto_bueno.php',
+                type: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    console.log('Estado actualizado exitosamente.');
+                },
+                error: function() {
+                    alert('Error al actualizar el estado.');
+                }
+            });
+        });
 
+        // Bootstrap Tooltip Initialization
+  $('[data-toggle="tooltip"]').tooltip({
+        html: true,
+        placement: 'auto', // Elige automáticamente la mejor posición
+        fallbackPlacement: 'flip', // Si no cabe, invierte la posición
+        boundary: 'viewport'
+    });
+        // JavaScript for handling the observation modal
+        // Listen for the 'show.bs.modal' event on the observation modal
+        $('#modalObservacion').on('show.bs.modal', function(event) {
+            // Get the button that triggered the modal
+            var button = $(event.relatedTarget);
 
-    </body>
+            // Extract the observation from the 'data-obs' attribute of that button
+            var observation = button.data('obs');
+
+            // Debugging: Log the observation to the console
+            console.log("Observation received:", observation);
+
+            // Get the modal itself
+            var modal = $(this);
+
+            // Find the paragraph where the observation should be displayed
+            // Use .text() for plain text. If observations contain HTML (e.g., <br>), use .html()
+            modal.find('#textoObservacion').text(observation);
+
+            // Alternative if .text() is not working or if you suspect HTML issues:
+            // modal.find('#textoObservacion').html(observation);
+            // If observation might have line breaks, ensure the CSS 'white-space: pre-wrap;' is applied to #textoObservacion
+        });
+    });
+</script>
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const fechaOficioInput = document.getElementById('fecha_oficio');
+        let today = new Date();
+        let day = today.getDay();
+
+        // If today is Saturday (6) or Sunday (0), adjust date to next Monday
+        if (day === 6) { // Saturday
+            today.setDate(today.getDate() + 2);
+        } else if (day === 0) { // Sunday
+            today.setDate(today.getDate() + 1);
+        }
+
+        // Format date to YYYY-mm-dd for date input value
+        let year = today.getFullYear();
+        let month = String(today.getMonth() + 1).padStart(2, '0');
+        let date = String(today.getDate()).padStart(2, '0');
+        let formattedDate = `${year}-${month}-${date}`;
+
+        fechaOficioInput.value = formattedDate;
+    });
+</script>
+           
+<?php
+// Cerrar la conexión a la base de datos
+$conn->close();
+?>
+    </div>    
+            
+
+<script>
+    document.getElementById('confirmForm').addEventListener('submit', function() {
+        setTimeout(function() {
+            location.reload();
+        }, 3000); // Espera 3 segundos antes de recargar la página
+    });
+</script>
+    <script>
+    // Script para cerrar el modal automáticamente después de enviar el formulario
+    $('#oficioForm').on('submit', function() {
+        $('#oficioModal').modal('hide');  // Cerrar el modal
+    });
+
+    $('#oficioFacultadForm').on('submit', function() {
+        $('#oficioModal').modal('hide');  // Cerrar el modal
+    });
+</script>
+   </div>
+</body>
+    
 </html>

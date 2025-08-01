@@ -80,7 +80,9 @@ $sqle = "SELECT
     facultad.PK_FAC,
     solicitudes.anexa_hv_docente_nuevo, solicitudes.actualiza_hv_antiguo, 
     solicitudes.estado, solicitudes.novedad,
-    '' AS detalle_novedad  
+    '' AS detalle_novedad, 
+    solicitudes.s_observacion AS observación_novedad,
+    solicitudes.tipo_reemplazo AS tipo_de_novedad
 FROM 
     solicitudes 
 JOIN 
@@ -126,7 +128,9 @@ SELECT
     facultad.PK_FAC,
     solicitudes.anexa_hv_docente_nuevo, solicitudes.actualiza_hv_antiguo, 
     solicitudes.estado, solicitudes.novedad,
-    '' AS detalle_novedad  
+    '' AS detalle_novedad,
+     solicitudes.s_observacion AS observación_novedad,
+    solicitudes.tipo_reemplazo AS tipo_de_novedad
 FROM 
     solicitudes 
 JOIN 
@@ -169,21 +173,21 @@ if ($result->num_rows > 0) {
     $headers = [
         'Semestre', 'Facultad', 'Departamento', 'id_depto', 'Sede', 'Cédula', 'Nombre', 
         'Tipo Docente', 'Dedicación', 'Horas', 'Estado_fac', 'Envio_fac',
-        'Estado_vra', 'ID_FAC', 'AnexaHV', 'ActualizaHV', 'Estado', 'Novedad', 'Detalle Novedad'
+        'Estado_vra', 'ID_FAC', 'AnexaHV', 'ActualizaHV', 'Estado', 'Novedad', 'Detalle Novedad', 'Observacion Novedad', 'Tipo Novedad'
     ];
 
     // Escribir los encabezados
     $sheet->fromArray($headers, NULL, 'A1');
 
     // Aplicar estilos a los encabezados
-    $sheet->getStyle('A1:R1')->applyFromArray($headerStyle);
+    $sheet->getStyle('A1:U1')->applyFromArray($headerStyle);
 
     // Establecer el ancho de las columnas
     $columnWidths = [
         'A' => 20, 'B' => 30, 'C' => 15, 'D' => 20, 'E' => 15, 
         'F' => 30, 'G' => 20, 'H' => 20, 'I' => 15, 'J' => 15, 
         'K' => 15, 'L' => 15, 'M' => 10, 'N' => 10, 'O' => 10,
-        'P' => 15, 'Q' => 15, 'R' => 15 , 'S' => 45 // Ancho mayor para el detalle de novedades
+        'P' => 15, 'Q' => 15, 'R' => 15 , 'S' => 45, 'T' => 35, 'U' => 15 // Ancho mayor para el detalle de novedades
     ];
     foreach ($columnWidths as $column => $width) {
         $sheet->getColumnDimension($column)->setWidth($width);
