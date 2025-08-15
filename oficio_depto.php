@@ -65,18 +65,7 @@ $folios = isset($_GET['folios']) && trim($_GET['folios']) !== '' ? trim($_GET['f
 $decano = obtenerDecano($facultad_id);
  // Función para obtener el nombre del departamento
     
- // Función para obtener el nombre del departamento
-    function obtenerNombreDepartamento($departamento_id) {
-        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-        $sql = "SELECT depto_nom_propio FROM deparmanentos WHERE PK_DEPTO = '$departamento_id'";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            return $row['depto_nom_propio'];
-        } else {
-            return "Departamento Desconocido";
-        }
-    }
+
 $departamentos = [
     1 => ['encabezado' => 'img/encabezado_artes_plasticas.png', 'pie' => 'img/pieartes.png'],
     2 => ['encabezado' => 'img/encabezado_diseno.png', 'pie' => 'img/pieartes.png'],

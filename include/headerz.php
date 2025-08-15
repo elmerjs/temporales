@@ -8,7 +8,7 @@ require 'cn.php';
 
 if (isset($_SESSION['name'])) {
     $nombre_sesion = $_SESSION['name'];
-        $fk_fac_user = $_SESSION['fk_fac_user'];
+$fk_fac_user = isset($_SESSION['fk_fac_user']) ? $_SESSION['fk_fac_user'] : null;
     
 
 } else {

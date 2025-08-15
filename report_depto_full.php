@@ -187,17 +187,7 @@ GROUP BY
 
 // Total de facultades
 $total_facultades = count($facultades);
-function obtenerTRDFacultad($facultad_id) {
-        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-        $sql = "SELECT trd_fac FROM facultad WHERE PK_FAC = '$facultad_id'";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            return $row['trd_fac'];
-        } else {
-            return "FAC Desconocido";
-        }
-    }
+
 function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse de la fac..a la vra
         $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
         $sql = "SELECT fp_estado FROM fac_periodo WHERE fp_fk_fac = '$facultad_id' and fp_periodo ='$anio_semestre' ";
