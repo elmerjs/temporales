@@ -164,6 +164,9 @@ $stmt_check_vigencia->close();
 // Mostrar la lista de periodos existentes
 $sql_existing_periods = "SELECT 
     p.nombre_periodo AS periodo, 
+    p.plazo_jefe,
+    p.plazo_fac,
+    p.plazo_vra,
     COUNT(dp.fk_depto_dp) AS total_deptos, 
     COUNT(CASE WHEN dp.dp_estado_total = 1 AND fp.fp_acepta_vra = 2 THEN 1 END) AS processed_deptos, 
     p.estado_periodo, 
@@ -183,6 +186,9 @@ JOIN
     fac_periodo fp ON fp.fp_fk_fac = d.FK_FAC AND fp.fp_periodo = dp.periodo
 GROUP BY 
     p.nombre_periodo, 
+    p.plazo_jefe,
+    p.plazo_fac,
+    p.plazo_vra,
     p.estado_periodo, 
     p.estado_novedad,
     p.inicio_sem, 
@@ -516,7 +522,7 @@ $result_existing_periods = $conn->query($sql_existing_periods);
     <div class="container mt-5">
         <h1 class="text-center mb-4">Gestión de Periodos</h1>
 
- <form method="POST" action="" class="mb-5">
+<form method="POST" action="" class="mb-5">
     <div class="d-flex justify-content-between align-items-end flex-wrap" style="gap: 10px;">
         <!-- Input + Botón -->
         <div class="d-flex align-items-end" style="gap: 10px;">
@@ -530,12 +536,18 @@ $result_existing_periods = $conn->query($sql_existing_periods);
             </div>
         </div>
 
-        <!-- Enlace al otro módulo -->
-        <div>
-            <a href="http://192.168.42.175/labor/dt_ss/index.php" class="btn btn-outline-secondary" target="_blank">Módulo - Resoluciones CIARP</a>
+        <!-- Enlaces a otros módulos -->
+        <div class="d-flex" style="gap: 10px;">
+            <a href="http://192.168.42.175/labor/dt_ss/index.php" class="btn btn-outline-secondary" target="_blank">
+                Módulo - Resoluciones CIARP
+            </a>
+            <a href="vicerrectoria/listar_vicerrectores.php" class="btn btn-outline-primary">
+                <i class="fas fa-user-tie"></i> Gestión de Vicerrectores
+            </a>
         </div>
     </div>
 </form>
+        
 
 
 
@@ -550,6 +562,7 @@ $result_existing_periods = $conn->query($sql_existing_periods);
             <th>Fin Cátedra</th>
             <th>Inicio Ocasional</th>
             <th>Fin Ocasional</th>
+            <th>Plazos</th>
             <th>Valor Punto</th>
      <!--       <th>Estado</th>
             <th>Est. Novedad</th>-->
@@ -579,6 +592,19 @@ $result_existing_periods = $conn->query($sql_existing_periods);
                 <td class="text-center editable-date" data-field="fin_sem_oc" data-periodo="<?php echo htmlspecialchars($row['periodo']); ?>">
                     <?php echo !empty($row['fecha_fin_ocasional']) ? date('d/m/Y', strtotime($row['fecha_fin_ocasional'])) : 'No definida'; ?>
                 </td>
+                 <td class="text-center">
+                <!-- Botón que abre el modal -->
+                <button type="button" class="btn btn-sm btn-warning" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#modalPlazos" 
+                        data-nombre="<?php echo $row['periodo']; ?>"
+                        data-jefe="<?php echo $row['plazo_jefe']; ?>"
+                        data-fac="<?php echo $row['plazo_fac']; ?>"
+                        data-vra="<?php echo $row['plazo_vra']; ?>">
+                    <i class="fas fa-calendar-alt"></i> Plazos
+                </button>
+            </td>
+
                 <td class="text-center editable" data-field="valor_punto" data-periodo="<?php echo htmlspecialchars($row['periodo']); ?>">
                     <?php echo isset($row['valor_punto']) ? '$' . number_format($row['valor_punto'], 0, ',', '.') : 'No definido'; ?>
                 </td>
@@ -593,7 +619,7 @@ $result_existing_periods = $conn->query($sql_existing_periods);
     </span>
 </td>-->
                 
-                <td>
+        <td class="text-center">
     <!-- Botón Eliminar (condicional) -->
     <form method="POST" action="" style="display:inline-block; margin-right:5px;">
         <input type="hidden" name="periodo" value="<?php echo $row['periodo']; ?>">
@@ -606,46 +632,48 @@ $result_existing_periods = $conn->query($sql_existing_periods);
     
     <!-- Botón Abrir/Cerrar -->
     <form method="POST" action="" style="display:inline-block;">
-        <input type="hidden" name="periodo" value="<?php echo $row['periodo']; ?>">
-        <button type="submit" name="accion" value="<?php echo $row['estado_periodo'] == 1 ? 'abrir' : 'cerrar'; ?>" 
-                class="btn btn-sm estado-toggle <?php echo $row['estado_periodo'] == 1 ? 'btn-abrir' : 'btn-cerrar'; ?>">
-            <i class="fas <?php echo $row['estado_periodo'] == 1 ? 'fa-lock-open' : 'fa-lock'; ?>"></i>
-            <?php echo $row['estado_periodo'] == 1 ? 'Abrir' : 'Cerrar'; ?>
-        </button>
-    </form>
-</td>
-              <td>
-    <form method="POST" action="" style="display:inline-block;">
-        <input type="hidden" name="periodo" value="<?php echo $row['periodo']; ?>">
-        <button type="submit" name="accion" value="<?php echo $row['estado_novedad'] == 1 ? 'abrirnov' : 'cerrarnov'; ?>" 
-                class="btn btn-sm estado-novedad <?php echo $row['estado_novedad'] == 1 ? 'btn-abrir-nov' : 'btn-cerrar-nov'; ?>">
-            <i class="fas <?php echo $row['estado_novedad'] == 1 ? 'fa-envelope-open-text' : 'fa-envelope'; ?>"></i>
-            <?php echo $row['estado_novedad'] == 1 ? 'Abrir Nov' : 'Cerrar Nov'; ?>
-        </button>
-    </form>
-</td>
-                <td>
-                    <!-- Botón para abrir el modal -->
-                    <button 
-                        type="button" 
-                        class="btn btn-primary btn-sm cargar-aspirantes-btn" 
-                        data-bs-toggle="modal" 
-                        data-bs-target="#cargarAspirantesModal" 
-                        data-periodo="<?php echo    $row['periodo']; ?>">
-                        Cargar Aspirantes
-                    </button>
-                    
-                    <!-- Botón para abrir el modal de Cargar Puntos -->
-    <button 
-        type="button" 
-        class="btn btn-success btn-sm cargar-puntos-btn" 
-        data-bs-toggle="modal" 
-        data-bs-target="#cargarPuntosModal" 
-        data-periodo="<?php echo $row['periodo']; ?>">
-        Cargar Puntos
-    </button>
+                <input type="hidden" name="periodo" value="<?php echo $row['periodo']; ?>">
+                <button type="submit" name="accion" value="<?php echo $row['estado_periodo'] == 1 ? 'abrir' : 'cerrar'; ?>" 
+                        class="btn btn-sm estado-toggle <?php echo $row['estado_periodo'] == 1 ? 'btn-abrir' : 'btn-cerrar'; ?>">
+                    <i class="fas <?php echo $row['estado_periodo'] == 1 ? 'fa-lock-open' : 'fa-lock'; ?>"></i>
+                    <?php echo $row['estado_periodo'] == 1 ? 'Abrir' : 'Cerrar'; ?>
+                </button>
+            </form>
+        </td>
 
-                </td>
+       <td style="text-align:center;">
+                <form method="POST" action="" style="display:inline-block;">
+                    <input type="hidden" name="periodo" value="<?php echo $row['periodo']; ?>">
+                    <button type="submit" name="accion" value="<?php echo $row['estado_novedad'] == 1 ? 'abrirnov' : 'cerrarnov'; ?>" 
+                            class="btn btn-sm estado-novedad <?php echo $row['estado_novedad'] == 1 ? 'btn-abrir-nov' : 'btn-cerrar-nov'; ?>">
+                        <i class="fas <?php echo $row['estado_novedad'] == 1 ? 'fa-envelope-open-text' : 'fa-envelope'; ?>"></i>
+                        <?php echo $row['estado_novedad'] == 1 ? 'Abrir Nov' : 'Cerrar Nov'; ?>
+                    </button>
+                </form>
+            </td>
+
+                <td class="text-center">
+                <!-- Botón para abrir el modal -->
+                <button 
+                    type="button" 
+                    class="btn btn-primary btn-sm cargar-aspirantes-btn" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#cargarAspirantesModal" 
+                    data-periodo="<?php echo $row['periodo']; ?>">
+                    Cargar Aspirantes
+                </button>
+
+                <!-- Botón para abrir el modal de Cargar Puntos -->
+                <button 
+                    type="button" 
+                    class="btn btn-success btn-sm cargar-puntos-btn" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#cargarPuntosModal" 
+                    data-periodo="<?php echo $row['periodo']; ?>">
+                    Cargar Puntos
+                </button>
+            </td>
+
             </tr>
         <?php } ?>
     </tbody>
@@ -753,6 +781,66 @@ $result_existing_periods = $conn->query($sql_existing_periods);
     </div>
 </div>
 
+    
+    
+    
+<!-- Modal Bootstrap  para plazos -->
+<div class="modal fade" id="modalPlazos" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="actualizar_plazos.php">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Gestión de Plazos - <span id="tituloPeriodo"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <!-- Campo oculto con el nombre del periodo -->
+            <input type="hidden" name="nombre_periodo" id="nombre_periodo">
+
+            <div class="mb-3">
+                <label for="plazo_jefe" class="form-label">Plazo Jefes de Departamento</label>
+                <input type="date" class="form-control" name="plazo_jefe" id="plazo_jefe">
+            </div>
+            <div class="mb-3">
+                <label for="plazo_fac" class="form-label">Plazo Facultades</label>
+                <input type="date" class="form-control" name="plazo_fac" id="plazo_fac">
+            </div>
+            <div class="mb-3">
+                <label for="plazo_vra" class="form-label">Plazo VRA</label>
+                <input type="date" class="form-control" name="plazo_vra" id="plazo_vra">
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" name="guardar_plazos" class="btn btn-primary">Guardar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+    
+    
+    
+<!-- Script para pasar datos al modal  plaoos-->
+<script>
+var modalPlazos = document.getElementById('modalPlazos');
+modalPlazos.addEventListener('show.bs.modal', function (event) {
+  var button = event.relatedTarget;
+
+  var nombre = button.getAttribute('data-nombre');
+  var jefe = button.getAttribute('data-jefe');
+  var fac = button.getAttribute('data-fac');
+  var vra = button.getAttribute('data-vra');
+
+  // Pasar valores al modal
+  modalPlazos.querySelector('#nombre_periodo').value = nombre;
+  modalPlazos.querySelector('#tituloPeriodo').innerText = nombre;
+  modalPlazos.querySelector('#plazo_jefe').value = jefe;
+  modalPlazos.querySelector('#plazo_fac').value = fac;
+  modalPlazos.querySelector('#plazo_vra').value = vra;
+});
+</script>
+    
 <script>
 $(document).ready(function() {
     // Manejar clic en celdas editables

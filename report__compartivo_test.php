@@ -1883,8 +1883,8 @@ max-width: 1600px;margin: 0 auto;
     $prof_anterior = $data['total_profesores_anterior'];
     $diff_prof = $prof_actual - $prof_anterior;
     $porc_prof = ($prof_anterior != 0) ? (abs($diff_prof) / $prof_anterior * 100) : 0;
-    $color_prof = ($diff_prof >= 0) ? '#e74c3c' : '#27ae60';
-    $icon_prof = ($diff_prof >= 0) ? '▲' : '▼';
+    $color_prof = ($diff_prof < 0) ? '#e74c3c' : '#27ae60';
+    $icon_prof = ($diff_prof > 0) ? '▲' : '▼';
 
     // Calcular diferencias para valor proyectado
     $valor_actual = $data['gran_total_ajustado_actual'];
@@ -3108,20 +3108,20 @@ if (!empty($combined_data)) {
         $class_prof = '';
         if ($diff_prof > 0) {
             $arrow_prof = '&#x25B2;'; // Flecha arriba
-            $class_prof = 'diff-bad'; // ROJO: Más profesores es MALO
+            $class_prof = 'diff-good'; // ROJO: Más profesores es MALO
         } elseif ($diff_prof < 0) {
             $arrow_prof = '&#x25BC;'; // Flecha abajo
-            $class_prof = 'diff-good'; // VERDE: Menos profesores es BUENO
+            $class_prof = 'diff-bad'; // VERDE: Menos profesores es BUENO
         }
 
         $arrow_horas = '';
         $class_horas = '';
         if ($diff_horas > 0) {
             $arrow_horas = '&#x25B2;'; // Flecha arriba
-            $class_horas = 'diff-bad'; // ROJO: Más horas es MALO
+            $class_horas = 'diff-good'; // ROJO: Más horas es MALO
         } elseif ($diff_horas < 0) {
             $arrow_horas = '&#x25BC;'; // Flecha abajo
-            $class_horas = 'diff-good'; // VERDE: Menos horas es BUENO
+            $class_horas = 'diff-bad'; // VERDE: Menos horas es BUENO
         }
 
         $arrow_proy = '';
@@ -3225,7 +3225,7 @@ echo "</div>"; // cierre unicauca-container
   --unicauca-gray-dark: #dee2e6;
   --unicauca-text: #212529;
   --unicauca-text-light: #6c757d;
-  --unicauca-success: #28a745;
+  --unicauca-success: #0d6efd;
   --unicauca-danger: #dc3545;
   --unicauca-warning: #ffc107;
 
@@ -3357,7 +3357,7 @@ echo "</div>"; // cierre unicauca-container
 }
 
 .diff-good::before {
-  content: "↓"; /* Flecha hacia arriba */
+  content: "↑"; /* Flecha hacia arriba */
   position: absolute;
   left: 2px;
   top: 50%;
@@ -3374,7 +3374,7 @@ echo "</div>"; // cierre unicauca-container
 }
 
 .diff-bad::before {
-  content: "↑"; /* Flecha hacia abajo */
+  content: "↓"; /* Flecha hacia abajo */
   position: absolute;
   left: 2px;
   top: 50%;

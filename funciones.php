@@ -1,34 +1,53 @@
 <?php
 
-
-             // Función para obtener el nombre de la facultad
-    function obtenerIdFacultad($departamento_id)  {
-        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-        $sql = "SELECT deparmanentos.FK_FAC  FROM deparmanentos WHERE PK_DEPTO = '$departamento_id'";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            return $row['FK_FAC'];
-        } else {
-            return "Departamento Desconocido";
-        }
+function obtenerVicerrectorActivo() {
+    global $conn;
+    
+    $sql = "SELECT * FROM vicerrectores WHERE activo = TRUE LIMIT 1";
+    $result = $conn->query($sql);
+    
+    if ($result->num_rows === 0) {
+        return false; // No hay vicerrector activo
     }
+    
+    return $result->fetch_assoc();
+}
 
-    // Función para obtener el nombre de la facultad
-    function obtenerNombreFacultad($departamento_id) {
-        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-        $sql = "SELECT nombre_fac_min FROM facultad,deparmanentos WHERE
-        PK_FAC = FK_FAC AND 
-        deparmanentos.PK_DEPTO = '$departamento_id'";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            return $row['nombre_fac_min'];
-        } else {
-            return "Facultad Desconocida";
-        }
+function formatearVicerrectorParaOficio() {
+    $vicerrector = obtenerVicerrectorActivo();
+    
+    if (!$vicerrector) {
+        return [
+            'titulo' => 'Vicerrector(a) Académico(a)',
+            'nombre' => '[NOMBRE NO ASIGNADO]',
+            'cargo_completo' => 'Vicerrector(a) Académico(a) [SIN ASIGNAR]',
+            'institucion' => 'Universidad del Cauca'
+        ];
     }
- // Función para obtener el nombre del departamento
+    
+    // Determinar título (Doctor/Doctora)
+    $titulo = ($vicerrector['sexo'] == 'F') ? 'Doctora' : 'Doctor';
+    
+    // Determinar cargo completo
+    $cargo = 'Vicerrector'.(($vicerrector['sexo'] == 'F') ? 'a' : '').' Académic'.(($vicerrector['sexo'] == 'F') ? 'a' : 'o');
+    
+    switch($vicerrector['encargo']) {
+        case 'Encargado':
+            $cargo .= ' Encargad'.(($vicerrector['sexo'] == 'F') ? 'a' : 'o');
+            break;
+        case 'Delegado':
+            $cargo .= ' Delegad'.(($vicerrector['sexo'] == 'F') ? 'a' : 'o');
+            break;
+    }
+    
+    return [
+        'titulo' => $titulo,
+        'nombre' => $vicerrector['nombres'] . ' ' . $vicerrector['apellidos'],
+        'cargo_completo' => $cargo,
+        'institucion' => 'Universidad del Cauca'
+    ];
+}
+    // Función para obtener el nombre del departamento
     function obtenerNombreDepartamento($departamento_id) {
         $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
         $sql = "SELECT depto_nom_propio FROM deparmanentos WHERE PK_DEPTO = '$departamento_id'";
@@ -42,7 +61,7 @@
     }
 
 function obtenerTRDDepartamento($departamento_id) {
-        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales_b');
+        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
         $sql = "SELECT trd_depto FROM deparmanentos WHERE PK_DEPTO = '$departamento_id'";
         $result = $conn->query($sql);
         if ($result->num_rows > 0) {
@@ -54,7 +73,7 @@ function obtenerTRDDepartamento($departamento_id) {
     }
 
 function obtenerTRDFacultad($facultad_id) {
-        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales_b');
+        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
         $sql = "SELECT trd_fac FROM facultad WHERE PK_FAC = '$facultad_id'";
         $result = $conn->query($sql);
         if ($result->num_rows > 0) {

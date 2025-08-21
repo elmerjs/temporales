@@ -1,0 +1,90 @@
+<?php
+require_once 'conn.php';
+
+if (!isset($_GET['id'])) {
+    header("Location: listar_vicerrectores.php");
+    exit();
+}
+
+$id = intval($_GET['id']);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nombres = $conn->real_escape_string($_POST['nombres']);
+    $apellidos = $conn->real_escape_string($_POST['apellidos']);
+    $documento = $conn->real_escape_string($_POST['documento']);
+    $sexo = $conn->real_escape_string($_POST['sexo']);
+    $encargo = $conn->real_escape_string($_POST['encargo']);
+
+    $sql = "UPDATE vicerrectores SET 
+            nombres = '$nombres',
+            apellidos = '$apellidos',
+            documento = '$documento',
+            sexo = '$sexo',
+            encargo = '$encargo'
+            WHERE id = $id";
+
+    if ($conn->query($sql)) {
+        header("Location: listar_vicerrectores.php?success=1");
+        exit();
+    } else {
+        $error = "Error: " . $conn->error;
+    }
+}
+
+$sql = "SELECT * FROM vicerrectores WHERE id = $id";
+$result = $conn->query($sql);
+$vicerrector = $result->fetch_assoc();
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Editar Vicerrector - Unicauca</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; color: #005883; }
+        h3 { color: #F0B310; border-bottom: 2px solid #005883; padding-bottom: 8px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .btn { background-color: #005883; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background-color: #F0B310; }
+    </style>
+</head>
+<body>
+    <h3>Editar Vicerrector</h3>
+    <?php if (isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
+
+    <form method="POST">
+        <div class="form-group">
+            <label>Nombres:</label>
+            <input type="text" name="nombres" value="<?= htmlspecialchars($vicerrector['nombres']) ?>" required>
+        </div>
+        <div class="form-group">
+            <label>Apellidos:</label>
+            <input type="text" name="apellidos" value="<?= htmlspecialchars($vicerrector['apellidos']) ?>" required>
+        </div>
+        <div class="form-group">
+            <label>Documento:</label>
+            <input type="text" name="documento" value="<?= htmlspecialchars($vicerrector['documento']) ?>" required>
+        </div>
+        <div class="form-group">
+            <label>Sexo:</label>
+            <select name="sexo" required>
+                <option value="F" <?= $vicerrector['sexo'] == 'F' ? 'selected' : '' ?>>Femenino</option>
+                <option value="M" <?= $vicerrector['sexo'] == 'M' ? 'selected' : '' ?>>Masculino</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Encargo:</label>
+            <select name="encargo" required>
+                <option value="Propiedad" <?= $vicerrector['encargo'] == 'Propiedad' ? 'selected' : '' ?>>En propiedad</option>
+                <option value="Encargado" <?= $vicerrector['encargo'] == 'Encargado' ? 'selected' : '' ?>>Encargado</option>
+                <option value="Delegado" <?= $vicerrector['encargo'] == 'Delegado' ? 'selected' : '' ?>>Delegado</option>
+            </select>
+        </div>
+        <button type="submit" class="btn">Actualizar</button>
+        <a href="listar_vicerrectores.php" style="margin-left: 10px;">Cancelar</a>
+    </form>
+</body>
+</html>
+<?php $conn->close(); ?>

@@ -53,7 +53,7 @@ $trabaja_actual = mb_strtoupper(trim($sheet->getCell("J{$rowIndex}")->getValue()
             if ($resultTercero->num_rows == 0) {
                 // Si no existe en la tabla tercero, insertar nuevo registro
                 $insertTercero = "INSERT INTO tercero (documento_tercero, nombre_completo, apellido1, apellido2, nombre1, nombre2, estado, email, fecha_ingreso, oferente_periodo)
-                                  VALUES (?, ?, ?, ?, ?, ?, 'ac', ?, '2025-01-01', 1)";
+                  VALUES (?, ?, ?, ?, ?, ?, 'ac', ?, CURDATE(), 1)";              $stmtInsertTercero = $con->prepare($insertTercero);
                 $stmtInsertTercero = $con->prepare($insertTercero);
                 $stmtInsertTercero->bind_param('sssssss', $identificacion, $nombreCompleto, $apellido1, $apellido2, $nombre1, $nombre2, $email);
                 $stmtInsertTercero->execute();

@@ -19,6 +19,8 @@ $anio_semestre = $_POST['anio_semestre'] ?? $_GET['anio_semestre'] ?? null;
 $departamento_id = $_POST['departamento_id'] ?? $_GET['departamento_id'] ?? null;
  $aniose= $anio_semestre;
         $cierreperiodo = obtenerperiodo($anio_semestre);
+        $cierreperiodonov = obtenerperiodonov($anio_semestre);
+
 
 ?>
 
@@ -810,7 +812,28 @@ th {
             <span class="data-value"><?php echo htmlspecialchars($_POST['anio_semestre']); ?></span>
         </li>
     </ul>
-</div>
+</div>   
+    
+<?php
+$url_novedad = "consulta_todo_depto_novedad.php?" .
+               "facultad_id=" . urlencode($facultad_id) .
+               "&anio_semestre=" . urlencode($anio_semestre) .
+               "&departamento_id=" . urlencode($departamento_id);
+
+// Mostrar el botón solo si el usuario es tipo 3
+if($tipo_usuario == 3) {
+    if($cierreperiodonov <> 1) { /* si está abierto novedades */ ?>
+        <a href="<?php echo htmlspecialchars($url_novedad); ?>" class="btn btn-primary" style="display: inline-block;">
+            <i class="fas fa-file-alt"></i> Agregar/ver Novedades
+        </a>
+    <?php } else { /* si está cerrado novedades */ ?>
+        <a href="#" class="btn btn-secondary disabled-btn" style="display: inline-block; cursor: not-allowed; opacity: 0.6;"
+           title="Período cerrado para novedades">
+            <i class="fas fa-file-alt"></i> Agregar/ver Novedades
+        </a>
+    <?php }
+}
+?>
 </div>
 
 
@@ -819,7 +842,33 @@ th {
 
 $facultad_id = obtenerIdFacultad($departamento_id);
 
-   
+    // Función para obtener el nombre de la facultad
+    function obtenerNombreFacultad($departamento_id) {
+        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+        $sql = "SELECT nombre_fac_min FROM facultad,deparmanentos WHERE
+        PK_FAC = FK_FAC AND 
+        deparmanentos.PK_DEPTO = '$departamento_id'";
+        $result = $conn->query($sql);
+        if ($result->num_rows > 0) {    
+            $row = $result->fetch_assoc();
+            return $row['nombre_fac_min'];
+        } else {
+            return "Facultad Desconocida";
+        }
+    }
+             // Función para obtener el nombre de la facultad
+    function obtenerIdFacultad($departamento_id)  {
+        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+        $sql = "SELECT deparmanentos.FK_FAC  FROM deparmanentos WHERE PK_DEPTO = '$departamento_id'";
+        $result = $conn->query($sql);
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['FK_FAC'];
+        } else {
+            return "Departamento Desconocido";
+        }
+    }
+
 
 
     // Establecer conexión a la base de datos
@@ -1172,8 +1221,8 @@ echo "<td class='td-simple centered-column'>";
 
 
 // Nuevo botón para la vista web
-echo "<a href='" . $web_view_url . "' target='_blank' class=' btn-info' title='Ver en Web' style='padding-top: 0rem; padding-bottom: 0rem;'>
-          <i class='fa-solid fa-eye' style='color: ; font-size: 0.8em;'></i>
+echo "<a href='" . $web_view_url . "' target='_blank' class='btn btn-sm btn-info' title='Ver en Web' style='padding-top: 0rem; padding-bottom: 0rem;'>
+          <i class='fa-solid fa-eye' style='color: white; font-size: 0.8em;'></i>
       </a>";    
            }
 
@@ -1240,52 +1289,13 @@ echo "<a href='" . $web_view_url . "' target='_blank' class=' btn-info' title='V
                         <i class="fas fa-lock"></i>
                     </button>
                 </form>
-            <?php
+           <?php
             }
         }
         // Moved the modal for FOR.45 and its script outside the main loop or ensure it's rendered only once
         // Also ensure the "Novedad" modal and its script are correctly placed.
         ?>
 
-        <?php if ($acepta_vra === '2' && ($tipo_usuario == 3)) { ?>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novedadModal_<?php echo htmlspecialchars($tipo_docente); ?>" style="display: inline-block;">
-                <i class="fas fa-file-alt"></i> Novedad
-            </button>
-
-            <div class="modal fade" id="novedadModal_<?php echo htmlspecialchars($tipo_docente); ?>" tabindex="-1" aria-labelledby="novedadModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="novedadModalLabel">Seleccione Tipo de Novedad</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label='Close'></button>
-                        </div>
-                        <div class="modal-body">
-                            <form action="procesar_novedad.php" method="POST" id="novedadForm_<?php echo htmlspecialchars($tipo_docente); ?>">
-                                <input type="hidden" name="facultad_id" value="<?php echo htmlspecialchars($facultad_id); ?>">
-                                <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($departamento_id); ?>">
-                                <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($anio_semestre); ?>">
-                                <input type="hidden" name="tipo_docente" value="<?php echo htmlspecialchars($tipo_docente); ?>">
-                                <input type="hidden" name="tipo_usuario" value="<?php htmlspecialchars($tipo_usuario); ?>">
-
-                                <div class="mb-3">
-                                    <label for="tipo_novedad_<?php htmlspecialchars($tipo_docente); ?>" class="form-label">Tipo de Novedad</label>
-                                    <select name="tipo_novedad" id="tipo_novedad_<?php htmlspecialchars($tipo_docente); ?>" class="form-select" required>
-                                        <option value="">Seleccione una opción</option>
-                                        <option value="Eliminar">Eliminar</option>
-                                        <option value="Modificar">Modificar</option>
-                                        <option value="Adicionar">Adicionar</option>
-                                    </select>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="submit" class="btn btn-primary">Continuar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        <?php } ?>
     </div></div><br>
 <?php
 } // End of while ($rowtipo = $resultadotipo->fetch_assoc())
@@ -1495,9 +1505,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     'MAESTRIA EN', 'MAESTRÍA EN', 'MAGISTER EN', 'MASTER EN',
                     'MAGISTER', 'MAESTRO', 'MASTER', 'MAGÍSTER', 'MAESTRÍA', 'MAESTRA', 'MÁSTER' 
                 ],
-                especializacion: ['ESPECIALIZACION', 'ESPECIALIZACIÓN', 'ESP.', 'ESPECIALISTA'],
+                especializacion: ['ESPECIALIZACION EN', 'ESPECIALIZACIÓN EN', 'ESP.', 'ESPECIALISTA'],
                 pregrado: [ // Palabras clave para pregrado, adaptadas para startsWith()
-                   'TECNÓLOGA ', 'TECNÓLOGO ',
                     'LICENCIADO EN', 'LICENCIADA EN', 'LICENCIATURA EN', 
                     'PROFESIONAL EN', 'INGENIERO EN', 'INGENIERA EN',
                     'ABOGADO', 'ABOGADA', 'ADMINISTRADOR DE', 'ADMINISTRADORA DE', 

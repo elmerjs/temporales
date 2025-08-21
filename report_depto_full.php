@@ -186,7 +186,7 @@ GROUP BY
    // echo "facultad  : ". $facultad_id;
 
 // Total de facultades
-$total_facultades = count($facultades);
+//$total_facultades = count($facultades);
 
 function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse de la fac..a la vra
         $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');

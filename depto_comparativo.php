@@ -112,34 +112,35 @@ $semanas_ocasant = ceil($dias_ocasant / 7);
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <!-- jQuery y Bootstrap JS -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
          <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
    
     
 <!-- Cargar Bootstrap 5 y Font Awesome -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
 <!-- jQuery (si es necesario) -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
-
+<!-- Cargar solo Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <style>
       
 .cedula-nueva {
-    color: red;
-    font-weight: bold;
+    color: blue;
+    
 }
 
 /* Para mantener visibilidad en fondos amarillos */
 .fondo-amarillo .cedula-nueva {
-    color: mediumvioletred!important; /* Verde más oscuro */
+    color: blue!important; /* Verde más oscuro */
         background-color: yellow; /* Amarillo claro */
 
 }
          .cedula-eliminada {
-        color:#28a745; /* Verde */!important;
-        font-weight: bold;
+        color:red; /* Verde */!important;
     }
      
 .cedula-en-otro-tipo {
@@ -376,6 +377,35 @@ if (isset($_POST['envia'])) {
 <?php endif; 
                    $huboCambioVinculacion = false; // <-- DECLARA E INICIALIZA LA BANDERA AQUÍ
  
+    
+    // Función para obtener el nombre de la facultad
+    function obtenerNombreFacultad($departamento_id) {
+        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+        $sql = "SELECT nombre_fac_min FROM facultad,deparmanentos WHERE
+        PK_FAC = FK_FAC AND 
+        deparmanentos.PK_DEPTO = '$departamento_id'";
+        $result = $conn->query($sql);
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['nombre_fac_min'];
+        } else {
+            return "Facultad Desconocida";
+        }
+    }
+             // Función para obtener el nombre de la facultad
+    function obtenerIdFacultad($departamento_id)  {
+        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+        $sql = "SELECT deparmanentos.FK_FAC  FROM deparmanentos WHERE PK_DEPTO = '$departamento_id'";
+        $result = $conn->query($sql);
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['FK_FAC'];
+        } else {
+            return "Departamento Desconocido";
+        }
+    }
+
+
     ?>
      <style>
         /* Definición de colores Unicauca (asegúrate de que estén aquí o en tu archivo CSS principal) */
@@ -864,19 +894,14 @@ if (isset($_POST['envia'])) {
 
 
         <div class="d-flex align-items-baseline gap-2">
-    <h2 class="mb-0" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-        Fac. <?= mb_strimwidth(obtenerNombreFacultad($departamento_id), 0, 65, '...') ?>
-    </h2>
-    <span class="text-muted-white">/</span>
-    <h2 class="mb-0" style="color: var(--unicauca-blanco); font-weight: 500;">
-        <?= mb_strimwidth(obtenerNombreDepartamento($_POST['departamento_id']), 0, 65, '...') ?>
-        <?php if (!empty($anio_semestre) && !empty($periodo_anterior)): ?>
-            <span style="font-size: 1.2em; font-weight: 400; color: var(--unicauca-blanco-claro);">
-                <?= htmlspecialchars($anio_semestre, ENT_QUOTES, 'UTF-8') ?> vs <?= htmlspecialchars($periodo_anterior, ENT_QUOTES, 'UTF-8') ?>
-            </span>
-        <?php endif; ?>
-    </h2>
-</div>
+            <h2 class="mb-0" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                Fac. <?= mb_strimwidth(obtenerNombreFacultad($departamento_id), 0, 65, '...') ?>
+            </h2>
+            <span class="text-muted-white">/</span>
+            <h2 class="mb-0" style="color: var(--unicauca-blanco); font-weight: 500;">
+                <?= mb_strimwidth(obtenerNombreDepartamento($_POST['departamento_id']), 0, 65, '...') ?>
+            </h2>
+        </div>
         <div>
            <a href="#seccionGraficos"
    class="btn btn-sm d-flex align-items-center gap-1"
@@ -1874,9 +1899,9 @@ $(document).ready(function(){
     
 echo "<div style='margin-bottom: 10px; font-size: 0.9em;'>
   <strong>Nota:</strong> 
-  <span style='color: red; font-weight: bold;'>En rojo:</span> Profesores nuevos; (Ocasionales: {$contadorVerdesOc}; Cátedra: {$contadorVerdesCa}) - Total: {$contadorVerdes} &nbsp;|&nbsp;
-  <span style='color: green; font-weight: bold;'>En verde:</span> Profesores que ya no continúan. (Ocasionales: {$contadorRojosOc}, Cátedra: {$contadorRojosCa}) - Total: {$contadorRojos} &nbsp;|&nbsp;
-  <span style='background-color: yellow; color: red; font-weight: bold;'>&nbsp;Cambio de vinculación&nbsp;</span>:  Profesores que cambian de tipo de vinculación en el periodo actual.
+  <span style='color: blue; font-weight: bold;'>En azul:</span> Profesores nuevos; (Ocasionales: {$contadorVerdesOc}; Cátedra: {$contadorVerdesCa}) - Total: {$contadorVerdes} &nbsp;|&nbsp;
+  <span style='color: red; font-weight: bold;'>En rojo:</span> Profesores que ya no continúan. (Ocasionales: {$contadorRojosOc}, Cátedra: {$contadorRojosCa}) - Total: {$contadorRojos} &nbsp;|&nbsp;
+  <span style='background-color: yellow; color: blue; font-weight: bold;'>&nbsp;Cambio de vinculación&nbsp;</span>:  Profesores que cambian de tipo de vinculación en el periodo actual.
 </div>  ";
     
 // Calcular el porcentaje de cambio (manteniendo tus variables exactas)
@@ -1913,7 +1938,7 @@ HTML;
 ?>
 </div>    
    
-
+   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.20/dist/js/bootstrap.bundle.min.js"></script>
             
 <script>
     
@@ -1934,6 +1959,7 @@ document.querySelectorAll('.delete-form').forEach(function(form) {
       return;
     }
 
+    
     // 3. Mostrar selector de tipo de eliminación
     const tipoEliminacion = `
       <div style="padding:10px;background:#f8f9fa;border-radius:5px;">
@@ -1956,7 +1982,6 @@ document.querySelectorAll('.delete-form').forEach(function(form) {
     <button onclick="cancelarEliminacion()" style="background:#6c757d;color:white;border:none;padding:8px 15px;border-radius:4px;margin-left:5px;">Cancelar</button>
 </div>
     `;
-
     // Crear modal temporal
     const modal = document.createElement('div');
     modal.style.position = 'fixed';
@@ -2038,8 +2063,8 @@ echo "<div>
         $percentageOcasional = ($totalProfesoresOcasionalAnterior != 0) ? ($diffOcasional / $totalProfesoresOcasionalAnterior) * 100 : 0;
         $percentageOcasionalh = ($totalhorasOcasionalAnterior != 0) ? ($diffOcasionalh / $totalhorasOcasionalAnterior) * 100 : 0;
 
-        $classOcasional = ($diffOcasional >= 0) ? 'positive-alert' : 'negative-favorable';
-        $classOcasionalh = ($diffOcasionalh >= 0) ? 'positive-alert' : 'negative-favorable';
+        $classOcasional = ($diffOcasional < 0) ? 'positive-alert' : 'negative-favorable';
+        $classOcasionalh = ($diffOcasionalh < 0) ? 'positive-alert' : 'negative-favorable';
 
         $discrepanciaOcasional = $diffOcasional - ($contadorVerdesOc - $contadorRojosOc);
         ?>
@@ -2058,8 +2083,8 @@ echo "<div>
             </span>
         </div>
         <div class="card-subtext">
-            <span class="new-count positive-alert">+<?= $contadorVerdesOc ?> nuevos</span>
-            <span class="removed-count negative-favorable">-<?= $contadorRojosOc ?> no continúan</span>
+            <span class="new-count negative-favorable">+<?= $contadorVerdesOc ?> nuevos</span>
+            <span class="removed-count positive-alert">-<?= $contadorRojosOc ?> no continúan</span>
             <?php if ($discrepanciaOcasional !== 0): ?>
                 <span class="change-vinculacion">
                     <?= ($discrepanciaOcasional > 0 ? '+' : '') . $discrepanciaOcasional ?> cambian vinc.
@@ -2235,6 +2260,8 @@ echo "<div>
 
 .change-vinculacion {
     color: #6c757d;
+    background-color: yellow; /* fondo amarillo */
+
 }
 
 .previous-count {
@@ -2252,8 +2279,8 @@ echo "<div>
         $percentageCatedra = ($totalProfesoresCatedraAnterior != 0) ? ($diffCatedra / $totalProfesoresCatedraAnterior) * 100 : 0;
         $percentageCatedrah = ($totalhorasCatedraAnterior != 0) ? ($diffCatedrah / $totalhorasCatedraAnterior) * 100 : 0;
 
-        $classCatedra = ($diffCatedra >= 0) ? 'positive-alert' : 'negative-favorable';
-        $classCatedrah = ($diffCatedrah >= 0) ? 'positive-alert' : 'negative-favorable';
+        $classCatedra = ($diffCatedra < 0) ? 'positive-alert' : 'negative-favorable';
+        $classCatedrah = ($diffCatedrah < 0) ? 'positive-alert' : 'negative-favorable';
 
         $discrepanciaCatedra = $diffCatedra - ($contadorVerdesCa - $contadorRojosCa);
         ?>
@@ -2272,8 +2299,8 @@ echo "<div>
             </span>
         </div>
         <div class="card-subtext">
-            <span class="new-count positive-alert">+<?= $contadorVerdesCa ?> nuevos</span>
-            <span class="removed-count negative-favorable">-<?= $contadorRojosCa ?> no continúan</span>
+            <span class="new-count negative-favorable">+<?= $contadorVerdesCa ?> nuevos</span>
+            <span class="removed-count positive-alert">-<?= $contadorRojosCa ?> no continúan</span>
             <?php if ($discrepanciaCatedra !== 0): ?>
                 <span class="change-vinculacion">
                     <?= ($discrepanciaCatedra > 0 ? '+' : '') . $discrepanciaCatedra ?> cambian vinculación
@@ -2329,8 +2356,8 @@ echo "<div>
         $percentageTotalProfesores = ($totalProfesoresTotalAnterior != 0) ? ($diffTotalProfesores / $totalProfesoresTotalAnterior) * 100 : 0;
         $percentageTotalHoras = ($totalHorasTotalAnterior != 0) ? ($diffTotalHoras / $totalHorasTotalAnterior) * 100 : 0;
         
-        $classTotalProfesores = ($diffTotalProfesores >= 0) ? 'positive-alert' : 'negative-favorable';
-        $classTotalHoras = ($diffTotalHoras >= 0) ? 'positive-alert' : 'negative-favorable';
+        $classTotalProfesores = ($diffTotalProfesores < 0) ? 'positive-alert' : 'negative-favorable';
+        $classTotalHoras = ($diffTotalHoras < 0) ? 'positive-alert' : 'negative-favorable';
         ?>
         
         <div class="dual-percentage">
@@ -2999,8 +3026,8 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
     --primary-color: #696FC7;
     --text-dark: #2c3e50;
     --text-muted: #6c757d;
-    --positive-bg: rgba(40, 167, 69, 0.15); /* Verde claro */
-    --positive-text: #28a745; /* Verde oscuro */
+    --positive-bg: #e7f1ff; /* Verde claro */
+    --positive-text: #0d6efd; /* Verde oscuro cambio a azul*/
     --negative-bg: rgba(220, 53, 69, 0.15); /* Rojo claro */
     --negative-text: #dc3545; /* Rojo oscuro */
     --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -3905,7 +3932,7 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
     ↑ Volver arriba
 </a>
 </div>
-
+</div>
     </body>
 </html>
 <?php

@@ -956,107 +956,10 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                     </ul>
                 </li>
             <?php endif; ?>
-    <?php if ($tipo_usuario == 1): ?>
-            <li class="menu-item <?= ($active_menu_item == 'comparativo') ? 'active' : '' ?>">
-                <a href="#" title="comparativo profesores periodo actual vs anterior">
-                    Comparativo <span class="new-badge">New!</span>
-                </a>
-                <ul class="submenu">
-                        <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
-                            <a href="#" class="report-linkb"
-                               data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                               data-anio-semestre="<?php echo $previousPeriod; ?>"
-                               data-departamento-id="<?php echo $departamento['PK_DEPTO']; // Add this line ?>">
-                                <?php echo $previousPeriod; ?>
-                            </a>
-                        </li>
-                        <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $periodo_work) ? 'active' : '' ?>">
-                            <a href="#" class="report-linkb"
-                               data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                               data-anio-semestre="<?php echo $periodo_work; ?>"
-                               data-departamento-id="<?php echo $departamento['PK_DEPTO']; // Add this line ?>">
-                                <?php echo $periodo_work; ?>
-                            </a>
-                        </li>
-                        <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
-                            <a href="#" class="report-linkb"
-                               data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                               data-anio-semestre="<?php echo $nextPeriod; ?>"
-                               data-departamento-id="<?php echo $departamento['PK_DEPTO']; // Add this line ?>">
-                                <?php echo $nextPeriod; ?>
-                            </a>
-                        </li>
-                </ul>
-            </li>         
-                            <?php endif; ?>
-    
-     
             
             
             
-                <?php
-            function get_immediate_previous_period($currentPeriod) {
-    list($anio, $semestre) = explode('-', $currentPeriod);
-    $anio = (int)$anio;
-    $semestre = (int)$semestre;
-
-    if ($semestre == 1) {
-        return ($anio - 1) . '-2';
-    } else {
-        return $anio . '-1';
-    }
-}
-
-                     /* COMPARATIVO GRAFICO PARA 2 Y 3 */
-        if ($tipo_usuario != 1): ?>
-            <li class="menu-item <?= ($active_menu_item == 'comparativo') ? 'active' : '' ?>">
-                <a href="#" title="comparativo profesores periodo actual vs anterior">
-                    Comparativo <span class="new-badge">New!</span>
-                </a>
-                <ul class="submenu">
-                    <?php
-                    // Calcular el 'anio_semestre_anterior' para cada opción de menú
-                    $previousPeriod_anterior = get_immediate_previous_period($previousPeriod);
-                    $periodo_work_anterior = get_immediate_previous_period($periodo_work);
-                    $nextPeriod_anterior = get_immediate_previous_period($nextPeriod);
-                
-                    ?>
-
-                    <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
-                        <a href="#" class="report-linkg"
-   data-facultad-id="<?php echo isset($departamento['PK_FAC']) ? htmlspecialchars($departamento['PK_FAC']) : ''; ?>"
-   data-anio-semestre="<?php echo htmlspecialchars($previousPeriod); ?>"
-   data-anio-semestre-anterior="<?php echo htmlspecialchars($previousPeriod_anterior); ?>"
-   data-departamento-id="<?php echo isset($departamento['PK_DEPTO']) ? htmlspecialchars($departamento['PK_DEPTO']) : ''; ?>">
-    <?php echo htmlspecialchars($previousPeriod); ?>
-</a>
-                    </li>
-                    <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $periodo_work) ? 'active' : '' ?>">
-                        <a href="#" class="report-linkg"
-                           data-facultad-id="<?php echo htmlspecialchars($departamento['PK_FAC']); ?>"
-                           data-anio-semestre="<?php echo htmlspecialchars($periodo_work); ?>"
-                           data-anio-semestre-anterior="<?php echo htmlspecialchars($periodo_work_anterior); ?>"
-                           data-departamento-id="<?php echo htmlspecialchars($departamento['PK_DEPTO']); ?>">
-                            <?php echo htmlspecialchars($periodo_work); ?>
-                        </a>
-                    </li>
-                    <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
-                        <a href="#" class="report-linkg"
-                           data-facultad-id="<?php echo htmlspecialchars($departamento['PK_FAC']); ?>"
-                           data-anio-semestre="<?php echo htmlspecialchars($nextPeriod); ?>"
-                           data-anio-semestre-anterior="<?php echo htmlspecialchars($nextPeriod_anterior); ?>"
-                           data-departamento-id="<?php echo htmlspecialchars($departamento['PK_DEPTO']); ?>">
-                            <?php echo htmlspecialchars($nextPeriod); ?>
-                        </a>
-                    </li>
-                </ul>
-            </li>
-        <?php endif; ?>
-
-
-            
-            
-            <li class="submenu-container <?= ($active_menu_item == 'novedades') ? 'active' : '' ?>" style="display: none;">
+                    <li class="submenu-container <?= ($active_menu_item == 'novedades') ? 'active' : '' ?>" >
                 <a href="#" title="Novedades que se presentan para los profesores temporales vinculados en el periodo actual">
                     Novedades
                 </a>
@@ -1157,12 +1060,115 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                 </ul>
             </li>
 
+            
+            
+    <?php if ($tipo_usuario == 1): ?>
+            <li class="menu-item <?= ($active_menu_item == 'comparativo') ? 'active' : '' ?>">
+                <a href="#" title="comparativo profesores periodo actual vs anterior">
+                    Comparativo <span class="new-badge">New!</span>
+                </a>
+                <ul class="submenu">
+                        <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                            <a href="#" class="report-linkb"
+                               data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                               data-anio-semestre="<?php echo $previousPeriod; ?>"
+                               data-departamento-id="<?php echo $departamento['PK_DEPTO']; // Add this line ?>">
+                                <?php echo $previousPeriod; ?>
+                            </a>
+                        </li>
+                        <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                            <a href="#" class="report-linkb"
+                               data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                               data-anio-semestre="<?php echo $periodo_work; ?>"
+                               data-departamento-id="<?php echo $departamento['PK_DEPTO']; // Add this line ?>">
+                                <?php echo $periodo_work; ?>
+                            </a>
+                        </li>
+                        <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                            <a href="#" class="report-linkb"
+                               data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                               data-anio-semestre="<?php echo $nextPeriod; ?>"
+                               data-departamento-id="<?php echo $departamento['PK_DEPTO']; // Add this line ?>">
+                                <?php echo $nextPeriod; ?>
+                            </a>
+                        </li>
+                </ul>
+            </li>         
+                            <?php endif; ?>
+    
+     
+            
+            
+            
+                <?php
+            function get_immediate_previous_period($currentPeriod) {
+    list($anio, $semestre) = explode('-', $currentPeriod);
+    $anio = (int)$anio;
+    $semestre = (int)$semestre;
+
+    if ($semestre == 1) {
+        return ($anio - 1) . '-2';
+    } else {
+        return $anio . '-1';
+    }
+}
+
+                     /* COMPARATIVO GRAFICO PARA 2 Y 3 */
+        if ($tipo_usuario != 1): ?>
+            <li class="menu-item <?= ($active_menu_item == 'comparativo') ? 'active' : '' ?>">
+                <a href="#" title="comparativo profesores periodo actual vs anterior">
+                    Comparativo <span class="new-badge">New!</span>
+                </a>
+                <ul class="submenu">
+                    <?php
+                    // Calcular el 'anio_semestre_anterior' para cada opción de menú
+                    $previousPeriod_anterior = get_immediate_previous_period($previousPeriod);
+                    $periodo_work_anterior = get_immediate_previous_period($periodo_work);
+                    $nextPeriod_anterior = get_immediate_previous_period($nextPeriod);
+                
+                    ?>
+
+                    <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                        <a href="#" class="report-linkg"
+   data-facultad-id="<?php echo isset($departamento['PK_FAC']) ? htmlspecialchars($departamento['PK_FAC']) : ''; ?>"
+   data-anio-semestre="<?php echo htmlspecialchars($previousPeriod); ?>"
+   data-anio-semestre-anterior="<?php echo htmlspecialchars($previousPeriod_anterior); ?>"
+   data-departamento-id="<?php echo isset($departamento['PK_DEPTO']) ? htmlspecialchars($departamento['PK_DEPTO']) : ''; ?>">
+    <?php echo htmlspecialchars($previousPeriod); ?>
+</a>
+                    </li>
+                    <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                        <a href="#" class="report-linkg"
+                           data-facultad-id="<?php echo htmlspecialchars($departamento['PK_FAC']); ?>"
+                           data-anio-semestre="<?php echo htmlspecialchars($periodo_work); ?>"
+                           data-anio-semestre-anterior="<?php echo htmlspecialchars($periodo_work_anterior); ?>"
+                           data-departamento-id="<?php echo htmlspecialchars($departamento['PK_DEPTO']); ?>">
+                            <?php echo htmlspecialchars($periodo_work); ?>
+                        </a>
+                    </li>
+                    <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                        <a href="#" class="report-linkg"
+                           data-facultad-id="<?php echo htmlspecialchars($departamento['PK_FAC']); ?>"
+                           data-anio-semestre="<?php echo htmlspecialchars($nextPeriod); ?>"
+                           data-anio-semestre-anterior="<?php echo htmlspecialchars($nextPeriod_anterior); ?>"
+                           data-departamento-id="<?php echo htmlspecialchars($departamento['PK_DEPTO']); ?>">
+                            <?php echo htmlspecialchars($nextPeriod); ?>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        <?php endif; ?>
+
+
+            
+            
+    
             <?php if (
                 $tipo_usuario == 1
                 && (
                     $id_user == 92
                     || $id_user == 93
-                    || $id_user == 96 || $id_user == 4
+                    || $id_user == 94 || $id_user == 4
                 )
             ): ?>
                 <li class="menu-item <?= ($active_menu_item == 'observaciones') ? 'active' : '' ?>">
@@ -1251,6 +1257,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
     </div>
 </div>
    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 
    <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -1365,7 +1372,7 @@ document.querySelectorAll('.novedades-periodo').forEach(function(link) {
 
         var form = document.createElement('form');
         form.method = 'POST';
-        form.action = '../../temporales/gestion_novedades.php'; // Página para gestionar novedades
+        form.action = '../../temporales/consulta_facultad_novedad.php'; // Página para gestionar novedades
 
         // Facultad
         if (facultadId) {
