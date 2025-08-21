@@ -46,64 +46,197 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <title>Actualizar Solicitud</title>
-    <style>
-        .modal-overlay {
+   <style>
+/* Unicauca styles */
+:root {
+    --unicauca-blue: #004080;
+    --unicauca-light-blue: #0059b3;
+    --unicauca-dark: #003366;
+    --unicauca-light: #f0f6ff;
+    --unicauca-gray: #f5f5f5;
+    --unicauca-border: #dcdcdc;
+    --unicauca-success: #28a745;
+    --unicauca-danger: #dc3545;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Open Sans', sans-serif;
+    background: linear-gradient(135deg, #f8f9fa, #e6f2ff);
+    color: #333;
+    line-height: 1.6;
+    padding: 20px;
+    min-height: 100vh;
+}
+.modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(100, 100, 100, 0.6); /* fondo gris semitransparente */
+    background-color: rgba(100, 100, 100, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 999;
 }
-
 .modal-content {
-    background-color: #f9f9f9;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 64, 128, 0.15);
     padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.25);
+    margin-bottom: 30px;
+    border: 1px solid var(--unicauca-border);
     width: 90%;
     max-width: 600px;
-    z-index: 1000;
+    position: relative;
+    overflow: hidden;
 }
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-        }
-        form {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        input[type="text"],input[type="number"] , select, textarea {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            background-color: #004080;
-            color: white;
-            font-size: 16px;
-        }
-    </style>
+
+.modal-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, var(--unicauca-blue), var(--unicauca-light-blue));
+}
+
+.header {
+    background: var(--unicauca-blue);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px 8px 0 0;
+    margin: -30px -30px 25px -30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--unicauca-blue);
+    font-size: 0.9rem;
+}
+
+input[type="text"], input[type="number"],
+select,
+textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--unicauca-border);
+    border-radius: 6px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+input[type="text"]:focus, input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--unicauca-light-blue);
+    box-shadow: 0 0 0 3px rgba(0, 89, 179, 0.15);
+}
+input[type="text"][readonly] {
+    background-color: var(--unicauca-gray);
+    cursor: not-allowed;
+    color: #666;
+}
+
+.btn-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.btn {
+    flex: 1;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: var(--unicauca-blue);
+    color: white;
+    box-shadow: 0 4px 8px rgba(0, 64, 128, 0.2);
+}
+
+.btn-primary:hover {
+    background: var(--unicauca-light-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 64, 128, 0.25);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.required {
+    color: var(--unicauca-danger);
+}
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .btn-group {
+        flex-direction: column;
+    }
+    .modal-content {
+        padding: 20px;
+    }
+}
+</style>
     <script>
       function validarHorasPHP() {
     var horasInput = document.getElementById("horas");
@@ -181,87 +314,114 @@ $conn->close();
 <body>
    <div class="modal-overlay">
     <div class="modal-content">
-        <h1>Actualizar Solicitud</h1>
+        <div class="header">
+            <h1><i class="fas fa-edit"></i> Actualizar Solicitud</h1>
+        </div>
         <form action="procesar_actualizacion.php" method="POST">
         <input type="hidden" name="id_solicitud" value="<?php echo htmlspecialchars($row['id_solicitud']); ?>">
         <input type="hidden" name="facultad_id" value="<?php echo htmlspecialchars($facultad_id); ?>">
         <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($departamento_id); ?>">
         <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($anio_semestre); ?>">
             
-            
         <input type="hidden" name="anio_semestre_anterior" value="<?php echo htmlspecialchars($anio_semestre_anterior); ?>">
 
         <input type="hidden" name="tipo_docente" value="<?php echo $tipo_docente; ?>">
 
-        <label for="cedula">Cédula</label>
-        <input type="text" name="cedula" value="<?php echo htmlspecialchars($row['cedula']); ?>" readonly required>
-
-        <label for="nombre">Nombre</label>
-        <input type="text" name="nombre" value="<?php echo htmlspecialchars($row['nombre']); ?>" readonly required>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="cedula">Cédula</label>
+                <input type="text" class="form-control" name="cedula" value="<?php echo htmlspecialchars($row['cedula']); ?>" readonly required>
+            </div>
+            <div class="form-group">
+                <label for="nombre">Nombre</label>
+                <input type="text" class="form-control" name="nombre" value="<?php echo htmlspecialchars($row['nombre']); ?>" readonly required>
+            </div>
+        </div>
 
         <?php if ($tipo_docente == "Ocasional") { ?>
-            <label for="tipo_dedicacion">Dedicación Popayán</label>
-            <select name="tipo_dedicacion" onchange="limpiarOtroSelect('tipo_dedicacion')">
-                <option value="" <?php if (empty($row['tipo_dedicacion'])) echo 'selected'; ?>></option>
-                <option value="TC" <?php if ($row['tipo_dedicacion'] == 'TC') echo 'selected'; ?>>TC</option>
-                <option value="MT" <?php if ($row['tipo_dedicacion'] == 'MT') echo 'selected'; ?>>MT</option>
-            </select>
-
-            <label for="tipo_dedicacion_r">Dedicación Regionalización</label>
-            <select name="tipo_dedicacion_r" onchange="limpiarOtroSelect('tipo_dedicacion_r')">
-                <option value="" <?php if (empty($row['tipo_dedicacion_r'])) echo 'selected'; ?>></option>
-                <option value="TC" <?php if ($row['tipo_dedicacion_r'] == 'TC') echo 'selected'; ?>>TC</option>
-                <option value="MT" <?php if ($row['tipo_dedicacion_r'] == 'MT') echo 'selected'; ?>>MT</option>
-            </select>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="tipo_dedicacion">Dedicación Popayán</label>
+                    <select class="form-control" name="tipo_dedicacion" onchange="limpiarOtroSelect('tipo_dedicacion')">
+                        <option value="" <?php if (empty($row['tipo_dedicacion'])) echo 'selected'; ?>></option>
+                        <option value="TC" <?php if ($row['tipo_dedicacion'] == 'TC') echo 'selected'; ?>>TC</option>
+                        <option value="MT" <?php if ($row['tipo_dedicacion'] == 'MT') echo 'selected'; ?>>MT</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tipo_dedicacion_r">Dedicación Regionalización</label>
+                    <select class="form-control" name="tipo_dedicacion_r" onchange="limpiarOtroSelect('tipo_dedicacion_r')">
+                        <option value="" <?php if (empty($row['tipo_dedicacion_r'])) echo 'selected'; ?>></option>
+                        <option value="TC" <?php if ($row['tipo_dedicacion_r'] == 'TC') echo 'selected'; ?>>TC</option>
+                        <option value="MT" <?php if ($row['tipo_dedicacion_r'] == 'MT') echo 'selected'; ?>>MT</option>
+                    </select>
+                </div>
+            </div>
         <?php } ?>
 
        <?php if ($tipo_docente == "Catedra") { ?>
-                <label for="horas">Horas Popayán</label>
-                <input type="number" id="horas" name="horas" value="<?php echo htmlspecialchars($row['horas']); ?>" step="0.1" min="0" max="12" onchange="validarHorasPHP()">
-
-                <label for="horas_r">Horas Regionalización</label>
-                <input type="number" id="horas_r" name="horas_r" value="<?php echo htmlspecialchars($row['horas_r']); ?>" step="0.1" min="0" max="12" onchange="validarHorasPHP()">
-            <?php } ?>
-        <label for="anexa_hv_docente_nuevo">Anexa HV Nuevos</label>
-        <select name="anexa_hv_docente_nuevo" onchange="sincronizarSelects()">
-            <option value="<?php echo $row['anexa_hv_docente_nuevo'];?>" selected><?php echo $row['anexa_hv_docente_nuevo'];?></option>
-            <option value="Si">Si</option>
-            <option value="No">No</option>
-        </select>
-
-        <label for="actualiza_hv_antiguo">Actualiza HV Antiguos</label>
-        <select name="actualiza_hv_antiguo" onchange="sincronizarSelects()">
-            <option value="<?php echo $row['actualiza_hv_antiguo'];?>" selected><?php echo $row['actualiza_hv_antiguo'];?></option>
-            <option value="Si">Si</option>
-            <option value="No">No</option>
-        </select>
-
-<label for="observacion">Observación</label>
-<textarea name="observacion" id="observacion" rows="4" style="width: 100%;" 
-          placeholder="<?php echo empty($row['s_observacion']) ? 'Evidencia de que se solicitó el cambio al responsable, pero no fue atendido' : ''; ?>"
-          oninput="detectarTipoReemplazo()"><?php echo htmlspecialchars($row['s_observacion']); ?></textarea>
-<!-- Campo de Tipo de Reemplazo/Justificación actualizado -->
-<label for="tipo_reemplazo">Tipo de Reemplazo/Justificación</label>
-<select name="tipo_reemplazo" id="tipo_reemplazo" required>
-    <option value="">-- Seleccione una opción --</option>
-    <option value="Ajuste de Matrículas">Ajuste de Matrículas</option>
-    <option value="Otras fuentes de financiacion">Otras fuentes de financiación</option>
-    <option value="Reemplazo por ajuste de labor y/o necesidad docente (+)">Reemplazo por ajuste de labor y/o necesidad docente (+)</option>
-    <option value="Reemplazo por Jubilación">Reemplazo por Jubilación</option>
-    <option value="Reemplazo por Fallecimiento">Reemplazo por Fallecimiento</option>
-    <option value="Reemplazor por Licencias de Maternidad">Reemplazor por Licencias de Maternidad</option>
-    <option value="Reemplazo por enfermedad general">Reemplazo por enfermedad general</option>
-    <option value="Reemplazo por renuncia">Reemplazo por renuncia</option>
-    <option value="Reemplazo NN">Reemplazo NN</option>
-    <option value="Ajuste de puntaje">Ajuste de puntaje</option>
-    <option value="Otro">Otro</option>
-    <option value="No puede asumir labor">No puede asumir labor</option>
-    <option value="Ajustes VRA">Ajustes VRA</option>
-</select>
-        <button type="submit">Actualizar</button>
-        <button type="button" onclick="redirectToConsulta()">Regresar</button>
-    </form>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="horas">Horas Popayán</label>
+                    <input type="number" class="form-control" id="horas" name="horas" value="<?php echo htmlspecialchars($row['horas']); ?>" step="0.1" min="0" max="12" onchange="validarHorasPHP()">
+                </div>
+                <div class="form-group">
+                    <label for="horas_r">Horas Regionalización</label>
+                    <input type="number" class="form-control" id="horas_r" name="horas_r" value="<?php echo htmlspecialchars($row['horas_r']); ?>" step="0.1" min="0" max="12" onchange="validarHorasPHP()">
+                </div>
+            </div>
+        <?php } ?>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="anexa_hv_docente_nuevo">Anexa HV Nuevos</label>
+                <select class="form-control" name="anexa_hv_docente_nuevo" onchange="sincronizarSelects()">
+                    <option value="<?php echo $row['anexa_hv_docente_nuevo'];?>" selected><?php echo $row['anexa_hv_docente_nuevo'];?></option>
+                    <option value="Si">Si</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="actualiza_hv_antiguo">Actualiza HV Antiguos</label>
+                <select class="form-control" name="actualiza_hv_antiguo" onchange="sincronizarSelects()">
+                    <option value="<?php echo $row['actualiza_hv_antiguo'];?>" selected><?php echo $row['actualiza_hv_antiguo'];?></option>
+                    <option value="Si">Si</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
         </div>
+
+        <div class="form-group">
+            <label for="observacion">Observación</label>
+            <textarea class="form-control" name="observacion" id="observacion" rows="4" 
+                    placeholder="<?php echo empty($row['s_observacion']) ? 'Evidencia de que se solicitó el cambio al responsable, pero no fue atendido' : ''; ?>"
+                    oninput="detectarTipoReemplazo()"><?php echo htmlspecialchars($row['s_observacion']); ?></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="tipo_reemplazo">Tipo de Reemplazo/Justificación</label>
+            <select class="form-control" name="tipo_reemplazo" id="tipo_reemplazo" required>
+                <option value="">-- Seleccione una opción --</option>
+                <option value="Ajuste de Matrículas">Ajuste de Matrículas</option>
+                <option value="Otras fuentes de financiacion">Otras fuentes de financiación</option>
+                <option value="Reemplazo por ajuste de labor y/o necesidad docente (+)">Reemplazo por ajuste de labor y/o necesidad docente (+)</option>
+                <option value="Reemplazo por Jubilación">Reemplazo por Jubilación</option>
+                <option value="Reemplazo por Fallecimiento">Reemplazo por Fallecimiento</option>
+                <option value="Reemplazor por Licencias de Maternidad">Reemplazor por Licencias de Maternidad</option>
+                <option value="Reemplazo por enfermedad general">Reemplazo por enfermedad general</option>
+                <option value="Reemplazo por renuncia">Reemplazo por renuncia</option>
+                <option value="Reemplazo NN">Reemplazo NN</option>
+                <option value="Ajuste de puntaje">Ajuste de puntaje</option>
+                <option value="Otro">Otro</option>
+                <option value="No puede asumir labor">No puede asumir labor</option>
+                <option value="Ajustes VRA">Ajustes VRA</option>
+            </select>
+        </div>
+        <div class="btn-group">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Actualizar</button>
+            <button type="button" class="btn btn-secondary" onclick="redirectToConsulta()"><i class="fas fa-arrow-left"></i> Regresar</button>
+        </div>
+    </form>
+    </div>
 </div>
     
     <script>
@@ -272,60 +432,39 @@ function detectarTipoReemplazo() {
     const keywords = {
     'matrículas': 'Ajuste de Matrículas',
     'matriculas': 'Ajuste de Matrículas',
-    // Ahora apunta a la opción más descriptiva
     'necesidad docente': 'Reemplazo por ajuste de labor y/o necesidad docente (+)',
     'requerimiento docente': 'Reemplazo por ajuste de labor y/o necesidad docente (+)',
     'falta de docente': 'Reemplazo por ajuste de labor y/o necesidad docente (+)',
-    
     'no puede asumir': 'No puede asumir labor',
     'no asume': 'No puede asumir labor',
     'no continuará': 'No puede asumir labor',
-    
     'financiación': 'Otras fuentes de financiacion',
     'financiamiento': 'Otras fuentes de financiacion',
-    
-    // Apunta a la opción actualizada
     'enfermedad': 'Reemplazo por enfermedad general',
     'incapacidad': 'Reemplazo por enfermedad general',
-    
     'fallecimiento': 'Reemplazo por Fallecimiento',
     'falleció': 'Reemplazo por Fallecimiento',
     'murió': 'Reemplazo por Fallecimiento',
-
-    // Nuevas para "Reemplazo por Jubilación"
     'jubilación': 'Reemplazo por Jubilación',
     'jubilado': 'Reemplazo por Jubilación',
     'jubiló': 'Reemplazo por Jubilación',
     'jubilada': 'Reemplazo por Jubilación',
-
-    // Nuevas para "Reemplazor por Licencias de Maternidad"
     'maternidad': 'Reemplazor por Licencias de Maternidad',
     'licencia maternidad': 'Reemplazor por Licencias de Maternidad',
-
-    // Nuevas para "Reemplazo por renuncia"
     'renuncia': 'Reemplazo por renuncia',
     'renunció': 'Reemplazo por renuncia',
-    
-    // Apunta a la opción actualizada
     'puntos': 'Ajuste de puntaje',
     'reajuste puntos': 'Ajuste de puntaje',
-    'puntaje': 'Ajuste de puntaje', // Añadida, por si se usa
-
-    // 'reemplazo' y 'sustitución' podrían apuntar a 'Reemplazo NN' si es el default para casos genéricos,
-    // o a 'Reemplazo' si esa opción genérica existe.
-    // Dadas tus últimas opciones, 'Reemplazo NN' parece el general.
-    'NN': 'Reemplazo NN', // Aseguramos que 'NN' apunte aquí
-    'reemplazo': 'Reemplazo NN', 
-    'sustitución': 'Reemplazo NN', 
-    'sustitucion': 'Reemplazo NN', 
-    
-    // Apunta a la opción actualizada
+    'puntaje': 'Ajuste de puntaje',
+    'NN': 'Reemplazo NN',
+    'reemplazo': 'Reemplazo NN',
+    'sustitución': 'Reemplazo NN',
+    'sustitucion': 'Reemplazo NN',
     '4-31/': 'Ajustes VRA',
-    'VRA': 'Ajustes VRA', // Añadida, por si se usa
-    'ajustes VRA': 'Ajustes VRA' // Añadida, por si se usa
-};
+    'VRA': 'Ajustes VRA',
+    'ajustes VRA': 'Ajustes VRA'
+    };
     
-    // Buscar coincidencias
     for (const [keyword, value] of Object.entries(keywords)) {
         if (observacion.includes(keyword)) {
             selectTipo.value = value;
@@ -333,7 +472,6 @@ function detectarTipoReemplazo() {
         }
     }
     
-    // Si no encuentra coincidencia exacta
     if (selectTipo.value === '') {
         selectTipo.value = 'Otro';
     }

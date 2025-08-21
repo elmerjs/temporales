@@ -1,0 +1,67 @@
+dp_acepta_fac
+dp_observacion
+plazo_jefe
+2025-2
+Ciencias de la Salud
+Morfología
+NULL
+0000-00-00 00:00:00
+NULL
+NULL
+2025-04-22
+2025-2
+Ciencias Humanas y Sociales
+Estudios Interculturales
+NULL
+0000-00-00 00:00:00
+rechazar
+Se solicita registrar la vinculación de los docent...
+2025-04-22
+2025-2
+Ciencias Humanas y Sociales
+Filosofía
+NULL
+2025-04-23 09:39:36
+rechazar
+Verificar con Decanatura a la Profesora Diana Soto...
+2025-04-22
+2025-2
+Ciencias Humanas y Sociales
+Historia
+NULL
+0000-00-00 00:00:00
+NULL
+NULL
+2025-04-22
+2025-2
+Ciencias Naturales, Exactas y de la Educación
+Educación y Pedagogía
+1
+2025-04-24 07:59:12
+subsanado
+Presenta novedades  a la fecha, de 2 catedráticos ...
+2025-04-22
+2025-2
+Derecho
+Derecho Privado
+NULL
+0000-00-00 00:00:00
+NULL
+NULL
+2025-04-22
+2025-2
+Derecho
+Derecho Público
+NULL
+0000-00-00 00:00:00
+NULL
+NULL
+2025-04-22
+2025-2
+Ingeniería Civil
+Construcción
+NULL
+0000-00-00 00:00:00
+NULL
+NULL
+2025-04-22

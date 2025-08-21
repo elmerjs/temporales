@@ -1,0 +1,109 @@
+vamos a realizar un proyecto php msyql 
+donde  se hace un proceso periódico (semestral ) 2024-1 2024-2 2025-1 ..etc
+que se guardan en 
+CREATE TABLE `periodo` (
+  `id_periodo` int(11) NOT NULL,
+  `nombre_periodo` varchar(100) DEFAULT NULL,
+...
+)
+de generar unos movimientos que tienen un saldo incial 
+que se guarda en la tabla 
+CREATE TABLE `detalle_vigencia` (
+  `id` int(11) NOT NULL,
+  `vigencia_id` int(11) NOT NULL,
+  `tipo_vinculacion` enum('CATEDRA','OCASIONAL') NOT NULL,
+  `sede` int(11) NOT NULL,
+  `saldo_inicial` decimal(18,2) NOT NULL,
+  `saldo_actual` decimal(18,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Índices para tablas volcadas
+-
+-- Indices de la tabla `detalle_vigencia`
+
+ALTER TABLE `detalle_vigencia`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `vigencia_id` (`vigencia_id`),
+  ADD KEY `sede` (`sede`);
+
+-- AUTO_INCREMENT de las tablas volcadas
+
+-- AUTO_INCREMENT de la tabla `detalle_vigencia`
+--
+ALTER TABLE `detalle_vigencia`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
+
+-- Restricciones para tablas volcadas
+
+-- Filtros para la tabla `detalle_vigencia`
+
+ALTER TABLE `detalle_vigencia`
+  ADD CONSTRAINT `detalle_vigencia_ibfk_1` FOREIGN KEY (`vigencia_id`) REFERENCES `periodo` (`id_periodo`),
+  ADD CONSTRAINT `detalle_vigencia_ibfk_2` FOREIGN KEY (`sede`) REFERENCES `sede_origen` (`id_sede_origen`);
+COMMIT;
+CREATE TABLE `sede_origen` ( (aqi puede estar   un tipo de origen  ej: popayan regionalizacion,  otro)
+  `id_sede_origen` int(11) NOT NULL,
+  `nombre_origen` varchar(255) NOT NULL,
+  `obs_origen` varchar(255) NOT NULL
+) 
+en  detalle_vigencia se crean los saldos inicial y actual
+
+y tenemos la tabla oficio   que es cuando el usuario genera un paquete  de movimientos
+
+CREATE TABLE `oficio` (
+  `id` int(11) NOT NULL,
+  `numero` varchar(100) NOT NULL,
+  `fecha` date NOT NULL,
+  `detalle_vigencia_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla `oficio`
+--
+ALTER TABLE `oficio`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `detalle_vigencia_id` (`detalle_vigencia_id`);
+
+
+-- AUTO_INCREMENT de la tabla `oficio`
+--
+ALTER TABLE `oficio`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+
+ALTER TABLE `oficio`
+  ADD CONSTRAINT `oficio_ibfk_1` FOREIGN KEY (`detalle_vigencia_id`) REFERENCES `detalle_vigencia` (`id`);
+
+ahi  esta ligada  a   los movimientos con : 
+CREATE TABLE `movimiento` (
+  `id` int(11) NOT NULL,
+  `oficio_id` int(11) NOT NULL,
+  `tipo_movimiento` enum('CONTRATA','LIBERA') NOT NULL,
+  `cdp` varchar(255) DEFAULT NULL,
+  `valor` decimal(18,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+ALTER TABLE `movimiento`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `oficio_id` (`oficio_id`);
+
+--
+-- AUTO_INCREMENT de la tabla `movimiento`
+--
+ALTER TABLE `movimiento`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=101;
+
+
+ALTER TABLE `movimiento`
+  ADD CONSTRAINT `movimiento_ibfk_1` FOREIGN KEY (`oficio_id`) REFERENCES `oficio` (`id`);
+
+entonces cuando un usuario ingresa  para inciar
+debe observar una vigencia actual:  (periodo) ej 2024-2
+
+y a lado en la misma fila un div largo con saldos actuales
+que mostrara: las clasficaciones de:::

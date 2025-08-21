@@ -14,107 +14,175 @@ require('include/headerz.php');
 <head>
     <meta charset="UTF-8">
     <title>Nuevo Registro</title>
-    <style>
-          .modal-overlay {
+   <style>
+/* Unicauca styles */
+:root {
+    --unicauca-blue: #004080;
+    --unicauca-light-blue: #0059b3;
+    --unicauca-dark: #003366;
+    --unicauca-light: #f0f6ff;
+    --unicauca-gray: #f5f5f5;
+    --unicauca-border: #dcdcdc;
+    --unicauca-success: #28a745;
+    --unicauca-danger: #dc3545;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Open Sans', sans-serif;
+    background: linear-gradient(135deg, #f8f9fa, #e6f2ff);
+    color: #333;
+    line-height: 1.6;
+    padding: 20px;
+    min-height: 100vh;
+}
+/* Reemplazo de .modal-overlay para que coincida con .container en la apariencia */
+.modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(100, 100, 100, 0.6); /* fondo gris semitransparente */
+    background-color: rgba(100, 100, 100, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 999;
 }
-
+/* Reemplazo de .modal-content con el estilo .card del ejemplo */
 .modal-content {
-    background-color: #f9f9f9;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 64, 128, 0.15);
     padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.25);
+    margin-bottom: 30px;
+    border: 1px solid var(--unicauca-border);
     width: 90%;
     max-width: 600px;
-    z-index: 1000;
+    position: relative;
+    overflow: hidden;
 }
-        body {
-               font-family: Arial, sans-serif;
-            margin: 20px auto;
-            padding: 20px;
-            max-width: 80%; /* Establece el ancho máximo de la página */
-        }
-        
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px; /* Agrega un margen inferior al encabezado */
-        }
-        .header h1 {
-            flex: 1;
-            text-align: center;
-        }
-        .header h2, .header h3 {
-            flex: 1;
-            text-align: left;
-            margin: 5px 0;
-        }
-        form {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        input[type="text"], select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            background-color: #004080;
-            color: white;
-            font-size: 16px;
-        }   
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-        }
-        .regresar-button {
-            background-color: #cccccc;
-            color: #333333;
-        }
-        .regresar-button:hover {
-            background-color: #999999;
-        }
-     
-    input[type="text"],
-    select,
-    textarea {
-        width: 550px; /* o 100% si tus campos usan % */
-        padding: 6px;
-        font-size: 1rem;
-        box-sizing: border-box;
-    }
 
-    textarea {
-        resize: vertical;
-        height: 80px;
-    }
+.modal-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, var(--unicauca-blue), var(--unicauca-light-blue));
+}
 
-    </style>
+.header {
+    background: var(--unicauca-blue);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px 8px 0 0;
+    margin: -30px -30px 25px -30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    font-size: 1.5rem; /* Ajuste para un título más grande */
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--unicauca-blue);
+    font-size: 0.9rem; /* Ajuste para mayor legibilidad */
+}
+
+input[type="text"],
+select,
+textarea {
+    width: 100%; /* Ajustado para que ocupe el 100% del contenedor */
+    padding: 10px 12px;
+    border: 1px solid var(--unicauca-border);
+    border-radius: 6px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 0.9rem; /* Ajuste para mayor legibilidad */
+    transition: all 0.3s;
+}
+
+input[type="text"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--unicauca-light-blue);
+    box-shadow: 0 0 0 3px rgba(0, 89, 179, 0.15);
+}
+input[type="text"][readonly] {
+    background-color: var(--unicauca-gray);
+    cursor: not-allowed;
+    color: #666;
+}
+
+.button-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px; /* Separación entre botones */
+    margin-top: 30px;
+}
+
+.button-container button {
+    flex: 1; /* Para que ocupen el mismo ancho */
+    padding: 12px 25px;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.button-container button[type="submit"] {
+    background: var(--unicauca-blue);
+    color: white;
+    box-shadow: 0 4px 8px rgba(0, 64, 128, 0.2);
+}
+
+.button-container button[type="submit"]:hover {
+    background: var(--unicauca-light-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 64, 128, 0.25);
+}
+
+.regresar-button {
+    background: #6c757d;
+    color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.regresar-button:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.required {
+    color: var(--unicauca-danger);
+}
+</style>
     <script>
   function buscarTercero(input) {
     var numDocumento = input.value;
@@ -233,97 +301,121 @@ require('include/headerz.php');
     </script>
 </head>
 <body>
-      <div class="modal-overlay">
-    <div class="modal-content">
-        
-    <h1>Agregar Nuevo Registro</h1>
-   
-    <form action="procesar_nuevo_registro.php" method="POST" onsubmit="return validarFormulario()">
-        <input type="hidden" name="facultad_id" value="<?php echo htmlspecialchars($_GET['facultad_id']); ?>">
-        <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($_GET['departamento_id']); ?>">
-        <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($_GET['anio_semestre']); ?>">
-        <input type="hidden" name="anio_semestre_anterior" value="<?php echo htmlspecialchars($_GET['anio_semestre_anterior']); ?>">
+    <div class="modal-overlay">
+        <div class="modal-content">
+            <div class="header">
+                <h1><i class="fas fa-user-plus"></i> Agregar Nuevo Registro</h1>
+            </div>
+            <form action="procesar_nuevo_registro.php" method="POST" onsubmit="return validarFormulario()">
+                <input type="hidden" name="facultad_id" value="<?php echo htmlspecialchars($_GET['facultad_id']); ?>">
+                <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($_GET['departamento_id']); ?>">
+                <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($_GET['anio_semestre']); ?>">
+                <input type="hidden" name="anio_semestre_anterior" value="<?php echo htmlspecialchars($_GET['anio_semestre_anterior']); ?>">
+                <input type="hidden" name="tipo_docente" value="<?php echo htmlspecialchars($_GET['tipo_docente']); ?>">
+                <input type="hidden" name="nombre_usuario" value="<?php echo htmlspecialchars($_SESSION['name']); ?>">
 
-        <input type="hidden" name="tipo_docente" value="<?php echo htmlspecialchars($_GET['tipo_docente']); ?>">
-        <input type="hidden" name="nombre_usuario" value="<?php echo htmlspecialchars($_SESSION['name']); ?>">
+                <div class="form-group">
+                    <label for="cedula">Cédula <span class="required">*</span></label>
+                    <input type="text" class="form-control" name="cedula" onblur="validarCedulaUnica(this); buscarTercero(this);" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="nombre">Nombre <span class="required">*</span></label>
+                    <input type="text" class="form-control" name="nombre" id="nombre" readonly required>
+                </div>
 
-        <label for="cedula">Cédula</label>
-        <input type="text" name="cedula" onblur="validarCedulaUnica(this); buscarTercero(this);" required>
+                <?php if ($_GET['tipo_docente'] == "Ocasional") { ?>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tipo_dedicacion">Dedicación Popayán</label>
+                            <select class="form-control" name="tipo_dedicacion" onchange="limpiarTipoDedicacionR()">
+                                <option value=""></option>
+                                <option value="TC" selected>TC</option>
+                                <option value="MT">MT</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="tipo_dedicacion_r">Dedicación Regionalización</label>
+                            <select class="form-control" name="tipo_dedicacion_r" onchange="limpiarTipoDedicacion()">
+                                <option value=""></option>
+                                <option value="TC">TC</option>
+                                <option value="MT">MT</option>
+                            </select>
+                        </div>
+                    </div>
+                <?php } ?>
+                
+                <?php if ($_GET['tipo_docente'] == "Catedra") { ?>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="horas">Horas Popayán</label>
+                            <input type="text" class="form-control" name="horas">
+                        </div>
+                        <div class="form-group">
+                            <label for="horas_r">Horas Regionalización</label>
+                            <input type="text" class="form-control" name="horas_r">
+                        </div>
+                    </div>
+                <?php } ?>
 
-        <label for="nombre">Nombre</label>
-        <input type="text" name="nombre"   id="nombre" readonly required>
-        
-        <?php if ($_GET['tipo_docente'] == "Ocasional") { ?>
-            <label for="tipo_dedicacion">Dedicación Popayán</label>
-            <select name="tipo_dedicacion" onchange="limpiarTipoDedicacionR()">
-                <option value=""></option>
-                <option value="TC" selected>TC</option>
-                <option value="MT">MT</option>
-            </select>
-            <label for="tipo_dedicacion_r">Dedicación Regionalización</label>
-            <select name="tipo_dedicacion_r" onchange="limpiarTipoDedicacion()">
-                <option value=""></option>
-                <option value="TC">TC</option>
-                <option value="MT">MT</option>
-            </select>
-        <?php } ?>
-        
-        <?php if ($_GET['tipo_docente'] == "Catedra") { ?>
-            <label for="horas">Horas Popayán</label>
-            <input type="text" name="horas">
-            <label for="horas_r">Horas Regionalización</label>
-            <input type="text" name="horas_r">
-        <?php } ?>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="anexa_hv_docente_nuevo">Anexa HV Nuevos <span class="required">*</span></label>
+                        <select class="form-control" name="anexa_hv_docente_nuevo" required>
+                            <option value="No">No</option>
+                            <option value="Si">Si</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="actualiza_hv_antiguo">Actualiza HV Antiguos <span class="required">*</span></label>
+                        <select class="form-control" name="actualiza_hv_antiguo" required>
+                            <option value="No">No</option>
+                            <option value="Si">Si</option>
+                        </select>
+                    </div>
+                </div>
 
-        <label for="anexa_hv_docente_nuevo">Anexa HV Nuevos</label>
-        <select name="anexa_hv_docente_nuevo" required>
-            <option value="No">No</option>
-            <option value="Si">Si</option>
-        </select>
+                <div class="form-group">
+                    <label for="observacion">Observación <span class="required">*</span></label>
+                    <textarea name="observacion" id="observacion" rows="3" class="form-control"
+                        placeholder="evidencia de que se solicitó el cambio al responsable, pero no fue atendido...Ej: Oficio 5.5./31 no se acepta cambio a ocasional, se mantiene como cátedra.."
+                        oninput="detectarTipoReemplazo()"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tipo_reemplazo">Tipo de Reemplazo/Justificación <span class="required">*</span></label>
+                    <select name="tipo_reemplazo" id="tipo_reemplazo" class="form-control" required>
+                        <option value="">-- Seleccione una opción --</option>
+                        <option value="Ajuste de Matrículas">Ajuste de Matrículas</option>
+                        <option value="Otras fuentes de financiacion">Otras fuentes de financiación</option>
+                        <option value="Reemplazo">Reemplazo</option>
+                        <option value="Reemplazo por Jubilación">Reemplazo por Jubilación</option>
+                        <option value="Reemplazo por Necesidad Docente">Reemplazo por Necesidad Docente</option>
+                        <option value="Reemplazo por Fallecimiento">Reemplazo por Fallecimiento</option>
+                        <option value="Reemplazo por Licencia">Reemplazo por Licencia</option>
+                        <option value="Reemplazo por Renuncia">Reemplazo por Renuncia</option>
+                        <option value="Reemplazos NN">Reemplazos NN</option>
+                        <option value="Necesidad docente">Necesidad docente</option>
+                        <option value="Reemplazo por enfermedad general">Reemplazo por enfermedad general</option>
+                        <option value="Ajustes VRA">Ajustes VRA</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
 
-        <label for="actualiza_hv_antiguo">Actualiza HV Antiguos</label>
-        <select name="actualiza_hv_antiguo" required>
-            <option value="No">No</option>
-            <option value="Si">Si</option>
-        </select>
-            <label for="observacion">Observación</label>
-           <textarea name="observacion" id="observacion" rows="3" style="margin-bottom: 15px;" 
-              placeholder="evidencia de que se solicitó el cambio al responsable, pero no fue atendido...Ej: Oficio 5.5./31 no se acepta cambio a ocasional, se mantiene como cátedra.."
-              oninput="detectarTipoReemplazo()"></textarea>
-
-    <!-- Nuevo campo de pestaña -->
-    <label for="tipo_reemplazo">Tipo de Reemplazo/Justificación</label>
-    <select name="tipo_reemplazo" id="tipo_reemplazo" required>
-     <option value="">-- Seleccione una opción --</option>
-    <option value="Ajuste de Matrículas">Ajuste de Matrículas</option>
-    <option value="Otras fuentes de financiacion">Otras fuentes de financiación</option>
-    <option value="Reemplazo">Reemplazo</option>
-    <option value="Reemplazo por Jubilación">Reemplazo por Jubilación</option>
-    <option value="Reemplazo por Necesidad Docente">Reemplazo por Necesidad Docente</option>
-    <option value="Reemplazo por Fallecimiento">Reemplazo por Fallecimiento</option>
-    <option value="Reemplazo por Licencia">Reemplazo por Licencia</option>
-    <option value="Reemplazo por Renuncia">Reemplazo por Renuncia</option>
-    <option value="Reemplazos NN">Reemplazos NN</option>
-    <option value="Necesidad docente">Necesidad docente</option>
-    <option value="Reemplazo por enfermedad general">Reemplazo por enfermedad general</option>
-    <option value="Ajustes VRA">Ajustes VRA</option>
-    <option value="Otro">Otro</option>
-
-    </select>
-
-        <div class="button-container">
-            <button type="submit">Agregar</button>
-            <button type="button" class="regresar-button" onclick="regresar()">Regresar</button>
+                <div class="button-container">
+                    <button type="submit">Agregar</button>
+                    <button type="button" class="regresar-button" onclick="regresar()">Regresar</button>
+                </div>
+            </form>
         </div>
+    </div>
+    
+    <form id="redirectForm" action="depto_comparativo.php" method="POST" style="display: none;">
+        <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($_GET['departamento_id']); ?>">
+        <input type="hidden" id="anio_semestre" name="anio_semestre" value="<?php echo htmlspecialchars($_GET['anio_semestre']); ?>">
+        <input type="hidden" id="anio_semestre_anterior" name="anio_semestre_anterior" value="<?php echo htmlspecialchars($_GET['anio_semestre_anterior']); ?>">
     </form>
 
-    <!-- Formulario oculto para el botón de regresar -->
- <form id="redirectForm" action="depto_comparativo.php" method="POST" style="display: none;">
-    <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($_GET['departamento_id']); ?>">
-    <input type="hidden" id="anio_semestre" name="anio_semestre" value="<?php echo htmlspecialchars($_GET['anio_semestre']); ?>">
-         <input type="hidden" id="anio_semestre_anterior" name="anio_semestre_anterior" value="<?php echo htmlspecialchars($_GET['anio_semestre_anterior']); ?>">
-
-</form>
   </div>
     </div>
     
