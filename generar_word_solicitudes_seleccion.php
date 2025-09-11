@@ -11,34 +11,101 @@ use PhpOffice\PhpWord\Style\Language;
 
 setlocale(LC_TIME, 'es_ES.UTF-8', 'es_ES', 'Spanish_Spain', 'es');
 
-// Parámetros recibidos
+// --- 1. PARÁMETROS RECIBIDOS ---
 $anio_semestre = $_POST['anio_semestre'] ?? '';
 $id_facultad = (int)($_POST['id_facultad'] ?? 0);
 $numero_oficio = $_POST['oficio'] ?? 'S/N';
 $fecha_oficio = $_POST['fecha_oficio'] ?? date('Y-m-d');
+$oficio_con_fecha_fac = $numero_oficio . ' ' . $fecha_oficio;
+
 $decano_nombre = $_POST['decano'] ?? 'Decano/a';
 $elaborado_por = $_POST['elaborado_por'] ?? 'Responsable Facultad';
 $folios = (int)($_POST['folios'] ?? 0);
 $numero_acta = $_POST['numero_acta'] ?? '';
 
-// === NUEVA LÓGICA PARA RECIBIR Y PROCESAR LOS IDs SELECCIONADOS ===
 $selected_ids_str = $_POST['selected_ids_for_word'] ?? '';
-$selected_ids_array = [];
-if (!empty($selected_ids_str)) {
-    // Convertir la cadena de IDs de nuevo a un array de enteros
-    $selected_ids_array = array_map('intval', explode(',', $selected_ids_str));
-    // Asegurarse de que el array no esté vacío después de la conversión
-    if (empty($selected_ids_array)) {
-        die("No se proporcionaron IDs de solicitud válidos.");
-    }
-} else {
-    die("Debe proporcionar los IDs de solicitud para generar el oficio.");
+if (empty($selected_ids_str)) {
+    die("No se proporcionaron IDs de solicitud válidos.");
 }
-// ===================================================================
+$selected_ids_array = array_map('intval', explode(',', $selected_ids_str));
 
 if (empty($anio_semestre) || $id_facultad === 0) {
     die("Debe proporcionar el año-semestre y la facultad para generar el oficio.");
 }
+        $departamento_emails = [];
+
+// ==============================================================================
+// ===== INICIO DE LA LÓGICA MEJORADA PARA "CAMBIO DE VINCULACIÓN" ==============
+// ==============================================================================
+
+// El array final de IDs que se van a actualizar y a incluir en el Word
+$ids_a_procesar = $selected_ids_array;
+
+// Primero, buscamos las cédulas de los registros "Adicionar" que hemos seleccionado
+$placeholders = implode(',', array_fill(0, count($selected_ids_array), '?'));
+$types = str_repeat('i', count($selected_ids_array));
+$sql_find_cedulas = "SELECT cedula FROM solicitudes_working_copy WHERE id_solicitud IN ($placeholders) AND (novedad = 'Adicion' OR novedad = 'adicionar')";
+
+$stmt_cedulas = $conn->prepare($sql_find_cedulas);
+if ($stmt_cedulas) {
+    $stmt_cedulas->bind_param($types, ...$selected_ids_array);
+    $stmt_cedulas->execute();
+    $result_cedulas = $stmt_cedulas->get_result();
+    $cedulas_de_adiciones = [];
+    while ($row = $result_cedulas->fetch_assoc()) {
+        $cedulas_de_adiciones[] = $row['cedula'];
+    }
+    $stmt_cedulas->close();
+}
+
+// Si encontramos cédulas, buscamos sus contrapartes "Eliminar" que ya fueron APROBADAS
+if (!empty($cedulas_de_adiciones)) {
+    $placeholders_cedulas = implode(',', array_fill(0, count($cedulas_de_adiciones), '?'));
+    $types_cedulas = str_repeat('s', count($cedulas_de_adiciones));
+
+    $sql_find_eliminar = "SELECT id_solicitud FROM solicitudes_working_copy WHERE cedula IN ($placeholders_cedulas) AND novedad = 'Eliminar' AND anio_semestre = ? AND facultad_id = ? AND estado_facultad = 'APROBADO'";
+    $stmt_eliminar = $conn->prepare($sql_find_eliminar);
+    
+    if ($stmt_eliminar) {
+        $params_eliminar = array_merge($cedulas_de_adiciones, [$anio_semestre, $id_facultad]);
+        $stmt_eliminar->bind_param($types_cedulas . 'si', ...$params_eliminar);
+        
+        $stmt_eliminar->execute();
+        $result_eliminar = $stmt_eliminar->get_result();
+        while ($row = $result_eliminar->fetch_assoc()) {
+            // Añadimos el ID del registro "Eliminar" a nuestra lista de procesamiento
+            $ids_a_procesar[] = $row['id_solicitud'];
+        }
+        $stmt_eliminar->close();
+    }
+}
+
+// Nos aseguramos de que no haya IDs duplicados en la lista final
+$ids_a_procesar = array_unique($ids_a_procesar);
+
+// ==============================================================================
+// ===== FIN DE LA LÓGICA MEJORADA ==============================================
+// ==============================================================================
+
+
+// === UPDATE PARA CADA SOLICITUD SELECCIONADA (USANDO LA LISTA COMPLETA) ===
+$sql_update = "UPDATE solicitudes_working_copy 
+               SET oficio_fac = ?, 
+                   fecha_oficio_fac = ?, 
+                   oficio_con_fecha_fac = ? 
+               WHERE id_solicitud = ?";
+
+$stmt_update = $conn->prepare($sql_update);
+if (!$stmt_update) {
+    die("Error al preparar el UPDATE: " . $conn->error);
+}
+
+// Ahora iteramos sobre la lista completa que incluye las contrapartes "Eliminar"
+foreach ($ids_a_procesar as $id) {
+    $stmt_update->bind_param("sssi", $numero_oficio, $fecha_oficio, $oficio_con_fecha_fac, $id);
+    $stmt_update->execute();
+}
+$stmt_update->close();
 
 // Mapeo de imágenes por facultad
 $facultades = [
@@ -134,10 +201,14 @@ $sql_cambio_vinculacion = "
 
 $stmt_cambio_vinculacion = $conn->prepare($sql_cambio_vinculacion);
 if ($stmt_cambio_vinculacion) {
-    $types_cambio = 'si' . str_repeat('i', count($selected_ids_array) * 2); // 'si' para anio_semestre, id_facultad, luego 'i' por cada ID en los dos IN clauses
+    $types_cambio = 'si' . str_repeat('i', count($selected_ids_array) * 2);
     $params_cambio = array_merge([$types_cambio, $anio_semestre, $id_facultad], $selected_ids_array, $selected_ids_array);
     call_user_func_array([$stmt_cambio_vinculacion, 'bind_param'], refValues($params_cambio));
-    $stmt_cambio_vinculacion->execute();
+    
+    if (!$stmt_cambio_vinculacion->execute()) {
+        die("Error al ejecutar la consulta de cambio de vinculación: " . $stmt_cambio_vinculacion->error);
+    }
+    
     $result_cambio_vinculacion = $stmt_cambio_vinculacion->get_result();
     while ($row = $result_cambio_vinculacion->fetch_assoc()) {
         $cambio_vinculacion_data[] = $row;
@@ -157,7 +228,6 @@ $cedulas_excluir_str = !empty($cedulas_excluir) ? "'" . implode("','", $cedulas_
 
 $ids_excluir = array_unique($ids_cambio_vinculacion);
 $ids_excluir_str = !empty($ids_excluir) ? implode(',', $ids_excluir) : '0'; // Usa 0 si el array está vacío
-
 
 // === MODIFICACIÓN DE LA CONSULTA SQL PRINCIPAL PARA EXCLUIR CAMBIOS DE VINCULACIÓN ===
 $sql = "
@@ -186,17 +256,30 @@ $sql = "
       AND sw.estado_facultad = 'APROBADO'
       AND sw.estado_vra = 'PENDIENTE'
       AND sw.id_solicitud IN ($placeholders_ids_seleccionados)
-      AND sw.id_solicitud NOT IN ($ids_excluir_str) -- ¡Excluir IDs de Cambio de Vinculación!
-    ORDER BY d.depto_nom_propio ASC, sw.novedad ASC, sw.nombre ASC
 ";
+
+// Si hay IDs para excluir (cambios de vinculación), añadimos la cláusula NOT IN
+if (!empty($ids_excluir)) {
+    $placeholders_excluir = implode(',', array_fill(0, count($ids_excluir), '?'));
+    $sql .= " AND sw.id_solicitud NOT IN ($placeholders_excluir)";
+}
+
+$sql .= " ORDER BY d.depto_nom_propio ASC, sw.novedad ASC, sw.nombre ASC";
 
 $stmt = $conn->prepare($sql);
 if ($stmt) {
-    // Reconstruir los parámetros para la consulta principal
+    // Construir los tipos y parámetros para bind_param
     $types = 'si' . str_repeat('i', count($selected_ids_array));
-    $params = array_merge([$types, $anio_semestre, $id_facultad], $selected_ids_array);
+    $params = array_merge([$anio_semestre, $id_facultad], $selected_ids_array);
 
-    call_user_func_array([$stmt, 'bind_param'], refValues($params));
+    // Si hay IDs para excluir, añadimos sus tipos y parámetros
+    if (!empty($ids_excluir)) {
+        $types .= str_repeat('i', count($ids_excluir));
+        $params = array_merge($params, $ids_excluir);
+    }
+
+    // Usar call_user_func_array para bind_param
+    call_user_func_array([$stmt, 'bind_param'], refValues(array_merge([$types], $params)));
 
     $stmt->execute();
     $result = $stmt->get_result();
@@ -210,33 +293,26 @@ if (empty($solicitudes) && empty($cambio_vinculacion_data)) {
     die("No se encontraron solicitudes APROBADAS por Facultad y PENDIENTES por VRA para el periodo, facultad y IDs seleccionados.");
 }
 
-$nombre_facultad_principal = ($solicitudes[0]['nombre_facultad'] ?? $cambio_vinculacion_data[0]['nombre_facultad']) ?? 'Facultad Desconocida';
-$departamentos_nombres = [];
-$sql_departamentos = "SELECT depto_nom_propio FROM deparmanentos WHERE PK_DEPTO IN (
-    SELECT DISTINCT departamento_id 
-    FROM solicitudes_working_copy 
-    WHERE anio_semestre = ? AND facultad_id = ? AND estado_facultad = 'APROBADO' AND estado_vra = 'PENDIENTE'
-)"; // Filtramos solo los departamentos con solicitudes relevantes
+// ==============================================================================
+// ===== INICIA EL BLOQUE DE CÓDIGO CORREGIDO ===================================
+// ==============================================================================
 
-$stmt_departamentos = $conn->prepare($sql_departamentos);
-if ($stmt_departamentos) {
-    $stmt_departamentos->bind_param('si', $anio_semestre, $id_facultad);
-    $stmt_departamentos->execute();
-    $result_departamentos = $stmt_departamentos->get_result();
-    while ($row = $result_departamentos->fetch_assoc()) {
-        $departamentos_nombres[] = htmlspecialchars($row['depto_nom_propio']);
+// --- OBTENER NOMBRES PARA EL ENCABEZADO DEL DOCUMENTO ---
+$nombre_facultad_principal = ($solicitudes[0]['nombre_facultad'] ?? $cambio_vinculacion_data[0]['nombre_facultad']) ?? 'Facultad Desconocida';
+
+// Obtener nombres de los departamentos involucrados directamente de los datos que ya tenemos
+$departamentos_nombres = [];
+$todos_los_datos = array_merge($solicitudes, $cambio_vinculacion_data);
+foreach ($todos_los_datos as $dato) {
+    if (!in_array($dato['nombre_departamento'], $departamentos_nombres)) {
+        $departamentos_nombres[] = htmlspecialchars($dato['nombre_departamento']);
     }
-    $stmt_departamentos->close();
-} else {
-    die("Error al preparar la consulta de departamentos: " . $conn->error);
 }
+$departamentos_nombres = array_unique($departamentos_nombres);
 
 $departamentos_frase = '';
 if (!empty($departamentos_nombres)) {
-    // Eliminar duplicados y reindexar (si es necesario)
-    $departamentos_nombres = array_unique($departamentos_nombres);
     $num_deptos = count($departamentos_nombres);
-
     if ($num_deptos === 1) {
         $departamentos_frase = $departamentos_nombres[0];
     } elseif ($num_deptos > 1) {
@@ -244,26 +320,16 @@ if (!empty($departamentos_nombres)) {
         $departamentos_frase = implode(', ', $departamentos_nombres) . ' y ' . $ultimo_depto;
     }
 }
-// Agrupar solicitudes por departamento y luego por novedad, recolectando observaciones
-$grouped_solicitudes = [];
-$grouped_observations = [];
+
+// --- AGRUPAR LAS SOLICITUDES POR TIPO Y DEPARTAMENTO ---
+$grouped_solicitudes = []; // Para Adicionar, Eliminar, etc.
 foreach ($solicitudes as $sol) {
-    $departamento = $sol['nombre_departamento'];
-    $novedad_tipo = $sol['novedad'];
+    $grouped_solicitudes[$sol['nombre_departamento']][$sol['novedad']][] = $sol;
+}
 
-    if (!isset($grouped_solicitudes[$departamento])) {
-        $grouped_solicitudes[$departamento] = [];
-        $grouped_observations[$departamento] = [];
-    }
-    if (!isset($grouped_solicitudes[$departamento][$novedad_tipo])) {
-        $grouped_solicitudes[$departamento][$novedad_tipo] = [];
-        $grouped_observations[$departamento][$novedad_tipo] = [];
-    }
-    $grouped_solicitudes[$departamento][$novedad_tipo][] = $sol;
-
-    if (!empty($sol['s_observacion']) && !in_array($sol['s_observacion'], $grouped_observations[$departamento][$novedad_tipo])) {
-        $grouped_observations[$departamento][$novedad_tipo][] = $sol['s_observacion'];
-    }
+$grouped_cambio_vinculacion = []; // Exclusivamente para Cambios de Vinculación
+foreach ($cambio_vinculacion_data as $cambio) {
+    $grouped_cambio_vinculacion[$cambio['nombre_departamento']][] = $cambio;
 }
 
 // Generar el documento de Word usando PHPWord
@@ -357,12 +423,7 @@ $section->addText($vicerrector['nombre'], ['size' => 11], $styleNoSpace);
 $section->addText($vicerrector['cargo_completo'], ['size' => 11], $styleNoSpace);
 $section->addText($vicerrector['institucion'], ['size' => 11], $styleNoSpace);
 $section->addTextBreak(1);
-/*
-$section->addText('Doctora', ['size' => 11], $styleNoSpace);
-$section->addText('AIDA PATRICIA GONZALEZ NIEVA', ['size' => 11], $styleNoSpace);
-$section->addText('Vicerrectora Académica', ['size' => 11], $styleNoSpace);
-$section->addText('Universidad del Cauca', ['size' => 11], $styleNoSpace);
-$section->addTextBreak(1);*/
+
 
 $section->addText(
     'Asunto: Novedades de Vinculación Profesores temporales ' . $anio_semestre . '.',
@@ -374,343 +435,354 @@ $section->addText('Cordial saludo,', 'normalSize11', 'left');
 $section->addTextBreak(0);
 
 $section->addText(
-    'Para su conocimiento y trámite pertinente remito solicitud de novedades de la Facultad de ' . $nombre_facultad_principal . ' departamento: '.$departamentos_frase . '; periodo: ' . $anio_semestre . ',  para los siguientes profesores:',
+    'Para su conocimiento y trámite pertinente remito solicitud de novedades de la Facultad de ' . $nombre_facultad_principal . /*' departamento: '.$departamentos_frase . */'; periodo: ' . $anio_semestre . ',  para los siguientes profesores:',
     'normalSize11', 'justify'
 );
 $section->addTextBreak(1);
 
-// ==================================================
-// SECCIÓN: Novedad Cambio de Vinculación
-// ==================================================
-if (!empty($cambio_vinculacion_data)) {
-    $section->addText('Novedad: Cambio de Vinculación', ['bold' => true, 'size' => 11]);
-    $section->addTextBreak(0);
+// --- BUCLE PRINCIPAL POR DEPARTAMENTO ---
+$todos_los_departamentos = array_unique(array_merge(array_keys($grouped_solicitudes), array_keys($grouped_cambio_vinculacion)));
+sort($todos_los_departamentos);
 
- 
-foreach ($cambio_vinculacion_data as $cambio) {
-    // 1. Añadir la observación general/contexto al inicio (si existe)
-    if (!empty($cambio['observacion_adicionar'])) {
-        $section->addText(htmlspecialchars($cambio['observacion_adicionar']), $observationTextStyle, $paragraphStyleLeft);
-    }
+foreach ($todos_los_departamentos as $departamento_nombre) {
+    // Título del Departamento
+    $section->addText('Departamento de ' . htmlspecialchars($departamento_nombre), ['bold' => true, 'size' => 12], ['spaceAfter' => 120, 'keepNext' => true]);
 
-    // 2. Construir la frase narrativa de transición del profesor
-    $tipo_docente_eliminar = $cambio['tipo_docente_eliminar'];
-    $salida_part = ''; // Inicializar para la parte de la salida
-    $sede_eliminar = htmlspecialchars($cambio['sede_eliminar'] ?: ''); // Obtener el valor de la sede a eliminar aquí
-    
-    // Determinar los valores para la vinculación que se elimina
-    if ($tipo_docente_eliminar == "Ocasional") {
-        // Para Ocasional, usar dedicación (MT o TC) - priorizar el campo principal, sino el _r
-        $dedicacion_eliminar_val = !empty($cambio['dedicacion_eliminar']) ? $cambio['dedicacion_eliminar'] : $cambio['dedicacion_eliminar_r'];
-        $dedicacion_eliminar_str = '';
-        
-        if (!empty($dedicacion_eliminar_val)) {
-            // Convertir abreviaciones a texto completo
-            $dedicacion_eliminar_str = str_replace(
-                ['MT', 'TC'], 
-                ['Medio Tiempo', 'Tiempo Completo'], 
-                htmlspecialchars($dedicacion_eliminar_val)
-            );
-             // MODIFICACIÓN AQUÍ para Ocasional Eliminación: Añadir la sede si existe
-            if (!empty($sede_eliminar)) {
-                $dedicacion_eliminar_str .= " - Sede {$sede_eliminar}";
-            }
-        }
-        
-        $salida_part = $dedicacion_eliminar_str;
-    } else if ($tipo_docente_eliminar == "Catedra") {
-    $horas_eliminar_p_val = null; // Usaremos null para saber si el valor es válido y > 0
-    $horas_eliminar_r_val = null;
-
-    // Evaluar horas_eliminar (propuesta)
-    if (isset($cambio['horas_eliminar']) && is_numeric($cambio['horas_eliminar'])) {
-        $temp_p = floatval($cambio['horas_eliminar']);
-        if ($temp_p > 0) {
-            $horas_eliminar_p_val = htmlspecialchars((string)$temp_p);
-        }
-    }
-
-    // Evaluar horas_r_eliminar (regular/regional)
-    // Asumiendo que 'horas_r_eliminar' es el campo correcto para las horas regulares a eliminar
-    if (isset($cambio['horas_r_eliminar']) && is_numeric($cambio['horas_r_eliminar'])) {
-        $temp_r = floatval($cambio['horas_r_eliminar']);
-        if ($temp_r > 0) {
-            $horas_eliminar_r_val = htmlspecialchars((string)$temp_r);
-        }
-    }
-    
-    $horas_eliminar_str = '';
-    if ($horas_eliminar_p_val !== null && $horas_eliminar_r_val !== null) {
-        // Ambas tienen valores válidos y > 0
-        $horas_eliminar_str = "{$horas_eliminar_p_val} (P) / {$horas_eliminar_r_val} (R) horas";
-    } elseif ($horas_eliminar_p_val !== null) {
-        // Solo horas_eliminar tiene un valor válido y > 0
-        $horas_eliminar_str = "{$horas_eliminar_p_val} horas";
-    } elseif ($horas_eliminar_r_val !== null) {
-        // Solo horas_r_eliminar tiene un valor válido y > 0
-        $horas_eliminar_str = "{$horas_eliminar_r_val} horas";
-    }
-    
-    $salida_part = $horas_eliminar_str;
-    
-    // Concatenar la sede si existe y hay alguna hora válida para mostrar
-    if (!empty($sede_eliminar) && !empty($salida_part)) { // Se agregó !empty($salida_part) para que la sede solo se añada si hay horas
-        $salida_part .= " - Sede {$sede_eliminar}";
-    }
-} else {
-        $salida_part = '';
-    }
-    $sede_adicionar = htmlspecialchars($cambio['sede_adicionar'] ?: ''); // Obtener el valor de la sede aquí
-
-    // --- Lógica para determinar los valores de la NUEVA vinculación (adicionar) ---
-    $tipo_docente_str = htmlspecialchars($cambio['tipo_docente'] ?: '');
-    $nueva_vinculacion_dedicacion_horas = '';
-
-    if ($tipo_docente_str === "Ocasional") {
-        $dedicacion_val_adicionar = '';
-        if (!empty($cambio['dedicacion_adicionar'])) {
-            $dedicacion_val_adicionar = $cambio['dedicacion_adicionar'];
-        } elseif (!empty($cambio['tipo_dedicacion_r'])) {
-            $dedicacion_val_adicionar = $cambio['tipo_dedicacion_r'];
-        }
-
-        if (!empty($dedicacion_val_adicionar)) {
-            $nueva_vinculacion_dedicacion_horas = str_replace(
-                ['MT', 'TC'],
-                ['Medio Tiempo', 'Tiempo Completo'],
-                htmlspecialchars($dedicacion_val_adicionar)
-            );
-             // **MODIFICACIÓN AQUÍ para Ocasional:** Añadir la sede si existe
-            if (!empty($sede_adicionar)) {
-                $nueva_vinculacion_dedicacion_horas .= " - Sede {$sede_adicionar}";
-            }
-        }
-    } elseif ($tipo_docente_str === "Catedra") {
-        $horas_val_adicionar_numeric = null; // Almacenará el valor numérico válido y > 0
-
-        // Evaluar horas_adicionar
-        if (isset($cambio['horas_adicionar']) && is_numeric($cambio['horas_adicionar'])) {
-            $temp_horas_adicionar = floatval($cambio['horas_adicionar']);
-            if ($temp_horas_adicionar > 0) {
-                $horas_val_adicionar_numeric = $temp_horas_adicionar;
-            }
-        }
-
-        // Si horas_adicionar no es válido o es 0, evaluar horas_r
-        if ($horas_val_adicionar_numeric === null && isset($cambio['horas_r']) && is_numeric($cambio['horas_r'])) {
-            $temp_horas_r = floatval($cambio['horas_r']);
-            if ($temp_horas_r > 0) {
-                $horas_val_adicionar_numeric = $temp_horas_r;
-            }
-        }
-
-        if ($horas_val_adicionar_numeric !== null) {
-            $nueva_vinculacion_dedicacion_horas = htmlspecialchars((string)$horas_val_adicionar_numeric) . ' horas';
-            // **MODIFICACIÓN AQUÍ para Catedra:** Añadir la sede si existe
-            if (!empty($sede_adicionar)) {
-                $nueva_vinculacion_dedicacion_horas .= " - Sede {$sede_adicionar}";
-            }
-        }
-    }
-    // Fin de la lógica para ADICIONAR
-    $nombre_profesor = htmlspecialchars($cambio['nombre_adicionar'] ?: $cambio['nombre_eliminar']);
-$section->addTextBreak(0);
-
-    // Construcción del texto narrativo con lógica mejorada
-    $narrative_text = "Con el fin de atender esta necesidad, solicitamos comedidamente  el profesor {$nombre_profesor}";
-    
-    // Parte de la vinculación actual (que se elimina)
-    $narrative_text .= " que pasa de {$tipo_docente_eliminar}";
-    if (!empty($salida_part)) {
-        $narrative_text .= " - {$salida_part}";
-    }
-    
-    // Parte de la nueva vinculación
-    $narrative_text .= " a {$tipo_docente_str}";
-    if (!empty($nueva_vinculacion_dedicacion_horas)) {
-        $narrative_text .= " {$nueva_vinculacion_dedicacion_horas}";
-    }
-    $narrative_text .= ".";
-
-    $section->addText($narrative_text, ['size' => 11], $paragraphStyleLeft);
-    $section->addTextBreak(0); // Pequeña separación
-
-    // 3. Tabla para la "Nueva Vinculación"
-   $section->addText('Nueva Vinculación:', ['bold' => true, 'size' => 9], $paragraphStyleLeft);
-    $table_cambio = $section->addTable('ColspanRowspan');
-    $table_cambio->setWidth(100 * 50, TblWidth::PERCENT);
-
-    // Encabezados de tabla - Primera fila (para las celdas que abarcan dos filas)
-    $row = $table_cambio->addRow();
-
-    // Cédula
-    $row->addCell(1200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Cédula', $cellTextStyleb, $paragraphStyle);
-
-    // Nombre
-    $row->addCell(4000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyleb, $paragraphStyle);
-
-    // Dedicación/hr (cabecera que abarca dos columnas)
-    $row->addCell(2600, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('Dedic/hr', $cellTextStyleb, $paragraphStyle);
-    
-    // Hoja de vida (cabecera que abarca dos columnas)
-    $row->addCell(2000, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('H.de Vida', $cellTextStyleb, $paragraphStyle);
-
-    // Tipo Docente (última columna)
-    $row->addCell(1000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Tipo Docente', $cellTextStyleb, $paragraphStyle);
-
-    // Encabezados de tabla - Segunda fila (para sub-encabezados y 'continue' de vMerge)
-    $row = $table_cambio->addRow();
-
-    // Celdas 'continue' para Cédula y Nombre (y Nº si la tuvieras)
-    $row->addCell(1200, array('vMerge' => 'continue', 'borderSize' => 1)); // Cédula
-    $row->addCell(4000, array('vMerge' => 'continue', 'borderSize' => 1)); // Nombre
-
-    // Sub-encabezados de Dedicación/hr
-    $row->addCell(1300, $headerCellStyle)->addText('Pop', $cellTextStyleb, $paragraphStyle);
-    $row->addCell(1300, $headerCellStyle)->addText('Reg', $cellTextStyleb, $paragraphStyle);
-
-    // Sub-encabezados de Hoja de vida
-    $row->addCell(1000, $headerCellStyle)->addText('Nuevo', $cellTextStyleb, $paragraphStyle);
-    $row->addCell(1000, $headerCellStyle)->addText('Antig', $cellTextStyleb, $paragraphStyle);
-
-    // Celda 'continue' para Tipo Docente
-    $row->addCell(1000, array('vMerge' => 'continue', 'borderSize' => 1)); // Tipo Docente
-
-    // Fila de datos
-    $table_cambio->addRow();
-    // Datos de las nuevas columnas
-    $table_cambio->addCell(1200, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['cedula'] ?: ''), $cellTextStyle, $paragraphStyle);
-    $table_cambio->addCell(4000, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['nombre_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
-    
-    // Columnas de Dedicación/horas según el tipo de docente
-    if ($cambio['tipo_docente'] == "Ocasional") {
-        $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['dedicacion_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
-        $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['tipo_dedicacion_r'] ?: ''), $cellTextStyle, $paragraphStyle);
-    } elseif ($cambio['tipo_docente'] == "Catedra") {
-        $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['horas_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
-        $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['horas_r'] ?: ''), $cellTextStyle, $paragraphStyle);
-    } else {
-        $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText('', $cellTextStyle, $paragraphStyle);
-        $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText('', $cellTextStyle, $paragraphStyle);
-    }
-
-    // Columnas de Hoja de Vida
-    $table_cambio->addCell(1000, ['borderSize' => 1, 'valign' => 'center'])
-        ->addText(mb_strtoupper(htmlspecialchars($cambio['anexa_hv_docente_nuevo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
-    $table_cambio->addCell(1000, ['borderSize' => 1, 'valign' => 'center'])
-        ->addText(mb_strtoupper(htmlspecialchars($cambio['actualiza_hv_antiguo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
-
-    // Columna Tipo Docente
-    $table_cambio->addCell(1000, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['tipo_docente'] ?: ''), $cellTextStyle, $paragraphStyle);
-    
-    $section->addTextBreak(1); // Un salto de línea después de cada cambio de vinculación
-}
-// La línea siguiente estaba fuera del foreach, se mantiene así si es tu intención
-$section->addTextBreak(1);
-}
-// Iterar por departamentos y luego por novedades dentro de cada departamento (EXCLUYENDO los de cambio de vinculación)
-foreach ($grouped_solicitudes as $departamento_nombre => $novedades_por_depto) {
-   // $section->addText('Departamento de ' . htmlspecialchars($departamento_nombre), ['bold' => true, 'size' => 11]);
-    //$section->addTextBreak(0);
-
-    foreach ($novedades_por_depto as $novedad_tipo => $solicitudes_por_novedad) {
-        $novedad_mostrar = ucfirst($novedad_tipo);
-        $section->addText('Novedad: ' . htmlspecialchars($novedad_mostrar), $fontStyleb, $paragraphStyleLeft);
-
-        if (!empty($grouped_observations[$departamento_nombre][$novedad_tipo])) {
-            $observation_text = '';
-            foreach ($grouped_observations[$departamento_nombre][$novedad_tipo] as $index => $obs) {
-                $observation_text .= '(' . ($index + 1) . ') ' . htmlspecialchars($obs) . ' ';
-            }
-            $section->addText($observation_text, $observationTextStyle, $paragraphStyleLeft);
-            $section->addTextBreak(0);
-        }
+    // --- SECCIÓN 1: CAMBIOS DE VINCULACIÓN (si existen para este depto) ---
+    if (isset($grouped_cambio_vinculacion[$departamento_nombre])) {
+        $section->addText('Novedad: Cambio de Vinculación', ['bold' => true, 'size' => 11]);
         $section->addTextBreak(0);
 
-        $table = $section->addTable('ColspanRowspan');
-        $table->setWidth(100 * 50, TblWidth::PERCENT);
+        foreach ($grouped_cambio_vinculacion[$departamento_nombre] as $cambio) {
+            // 1. Añadir la observación general/contexto al inicio (si existe)
+            if (!empty($cambio['observacion_adicionar'])) {
+                $section->addText(htmlspecialchars($cambio['observacion_adicionar']), $observationTextStyle, $paragraphStyleLeft);
+            }
 
-        // Encabezados de la tabla - Primera fila
-        $row = $table->addRow();
+            // 2. Construir la frase narrativa de transición del profesor
+            $tipo_docente_eliminar = $cambio['tipo_docente_eliminar'];
+            $salida_part = ''; // Inicializar para la parte de la salida
+            $sede_eliminar = htmlspecialchars($cambio['sede_eliminar'] ?: ''); // Obtener el valor de la sede a eliminar aquí
+            
+            // Determinar los valores para la vinculación que se elimina
+            if ($tipo_docente_eliminar == "Ocasional") {
+                // Para Ocasional, usar dedicación (MT o TC) - priorizar el campo principal, sino el _r
+                $dedicacion_eliminar_val = !empty($cambio['dedicacion_eliminar']) ? $cambio['dedicacion_eliminar'] : $cambio['dedicacion_eliminar_r'];
+                $dedicacion_eliminar_str = '';
+                
+                if (!empty($dedicacion_eliminar_val)) {
+                    // Convertir abreviaciones a texto completo
+                    $dedicacion_eliminar_str = str_replace(
+                        ['MT', 'TC'], 
+                        ['Medio Tiempo', 'Tiempo Completo'], 
+                        htmlspecialchars($dedicacion_eliminar_val)
+                    );
+                     // MODIFICACIÓN AQUÍ para Ocasional Eliminación: Añadir la sede si existe
+                    if (!empty($sede_eliminar)) {
+                        $dedicacion_eliminar_str .= " - Sede {$sede_eliminar}";
+                    }
+                }
+                
+                $salida_part = $dedicacion_eliminar_str;
+            } else if ($tipo_docente_eliminar == "Catedra") {
+            $horas_eliminar_p_val = null; // Usaremos null para saber si el valor es válido y > 0
+            $horas_eliminar_r_val = null;
 
-        // Nº
-        $textrun = $row->addCell(400, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addTextRun($paragraphStyle);
-        $textrun->addText('N', $cellTextStyle);
-        $textrun->addText('o', array_merge($cellTextStyle, array('superScript' => true)));
+            // Evaluar horas_eliminar (propuesta)
+            if (isset($cambio['horas_eliminar']) && is_numeric($cambio['horas_eliminar'])) {
+                $temp_p = floatval($cambio['horas_eliminar']);
+                if ($temp_p > 0) {
+                    $horas_eliminar_p_val = htmlspecialchars((string)$temp_p);
+                }
+            }
 
-        // Cédula
-        $row->addCell(1200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Cédula', $cellTextStyle, $paragraphStyle);
+            // Evaluar horas_r_eliminar (regular/regional)
+            // Asumiendo que 'horas_r_eliminar' es el campo correcto para las horas regulares a eliminar
+            if (isset($cambio['horas_r_eliminar']) && is_numeric($cambio['horas_r_eliminar'])) {
+                $temp_r = floatval($cambio['horas_r_eliminar']);
+                if ($temp_r > 0) {
+                    $horas_eliminar_r_val = htmlspecialchars((string)$temp_r);
+                }
+            }
+            
+            $horas_eliminar_str = '';
+            if ($horas_eliminar_p_val !== null && $horas_eliminar_r_val !== null) {
+                // Ambas tienen valores válidos y > 0
+                $horas_eliminar_str = "{$horas_eliminar_p_val} (P) / {$horas_eliminar_r_val} (R) horas";
+            } elseif ($horas_eliminar_p_val !== null) {
+                // Solo horas_eliminar tiene un valor válido y > 0
+                $horas_eliminar_str = "{$horas_eliminar_p_val} horas";
+            } elseif ($horas_eliminar_r_val !== null) {
+                // Solo horas_r_eliminar tiene un valor válido y > 0
+                $horas_eliminar_str = "{$horas_eliminar_r_val} horas";
+            }
+            
+            $salida_part = $horas_eliminar_str;
+            
+            // Concatenar la sede si existe y hay alguna hora válida para mostrar
+            if (!empty($sede_eliminar) && !empty($salida_part)) { // Se agregó !empty($salida_part) para que la sede solo se añada si hay horas
+                $salida_part .= " - Sede {$sede_eliminar}";
+            }
+        } else {
+                $salida_part = '';
+            }
+            $sede_adicionar = htmlspecialchars($cambio['sede_adicionar'] ?: ''); // Obtener el valor de la sede aquí
 
-        // Nombre
-        $row->addCell(4000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyle, $paragraphStyle);
+            // --- Lógica para determinar los valores de la NUEVA vinculación (adicionar) ---
+            $tipo_docente_str = htmlspecialchars($cambio['tipo_docente'] ?: '');
+            $nueva_vinculacion_dedicacion_horas = '';
 
-        // Dedicación/hr
-        $row->addCell(1400, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('Dedic/hr', $cellTextStyle, $paragraphStyle);
+            if ($tipo_docente_str === "Ocasional") {
+                $dedicacion_val_adicionar = '';
+                if (!empty($cambio['dedicacion_adicionar'])) {
+                    $dedicacion_val_adicionar = $cambio['dedicacion_adicionar'];
+                } elseif (!empty($cambio['tipo_dedicacion_r'])) {
+                    $dedicacion_val_adicionar = $cambio['tipo_dedicacion_r'];
+                }
 
-        // Hoja de vida
-        $row->addCell(700, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('H.de Vida', $cellTextStyle, $paragraphStyle);
+                if (!empty($dedicacion_val_adicionar)) {
+                    $nueva_vinculacion_dedicacion_horas = str_replace(
+                        ['MT', 'TC'],
+                        ['Medio Tiempo', 'Tiempo Completo'],
+                        htmlspecialchars($dedicacion_val_adicionar)
+                    );
+                     // **MODIFICACIÓN AQUÍ para Ocasional:** Añadir la sede si existe
+                    if (!empty($sede_adicionar)) {
+                        $nueva_vinculacion_dedicacion_horas .= " - Sede {$sede_adicionar}";
+                    }
+                }
+            } elseif ($tipo_docente_str === "Catedra") {
+                $horas_val_adicionar_numeric = null; // Almacenará el valor numérico válido y > 0
 
-        // Tipo Docente
-        $row->addCell(1000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Tipo Docente', $cellTextStyle, $paragraphStyle);
+                // Evaluar horas_adicionar
+                if (isset($cambio['horas_adicionar']) && is_numeric($cambio['horas_adicionar'])) {
+                    $temp_horas_adicionar = floatval($cambio['horas_adicionar']);
+                    if ($temp_horas_adicionar > 0) {
+                        $horas_val_adicionar_numeric = $temp_horas_adicionar;
+                    }
+                }
 
+                // Si horas_adicionar no es válido o es 0, evaluar horas_r
+                if ($horas_val_adicionar_numeric === null && isset($cambio['horas_r']) && is_numeric($cambio['horas_r'])) {
+                    $temp_horas_r = floatval($cambio['horas_r']);
+                    if ($temp_horas_r > 0) {
+                        $horas_val_adicionar_numeric = $temp_horas_r;
+                    }
+                }
 
-        // Encabezados de la tabla - Segunda fila
-        $row = $table->addRow();
-        // Celdas 'continue' para los vMerge 'restart' de la fila anterior
-        $row->addCell(400, array('vMerge' => 'continue', 'borderSize' => 6, 'borderColor' => '999999')); // Nº
-        $row->addCell(1200, array('vMerge' => 'continue', 'borderSize' => 6, 'borderColor' => '999999')); // Cédula
-        $row->addCell(4000, array('vMerge' => 'continue', 'borderSize' => 6, 'borderColor' => '999999')); // Nombre
+                if ($horas_val_adicionar_numeric !== null) {
+                    $nueva_vinculacion_dedicacion_horas = htmlspecialchars((string)$horas_val_adicionar_numeric) . ' horas';
+                    // **MODIFICACIÓN AQUÍ para Catedra:** Añadir la sede si existe
+                    if (!empty($sede_adicionar)) {
+                        $nueva_vinculacion_dedicacion_horas .= " - Sede {$sede_adicionar}";
+                    }
+                }
+            }
+            // Fin de la lógica para ADICIONAR
+            $nombre_profesor = htmlspecialchars($cambio['nombre_adicionar'] ?: $cambio['nombre_eliminar']);
+        $section->addTextBreak(0);
 
-        // Sub-encabezados de Dedicación/hr
-        $row->addCell(700, $headerCellStyle)->addText('Pop', $cellTextStyleb, $paragraphStyle);
-        $row->addCell(700, $headerCellStyle)->addText('Reg', $cellTextStyleb, $paragraphStyle);
+            // Construcción del texto narrativo con lógica mejorada
+            $narrative_text = /*"Con el fin de atender esta necesidad, solicitamos comedidamente  */ "El(la) profesor(a) {$nombre_profesor}";
+            
+            // Parte de la vinculación actual (que se elimina)
+            $narrative_text .= "  pasa de {$tipo_docente_eliminar}";
+            if (!empty($salida_part)) {
+                $narrative_text .= " - {$salida_part}";
+            }
+            
+            // Parte de la nueva vinculación
+            $narrative_text .= " a {$tipo_docente_str}";
+            if (!empty($nueva_vinculacion_dedicacion_horas)) {
+                $narrative_text .= " {$nueva_vinculacion_dedicacion_horas}";
+            }
+            $narrative_text .= ".";
 
-        // Sub-encabezados de Hoja de vida
-        $row->addCell(350, $headerCellStyle)->addText('Nuevo', $cellTextStyleb, $paragraphStyle);
-        $row->addCell(350, $headerCellStyle)->addText('Antig', $cellTextStyleb, $paragraphStyle);
+            $section->addText($narrative_text, ['size' => 11], $paragraphStyleLeft);
+            $section->addTextBreak(0); // Pequeña separación
 
-        // Celdas 'continue' para Tipo Docente
-        $row->addCell(1000, array('vMerge' => 'continue', 'borderSize' => 6, 'borderColor' => '999999')); // Tipo Docente
+            // 3. Tabla para la "Nueva Vinculación"
+           $section->addText('Nueva Vinculación:', ['bold' => true, 'size' => 9], $paragraphStyleLeft);
+            $table_cambio = $section->addTable('ColspanRowspan');
+            $table_cambio->setWidth(100 * 50, TblWidth::PERCENT);
 
-        $cont = 0; // Contador de filas dentro de cada tabla de novedad
-        foreach ($solicitudes_por_novedad as $sol) {
-            $cont++;
-            $table->addRow();
+            // Encabezados de tabla - Primera fila (para las celdas que abarcan dos filas)
+            $row = $table_cambio->addRow();
 
-            // Columna Nº
-            $table->addCell(400, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($cont, $cellTextStyle, $paragraphStyle);
+            // Cédula
+            $row->addCell(1200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Cédula', $cellTextStyleb, $paragraphStyle);
 
-            // Columna Cédula
-            $table->addCell(1200, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(htmlspecialchars($sol['cedula'] ?: ''), $cellTextStyle, $paragraphStyle);
+            // Nombre
+            $row->addCell(4000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyleb, $paragraphStyle);
 
-            // Columna Nombre
-            $full_nombre = htmlspecialchars($sol['nombre'] ?: '');
-            $table->addCell(4000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($full_nombre, $cellTextStyle, $paragraphStyle);
+            // Dedicación/hr (cabecera que abarca two columns)
+            $row->addCell(2600, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('Dedic/hr', $cellTextStyleb, $paragraphStyle);
+            
+            // Hoja de vida (cabecera que abarca two columns)
+            $row->addCell(2000, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('H.de Vida', $cellTextStyleb, $paragraphStyle);
 
+            // Tipo Docente (última columna)
+            $row->addCell(1000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Tipo Docente', $cellTextStyleb, $paragraphStyle);
+
+            // Encabezados de tabla - Segunda fila (para sub-encabezados y 'continue' de vMerge)
+            $row = $table_cambio->addRow();
+
+            // Celdas 'continue' para Cédula y Nombre (y Nº si la tuvieras)
+            $row->addCell(1200, array('vMerge' => 'continue', 'borderSize' => 1)); // Cédula
+            $row->addCell(4000, array('vMerge' => 'continue', 'borderSize' => 1)); // Nombre
+
+            // Sub-encabezados de Dedicación/hr
+            $row->addCell(1300, $headerCellStyle)->addText('Pop', $cellTextStyleb, $paragraphStyle);
+            $row->addCell(1300, $headerCellStyle)->addText('Reg', $cellTextStyleb, $paragraphStyle);
+
+            // Sub-encabezados de Hoja de vida
+            $row->addCell(1000, $headerCellStyle)->addText('Nuevo', $cellTextStyleb, $paragraphStyle);
+            $row->addCell(1000, $headerCellStyle)->addText('Antig', $cellTextStyleb, $paragraphStyle);
+
+            // Celda 'continue' para Tipo Docente
+            $row->addCell(1000, array('vMerge' => 'continue', 'borderSize' => 1)); // Tipo Docente
+
+            // Fila de datos
+            $table_cambio->addRow();
+            // Datos de las nuevas columnas
+            $table_cambio->addCell(1200, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['cedula'] ?: ''), $cellTextStyle, $paragraphStyle);
+            $table_cambio->addCell(4000, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['nombre_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
+            
             // Columnas de Dedicación/horas según el tipo de docente
-            if ($sol['tipo_docente'] == "Ocasional") {
-                $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(htmlspecialchars($sol['tipo_dedicacion'] ?: ''), $cellTextStyle, $paragraphStyle);
-                $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(htmlspecialchars($sol['tipo_dedicacion_r'] ?: ''), $cellTextStyle, $paragraphStyle);
-            } elseif ($sol['tipo_docente'] == "Catedra") {
-                $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(htmlspecialchars($sol['horas'] ?: ''), $cellTextStyle, $paragraphStyle);
-                $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(htmlspecialchars($sol['horas_r'] ?: ''), $cellTextStyle, $paragraphStyle);
+            if ($cambio['tipo_docente'] == "Ocasional") {
+                $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['dedicacion_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
+                $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['tipo_dedicacion_r'] ?: ''), $cellTextStyle, $paragraphStyle);
+            } elseif ($cambio['tipo_docente'] == "Catedra") {
+                $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['horas_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
+                $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['horas_r'] ?: ''), $cellTextStyle, $paragraphStyle);
             } else {
-                $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText('', $cellTextStyle, $paragraphStyle);
-                $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText('', $cellTextStyle, $paragraphStyle);
+                $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText('', $cellTextStyle, $paragraphStyle);
+                $table_cambio->addCell(1300, ['borderSize' => 1, 'valign' => 'center'])->addText('', $cellTextStyle, $paragraphStyle);
             }
 
             // Columnas de Hoja de Vida
-            $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-                ->addText(mb_strtoupper(htmlspecialchars($sol['anexa_hv_docente_nuevo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
-
-            $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-                ->addText(mb_strtoupper(htmlspecialchars($sol['actualiza_hv_antiguo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
+            $table_cambio->addCell(1000, ['borderSize' => 1, 'valign' => 'center'])
+                ->addText(mb_strtoupper(htmlspecialchars($cambio['anexa_hv_docente_nuevo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
+            $table_cambio->addCell(1000, ['borderSize' => 1, 'valign' => 'center'])
+                ->addText(mb_strtoupper(htmlspecialchars($cambio['actualiza_hv_antiguo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
 
             // Columna Tipo Docente
-            $table->addCell(1000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-                ->addText(htmlspecialchars($sol['tipo_docente'] ?: ''), $cellTextStyle, $paragraphStyle);
+            $table_cambio->addCell(1000, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['tipo_docente'] ?: ''), $cellTextStyle, $paragraphStyle);
+            
+            $section->addTextBreak(1); // Un salto de línea después de cada cambio de vinculación
         }
-        $section->addTextBreak(1); // Espacio entre tablas de novedad
+        // La línea siguiente estaba fuera del foreach, se mantiene así si es tu intención
+        $section->addTextBreak(1);
+    }
+
+    // --- SECCIÓN 2: NOVEDADES REGULARES (si existen para este depto) ---
+    if (isset($grouped_solicitudes[$departamento_nombre])) {
+        foreach ($grouped_solicitudes[$departamento_nombre] as $novedad_tipo => $solicitudes_por_novedad) {
+            $novedad_mostrar = ucfirst($novedad_tipo);
+            $section->addText('Novedad: ' . htmlspecialchars($novedad_mostrar), $fontStyleb, $paragraphStyleLeft);
+
+            // Observaciones (si las hay)
+            $observations = [];
+            foreach ($solicitudes_por_novedad as $sol) {
+                if (!empty($sol['s_observacion']) && !in_array($sol['s_observacion'], $observations)) {
+                    $observations[] = $sol['s_observacion'];
+                }
+            }
+            if (!empty($observations)) {
+                $observation_text = '';
+                foreach ($observations as $index => $obs) {
+                    $observation_text .= '(' . ($index + 1) . ') ' . htmlspecialchars($obs) . ' ';
+                }
+                $section->addText($observation_text, $observationTextStyle, $paragraphStyleLeft);
+                $section->addTextBreak(0);
+            }
+            $section->addTextBreak(0);
+
+            $table = $section->addTable('ColspanRowspan');
+            $table->setWidth(100 * 50, TblWidth::PERCENT);
+
+            // Encabezados de la tabla - Primera fila
+            $row = $table->addRow();
+
+            // Nº
+            $textrun = $row->addCell(400, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addTextRun($paragraphStyle);
+            $textrun->addText('N', $cellTextStyle);
+            $textrun->addText('o', array_merge($cellTextStyle, array('superScript' => true)));
+
+            // Cédula
+            $row->addCell(1200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Cédula', $cellTextStyle, $paragraphStyle);
+
+            // Nombre
+            $row->addCell(4000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyle, $paragraphStyle);
+
+            // Dedicación/hr
+            $row->addCell(1400, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('Dedic/hr', $cellTextStyle, $paragraphStyle);
+
+            // Hoja de vida
+            $row->addCell(700, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('H.de Vida', $cellTextStyle, $paragraphStyle);
+
+            // Tipo Docente
+            $row->addCell(1000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Tipo Docente', $cellTextStyle, $paragraphStyle);
+
+
+            // Encabezados de la tabla - Segunda fila
+            $row = $table->addRow();
+            // Celdas 'continue' para los vMerge 'restart' de la fila anterior
+            $row->addCell(400, array('vMerge' => 'continue', 'borderSize' => 6, 'borderColor' => '999999')); // Nº
+            $row->addCell(1200, array('vMerge' => 'continue', 'borderSize' => 6, 'borderColor' => '999999')); // Cédula
+            $row->addCell(4000, array('vMerge' => 'continue', 'borderSize' => 6, 'borderColor' => '999999')); // Nombre
+
+            // Sub-encabezados de Dedicación/hr
+            $row->addCell(700, $headerCellStyle)->addText('Pop', $cellTextStyleb, $paragraphStyle);
+            $row->addCell(700, $headerCellStyle)->addText('Reg', $cellTextStyleb, $paragraphStyle);
+
+            // Sub-encabezados de Hoja de vida
+            $row->addCell(350, $headerCellStyle)->addText('Nuevo', $cellTextStyleb, $paragraphStyle);
+            $row->addCell(350, $headerCellStyle)->addText('Antig', $cellTextStyleb, $paragraphStyle);
+
+            // Celdas 'continue' para Tipo Docente
+            $row->addCell(1000, array('vMerge' => 'continue', 'borderSize' => 6, 'borderColor' => '999999')); // Tipo Docente
+
+            $cont = 0; // Contador de filas dentro de cada tabla de novedad
+            foreach ($solicitudes_por_novedad as $sol) {
+                $cont++;
+                $table->addRow();
+
+                // Columna Nº
+                $table->addCell(400, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($cont, $cellTextStyle, $paragraphStyle);
+
+                // Columna Cédula
+                $table->addCell(1200, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(htmlspecialchars($sol['cedula'] ?: ''), $cellTextStyle, $paragraphStyle);
+
+                // Columna Nombre
+                $full_nombre = htmlspecialchars($sol['nombre'] ?: '');
+                $table->addCell(4000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($full_nombre, $cellTextStyle, $paragraphStyle);
+
+                // Columnas de Dedicación/horas según el tipo de docente
+                if ($sol['tipo_docente'] == "Ocasional") {
+                    $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(htmlspecialchars($sol['tipo_dedicacion'] ?: ''), $cellTextStyle, $paragraphStyle);
+                    $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(htmlspecialchars($sol['tipo_dedicacion_r'] ?: ''), $cellTextStyle, $paragraphStyle);
+                } elseif ($sol['tipo_docente'] == "Catedra") {
+                    $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(htmlspecialchars($sol['horas'] ?: ''), $cellTextStyle, $paragraphStyle);
+                    $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(htmlspecialchars($sol['horas_r'] ?: ''), $cellTextStyle, $paragraphStyle);
+                } else {
+                    $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText('', $cellTextStyle, $paragraphStyle);
+                    $table->addCell(700, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText('', $cellTextStyle, $paragraphStyle);
+                }
+
+                // Columnas de Hoja de Vida
+                $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
+                    ->addText(mb_strtoupper(htmlspecialchars($sol['anexa_hv_docente_nuevo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
+
+                $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
+                    ->addText(mb_strtoupper(htmlspecialchars($sol['actualiza_hv_antiguo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
+
+                // Columna Tipo Docente
+                $table->addCell(1000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
+                    ->addText(htmlspecialchars($sol['tipo_docente'] ?: ''), $cellTextStyle, $paragraphStyle);
+            }
+            $section->addTextBreak(1); // Espacio entre tablas de novedad
+        }
     }
 }
 
@@ -745,7 +817,6 @@ $section->addText(
     'Folios: ' . $folios,
     'normalSize9', 'left'
 );
-
 
 // Configurar el nombre del archivo y las cabeceras para la descarga
 $fileName = 'Novedades_' . $anio_semestre . '_Facultad_' . $nombre_facultad_principal . '_' . date('Ymd') . '.docx';

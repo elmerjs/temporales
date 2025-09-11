@@ -34,28 +34,6 @@ if ($currentMonth >= 7) {
     $nextPeriod = $currentYear . '-2';
     $previousPeriod = ($currentYear - 1) . '-2';
 }
-
-
-// NUEVO: Verificar si hay registros pendientes para Novedades
-$hasPendingNovelties = false;
-if ($tipo_usuario != 1 && isset($fk_fac_user) && $fk_fac_user > 0) {
-    $con_check = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-    if (!$con_check->connect_error) {
-        $sql_check = "SELECT 1 FROM solicitudes_working_copy 
-                      WHERE facultad_id = ? 
-                      AND estado_facultad = 'PENDIENTE' 
-                      LIMIT 1";
-        $stmt = $con_check->prepare($sql_check);
-        if ($stmt) {
-            $stmt->bind_param("i", $fk_fac_user);
-            $stmt->execute();
-            $result_check = $stmt->get_result();
-            $hasPendingNovelties = $result_check->num_rows > 0;
-            $stmt->close();
-        }
-        $con_check->close();
-    }
-}
 //echo "nombre sesion: ". $nombre_sesion;
 $consultaf = "SELECT * FROM users WHERE users.Name= '$nombre_sesion'";
 $resultadof = $con->query($consultaf);
@@ -984,12 +962,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                     <li class="submenu-container <?= ($active_menu_item == 'novedades') ? 'active' : '' ?>" >
                 <a href="#" title="Novedades que se presentan para los profesores temporales vinculados en el periodo actual">
                     Novedades
-                     <?php if ($hasPendingNovelties): ?>
-            <span class="pulse-badge">!</span>
-        <?php endif; ?>
                 </a>
-                                                
-
                  <ul class="submenu novedades-submenu">
                     <?php
                     $periodosMostrados = [];
@@ -1092,7 +1065,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
     <?php if ($tipo_usuario == 1): ?>
             <li class="menu-item <?= ($active_menu_item == 'comparativo') ? 'active' : '' ?>">
                 <a href="#" title="comparativo profesores periodo actual vs anterior">
-                    Comparativo 
+                    Comparativo <span class="new-badge">New!</span>
                 </a>
                 <ul class="submenu">
                         <li class="<?= ($active_menu_item == 'comparativo' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
@@ -1399,11 +1372,8 @@ document.querySelectorAll('.novedades-periodo').forEach(function(link) {
 
         var form = document.createElement('form');
         form.method = 'POST';
-        if (tipoUsuario === "1") {
-            form.action = '../../temporales/consulta_facultad_novedad.php';
-        } else {
-            form.action = '../../temporales/consulta_facultad_novedad12.php';
-        }
+        form.action = '../../temporales/consulta_facultad_novedad.php'; // Página para gestionar novedades
+
         // Facultad
         if (facultadId) {
             var inputFacultad = document.createElement('input');

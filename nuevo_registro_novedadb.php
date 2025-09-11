@@ -439,20 +439,30 @@ $nombre_usuario = htmlspecialchars($_SESSION['name'] ?? ''); // No se usa direct
                     return false;
                 }
             } else if (tipoDocente === "Catedra") {
-                if ((horas === 0 && horasR === 0) || (isNaN(horas) || isNaN(horasR))) {
-                    alert('Debe ingresar al menos un valor para Horas.');
-                    return false;
-                }
-                
-                if (horas < 0 || horas > 12 || horasR < 0 || horasR > 12) {
-                    alert('Las horas no pueden ser menores de 0 o mayores de 12.');
-                    return false;
-                }
-                
-                if (horas + horasR > 12) {
-                    alert('La suma de las horas no puede ser mayor a 12.');
-                    return false;
-                }
+              // Valida que al menos un campo de horas tenga valor
+                    if ((horas === 0 && horasR === 0) || (isNaN(horas) || isNaN(horasR))) {
+                        alert('Debe ingresar al menos un valor para Horas.');
+                        return false;
+                    }
+
+                    // --- ¡NUEVA VALIDACIÓN! ---
+                    // Verifica que si las horas son mayores a 0, también sean mayores o iguales a 2.
+                    if ((horas > 0 && horas < 2) || (horasR > 0 && horasR < 2)) {
+                        alert('Si ingresa un valor para las horas, este no puede ser menor a 2.');
+                        return false;
+                    }
+
+                    // Mantiene la validación del máximo de horas
+                    if (horas > 12 || horasR > 12) {
+                        alert('Las horas no pueden ser mayores de 12.');
+                        return false;
+                    }
+
+                    // Mantiene la validación de la suma total de horas
+                    if (horas + horasR > 12) {
+                        alert('La suma de las horas no puede ser mayor a 12.');
+                        return false;
+                    }
             }
 
             // Validar campos de Observación y Tipo de Reemplazo (si son obligatorios)
@@ -679,9 +689,9 @@ $nombre_usuario = htmlspecialchars($_SESSION['name'] ?? ''); // No se usa direct
             </form>
         </div>
         
-        <div class="info-box">
-            <p><i class="fas fa-lightbulb"></i> El campo "Link Drive/Nube" es opcional, cuando se anexa o actualiza HV.</p>
-        </div>
+        <div class="info-box" id="info-box-mensajes">
+    <p><i class="fas fa-lightbulb"></i> El campo "Link Drive/Nube" es opcional, cuando se anexa o actualiza HV.</p>
+</div>
      
         <form id="redirectForm" action="consulta_todo_depto_novedad.php" method="POST" style="display: none;">
             <input type="hidden" name="departamento_id" value="<?php echo $departamento_id; ?>">
@@ -689,5 +699,56 @@ $nombre_usuario = htmlspecialchars($_SESSION['name'] ?? ''); // No se usa direct
             <input type="hidden" name="anio_semestre_anterior" value="<?php echo $anio_semestre_anterior; ?>">
         </form>
     </div>
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const cedulaInput = document.querySelector('input[name="cedula"]');
+    const observacionTextarea = document.getElementById('observacion');
+    // ↓↓↓ NUEVO: Seleccionamos el contenedor de mensajes ↓↓↓
+    const infoBox = document.getElementById('info-box-mensajes');
+
+    if (!cedulaInput || !observacionTextarea || !infoBox) {
+        console.error('No se encontraron los campos necesarios en el formulario.');
+        return;
+    }
+
+    // Variable para no mostrar el mensaje repetidamente
+    let mensajeMostrado = false;
+
+    cedulaInput.addEventListener('blur', () => {
+        const cedula = cedulaInput.value.trim();
+        const anioSemestre = document.querySelector('input[name="anio_semestre"]').value;
+        const departamentoId = document.querySelector('input[name="departamento_id"]').value;
+
+        if (cedula === '') return;
+
+        fetch(`verificar_eliminacion_previa.php?cedula=${cedula}&anio_semestre=${anioSemestre}&departamento_id=${departamentoId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.encontrado) {
+                    observacionTextarea.value = data.observacion;
+                    observacionTextarea.style.backgroundColor = '#eef2ff';
+                    observacionTextarea.dispatchEvent(new Event('input'));
+
+                    // --- LÓGICA PARA MOSTRAR LA ALERTA ---
+                    if (!mensajeMostrado) {
+                        // 1. Creamos un nuevo elemento <p> para nuestro mensaje
+                        const alertaParrafo = document.createElement('p');
+                        alertaParrafo.style.color = '#4f46e5'; // Color índigo
+                        alertaParrafo.style.fontWeight = 'bold';
+                        alertaParrafo.innerHTML = `<i class="fas fa-info-circle"></i> Se detectó  <strong>Cambio de Vinculación</strong>. La justificación ha sido pre-cargada.`;
+                        
+                        // 2. Añadimos el mensaje al principio del info-box
+                        infoBox.prepend(alertaParrafo);
+                        mensajeMostrado = true; // Marcamos que ya se mostró
+                    }
+
+                } else {
+                    observacionTextarea.style.backgroundColor = '';
+                }
+            })
+            .catch(error => console.error('Error al verificar:', error));
+    });
+});
+</script>
 </body>
 </html>

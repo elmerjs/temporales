@@ -84,6 +84,7 @@ if (empty($num_acta) && empty($fecha_acta_b)) {
 $facultad_id= obteneridfac($departamento_id);
 
 $fecha_oficio = $_GET['fecha_oficio'];
+$oficio_con_fecha_depto = $num_oficio . " " . $fecha_oficio;
 
 $folios = isset($_GET['folios']) && trim($_GET['folios']) !== '' ? trim($_GET['folios']) : 0;
 
@@ -303,7 +304,7 @@ $sql_cambio_vinculacion = "
       AND T1.anio_semestre = '$anio_semestre'
       AND T2.departamento_id = '$departamento_id'
       AND T2.anio_semestre = '$anio_semestre'
-      AND T1.novedad = 'eliminar'
+      AND T1.novedad = 'Eliminar'
       AND T2.novedad = 'adicionar'
       AND T1.estado_depto = 'PENDIENTE'
       AND T2.estado_depto = 'PENDIENTE'
@@ -431,11 +432,29 @@ if (!empty($cambio_vinculacion_data)) {
 
         // Actualizar el estado de ambas solicitudes a 'ENVIADO'
         $id_solicitud_adicionar = $cambio_row['id_solicitud_adicionar'];
-        $sql_update_adicionar = "UPDATE solicitudes_working_copy SET estado_depto = 'ENVIADO' WHERE id_solicitud = '$id_solicitud_adicionar'";
+        $sql_update_adicionar = "
+                UPDATE solicitudes_working_copy 
+                SET 
+                    estado_depto = 'ENVIADO',
+                    oficio_depto = '$num_oficio',
+                    fecha_oficio_depto = '$fecha_oficio',
+                    oficio_con_fecha = '$oficio_con_fecha_depto'
+                WHERE 
+                    id_solicitud = '$id_solicitud_adicionar'
+            ";
         $con->query($sql_update_adicionar); // Ejecutar actualización para la novedad "adicionar"
 
         $id_solicitud_eliminar = $cambio_row['id_solicitud_eliminar'];
-        $sql_update_eliminar = "UPDATE solicitudes_working_copy SET estado_depto = 'ENVIADO' WHERE id_solicitud = '$id_solicitud_eliminar'";
+        $sql_update_eliminar = "
+                UPDATE solicitudes_working_copy 
+                SET 
+                    estado_depto = 'ENVIADO',
+                    oficio_depto = '$num_oficio',
+                    fecha_oficio_depto = '$fecha_oficio',
+                    oficio_con_fecha = '$oficio_con_fecha_depto'
+                WHERE 
+                    id_solicitud = '$id_solicitud_eliminar'
+            ";
         $con->query($sql_update_eliminar); // Ejecutar actualización para la novedad "eliminar"
     }
 }
@@ -648,9 +667,17 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
         
         // --- INICIO: Nuevo UPDATE para cada registro mostrado en la tabla ---
         $id_solicitud_actual = $row['id_solicitud'];
-        $sql_update_solicitudes_estado = "UPDATE solicitudes_working_copy
-                                          SET estado_depto = 'ENVIADO'
-                                          WHERE id_solicitud = '$id_solicitud_actual'";
+        $sql_update_solicitudes_estado = "
+                UPDATE solicitudes_working_copy 
+                SET 
+                    estado_depto = 'ENVIADO',
+                    oficio_depto = '$num_oficio',
+                    fecha_oficio_depto = '$fecha_oficio',
+                    oficio_con_fecha = '$oficio_con_fecha_depto'
+                WHERE 
+                    id_solicitud = '$id_solicitud_actual'
+            ";
+
 
         if ($con->query($sql_update_solicitudes_estado) === TRUE) {
             // echo "Estado de solicitud con ID {$id_solicitud_actual} actualizado a ENVIADO correctamente.";
@@ -700,9 +727,9 @@ $consultacant = "
 ";
 
 // Excluir de nuevo las cédulas que ya se manejaron en el conteo total de profesores.
-if (!empty($cedulas_excluir_str)) {
+/*if (!empty($cedulas_excluir_str)) {
     $consultacant .= " AND cedula NOT IN ($cedulas_excluir_str)";
-}
+}*/
 
 $resultadocant = $con->query($consultacant);
 

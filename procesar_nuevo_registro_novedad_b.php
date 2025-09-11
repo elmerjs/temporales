@@ -1,6 +1,9 @@
 <?php
+session_start(); // ¡MUY IMPORTANTE! Inicia la sesión para poder leer sus variables.
+
 // Establecer conexión a la base de datos
-$nombre_sesion = isset($_POST['nombre_usuario']) ? $_POST['nombre_usuario'] : '';
+$nombre_sesion = $_SESSION['name'] ?? ''; 
+
 
 $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
 
@@ -8,13 +11,22 @@ if ($conn->connect_error) {
     die("Conexión fallida: " . $conn->connect_error);
 }
 
-$consultaf = "SELECT * FROM users WHERE users.Name= '$nombre_sesion'";
-$resultadof = $conn->query($consultaf);
-while ($row = $resultadof->fetch_assoc()) {
-    $nombre_usuario = $row['Name'];
-    $tipo_usuario = $row['tipo_usuario'];
-}
+// --- CAPTURAR DATOS COMPLETOS DEL USUARIO ---
+$aprobador_depto_id = null; // Variable para el ID del usuario
+$tipo_usuario = null;
 
+// Es más seguro usar una consulta preparada aquí también
+$stmt_user = $conn->prepare("SELECT Id, tipo_usuario FROM users WHERE Name = ?");
+$stmt_user->bind_param("s", $nombre_sesion);
+$stmt_user->execute();
+$result_user = $stmt_user->get_result();
+
+if ($user_row = $result_user->fetch_assoc()) {
+    $tipo_usuario = $user_row['tipo_usuario'];
+    $aprobador_depto_id = $user_row['Id']; // Guardamos el ID del usuario
+}
+$stmt_user->close();
+// --- FIN DE LA CAPTURA DE DATOS ---
 // Obtener los datos del formulario
 $facultad_id = $_POST['facultad_id'];
 $departamento_id = $_POST['departamento_id'];
@@ -63,11 +75,14 @@ if ($row['count'] == 0) {
 
 // Verificar si la cédula no es '222'
 if ($cedula !== '222') {
-    $verificarSolicitudSql = "SELECT COUNT(*) AS count FROM solicitudes_working_copy
-                              WHERE cedula = ?
-                                AND anio_semestre = ?
-                                AND (solicitudes_working_copy.estado <> 'an' OR solicitudes_working_copy.estado IS NULL)
-                                AND (solicitudes_working_copy.novedad IS NULL OR solicitudes_working_copy.novedad <> 'Eliminar')"; // <--- ¡CAMBIO AQUÍ!
+    $verificarSolicitudSql = "SELECT COUNT(*) AS count 
+            FROM solicitudes_working_copy
+            WHERE cedula = ?
+              AND anio_semestre = ?
+              AND (estado <> 'an' OR estado IS NULL)
+              AND (novedad IS NULL OR novedad <> 'Eliminar')
+              AND (estado_facultad IS NULL OR estado_facultad <> 'RECHAZADO')
+              AND (estado_vra IS NULL OR estado_vra <> 'RECHAZADO');"; // <--- ¡CAMBIO AQUÍ!
     $stmt = $conn->prepare($verificarSolicitudSql);
     $stmt->bind_param("ss", $cedula, $anio_semestre);
     $stmt->execute();
@@ -140,28 +155,32 @@ $tieneObservacion = !empty(trim($observacion));
 if ($tipo_docente == "Ocasional") {
 
         $novedad = "adicionar";
-        $sql = "INSERT INTO solicitudes_working_copy (facultad_id, departamento_id, anio_semestre, tipo_docente, cedula, nombre, 
-                tipo_dedicacion, tipo_dedicacion_r, sede, anexa_hv_docente_nuevo, actualiza_hv_antiguo, 
-                s_observacion, tipo_reemplazo, novedad, anexos)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iisssssssssssss", $facultad_id, $departamento_id, $anio_semestre, $tipo_docente, $cedula, $nombre, 
-                          $tipo_dedicacion, $tipo_dedicacion_r, $sede, $anexa_hv_docente_nuevo, $actualiza_hv_antiguo, 
-                          $observacion, $tipo_reemplazo, $novedad, $anexos);
+$fecha_envio_depto = date('Y-m-d H:i:s'); // Obtener fecha y hora actual
+
+$sql = "INSERT INTO solicitudes_working_copy (facultad_id, departamento_id, anio_semestre, tipo_docente, cedula, nombre, 
+            tipo_dedicacion, tipo_dedicacion_r, sede, anexa_hv_docente_nuevo, actualiza_hv_antiguo, s_observacion, 
+            tipo_reemplazo, novedad, anexos, fecha_envio_depto, aprobador_depto_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$stmt = $conn->prepare($sql);
+// Se añaden 's' para la fecha y 'i' para el ID al final de la cadena de tipos
+$stmt->bind_param("iissssssssssssssi", $facultad_id, $departamento_id, $anio_semestre, $tipo_docente, $cedula, $nombre, 
+                  $tipo_dedicacion, $tipo_dedicacion_r, $sede, $anexa_hv_docente_nuevo, $actualiza_hv_antiguo, 
+                  $observacion, $tipo_reemplazo, $novedad, $anexos, $fecha_envio_depto, $aprobador_depto_id);
 
 } else {
  
     $novedad = "adicionar";
-    $sql = "INSERT INTO solicitudes_working_copy (facultad_id, departamento_id, anio_semestre, tipo_docente, cedula, nombre, 
-            horas, horas_r, sede, anexa_hv_docente_nuevo, actualiza_hv_antiguo, s_observacion, 
-            tipo_reemplazo, novedad, anexos)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iisssssssssssss", $facultad_id, $departamento_id, $anio_semestre, $tipo_docente, $cedula, $nombre, 
-                      $horas, $horas_r, $sede, $anexa_hv_docente_nuevo, $actualiza_hv_antiguo, 
-                      $observacion, $tipo_reemplazo, $novedad, $anexos);
+$fecha_envio_depto = date('Y-m-d H:i:s'); // Obtener fecha y hora actual
 
-}
+$sql = "INSERT INTO solicitudes_working_copy (facultad_id, departamento_id, anio_semestre, tipo_docente, cedula, nombre, 
+            horas, horas_r, sede, anexa_hv_docente_nuevo, actualiza_hv_antiguo, s_observacion, 
+            tipo_reemplazo, novedad, anexos, fecha_envio_depto, aprobador_depto_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$stmt = $conn->prepare($sql);
+// Se corrigen los tipos para horas (dd) y se añaden los nuevos (si)
+$stmt->bind_param("iissssddssssssssi", $facultad_id, $departamento_id, $anio_semestre, $tipo_docente, $cedula, $nombre, 
+                  $horas, $horas_r, $sede, $anexa_hv_docente_nuevo, $actualiza_hv_antiguo, 
+                  $observacion, $tipo_reemplazo, $novedad, $anexos, $fecha_envio_depto, $aprobador_depto_id);}
 
 if ($stmt->execute()) {
     $target_page = (isset($tipo_usuario) && $tipo_usuario == 1) ? 'consulta_todo_depto_novedad.php' : 'consulta_todo_depto_novedad.php';
@@ -182,3 +201,14 @@ if ($stmt->execute()) {
 $stmt->close();
 $conn->close();
 ?>
+<?php
+    // Bloque de depuración para la consola
+    $nombre_sesion_debug = $_SESSION['name'] ?? 'No definido';
+    $id_usuario_debug = $_SESSION['aprobador_id_logged_in'] ?? 'No definido'; // Asumiendo que guardaste el ID en la sesión con este nombre
+?>
+<script>
+    console.log("--- DEBUGGING INFO ---");
+    console.log("Nombre de Sesión (Name):", "<?php echo $nombre_sesion_debug; ?>");
+    console.log("ID de Usuario en Sesión:", "<?php echo $id_usuario_debug; ?>");
+    console.log("----------------------");
+</script>

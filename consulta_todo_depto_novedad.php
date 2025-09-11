@@ -46,25 +46,37 @@ $working_table_name = "solicitudes_working_copy";
 
 
 // Función para obtener datos filtrados por tipo de novedad
-function fetchData($conn, $working_table_name, $anio_semestre, $departamento_id, $novedad_type) {
+// ====================================================================================
+// ===== PASO 1: REEMPLAZA TU FUNCIÓN 'fetchData' Y SUS LLAMADAS POR ESTE BLOQUE =====
+// ====================================================================================
+// ====================================================================================
+// ===== PASO 1: REEMPLAZA TU FUNCIÓN 'fetchData' Y SUS LLAMADAS POR ESTE BLOQUE =====
+// ====================================================================================
+
+// --- Nombre de la tabla de trabajo ---
+$working_table_name = "solicitudes_working_copy";
+
+// Función para obtener TODAS las novedades propuestas de una vez
+function fetchAllNovedadesPropuestas($conn, $working_table_name, $anio_semestre, $departamento_id) {
     $data = [];
+    // La consulta ya no filtra por una novedad específica
     $sql = "SELECT
-                id_solicitud, cedula, nombre, tipo_docente,sede, tipo_dedicacion, tipo_dedicacion_r,horas,horas_r,
-                novedad, s_observacion, tipo_reemplazo, anexa_hv_docente_nuevo, actualiza_hv_antiguo,estado_depto,
+                id_solicitud, cedula, nombre, tipo_docente, sede, tipo_dedicacion, tipo_dedicacion_r, horas, horas_r,
+                novedad, s_observacion, tipo_reemplazo, anexa_hv_docente_nuevo, actualiza_hv_antiguo, estado_depto,
                 estado_facultad, observacion_facultad
             FROM `$working_table_name`
-            WHERE anio_semestre = ? AND departamento_id = ? AND novedad = ?
-            and  (archivado = 0 OR archivado IS NULL)
-            and estado_depto = 'PENDIENTE'
-            ORDER BY nombre ASC"; // Ordenar por nombre para mejor legibilidad
+            WHERE anio_semestre = ? AND departamento_id = ?
+            AND (archivado = 0 OR archivado IS NULL)
+            AND estado_depto = 'PENDIENTE'
+            ORDER BY nombre ASC";
 
     $stmt = $conn->prepare($sql);
     if ($stmt === false) {
-        // Registrar el error en lugar de detener la ejecución
-        error_log("Error al preparar la consulta para novedad '$novedad_type': " . $conn->error);
+        error_log("Error al preparar la consulta de todas las novedades: " . $conn->error);
         return [];
     }
-    $stmt->bind_param("sis", $anio_semestre, $departamento_id, $novedad_type);
+    // La consulta ahora solo necesita 2 parámetros
+    $stmt->bind_param("si", $anio_semestre, $departamento_id);
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
@@ -74,14 +86,37 @@ function fetchData($conn, $working_table_name, $anio_semestre, $departamento_id,
     return $data;
 }
 
-// Obtener datos para cada categoría de novedad
-$data_adicionar = fetchData($conn, $working_table_name, $anio_semestre, $departamento_id, 'adicionar');
-$data_eliminar = fetchData($conn, $working_table_name, $anio_semestre, $departamento_id, 'eliminar');
-$data_modificar = fetchData($conn, $working_table_name, $anio_semestre, $departamento_id, 'modificar');
+// Se llama a la función UNA SOLA VEZ para obtener TODAS las novedades
+$todas_las_novedades_propuestas = fetchAllNovedadesPropuestas($conn, $working_table_name, $anio_semestre, $departamento_id);
 
+// ====================================================================================
+// ====================================================================================
+// =================================================================
+// ===== PASO 3: APLICA LA FUNCIÓN Y SEPARA LOS DATOS PROCESADOS =====
+// =================================================================
+// =================================================================
+// ===== PASO 3: APLICA LA FUNCIÓN Y SEPARA LOS DATOS PROCESADOS =====
+// =================================================================
+$novedades_procesadas = procesarCambiosParaVista($todas_las_novedades_propuestas);
 
+$data_adicionar = [];
+$data_eliminar = [];
+$data_modificar = [];
+$data_cambios_vinculacion = [];
 
-
+foreach ($novedades_procesadas as $sol) {
+    // Usamos strcasecmp para una comparación segura sin importar mayúsculas/minúsculas
+    if (strcasecmp(trim($sol['novedad'] ?? ''), 'Cambio de Vinculación') == 0) {
+        $data_cambios_vinculacion[] = $sol;
+    } elseif (strcasecmp(trim($sol['novedad'] ?? ''), 'adicionar') == 0 || strcasecmp(trim($sol['novedad'] ?? ''), 'adicion') == 0) {
+        $data_adicionar[] = $sol;
+    } elseif (strcasecmp(trim($sol['novedad'] ?? ''), 'eliminar') == 0) {
+        $data_eliminar[] = $sol;
+    } elseif (strcasecmp(trim($sol['novedad'] ?? ''), 'modificar') == 0) {
+        $data_modificar[] = $sol;
+    }
+}
+// =================================================================
 
 // Función para obtener el conteo de registros PENDIENTES por tipo de novedad
 function countPending($conn, $working_table_name, $anio_semestre, $departamento_id, $novedad_type) {
@@ -1693,6 +1728,59 @@ $facultad_id = obtenerIdFacultad($departamento_id);
         die("Conexión fallida: " . $conn->connect_error);
     }
 
+// =================================================================
+// ===== PASO 2: AÑADE ESTA FUNCIÓN AL INICIO DEL ARCHIVO =====
+// ... tus require ...
+
+// =================================================================
+// ===== PASO 2: AÑADE ESTA FUNCIÓN AL INICIO DEL ARCHIVO =====
+// =================================================================
+function procesarCambiosParaVista($solicitudes) {
+    $adiciones = [];
+    $eliminaciones = [];
+    $otras_novedades = [];
+    $resultado_final = [];
+
+    foreach ($solicitudes as $sol) {
+        $cedula = $sol['cedula'];
+        $novedad = strtolower(trim($sol['novedad'] ?? ''));
+
+        if ($novedad === 'adicionar' || $novedad === 'adicion') {
+            $adiciones[$cedula] = $sol;
+        } elseif ($novedad === 'eliminar') {
+            $eliminaciones[$cedula] = $sol;
+        } else {
+            $otras_novedades[] = $sol;
+        }
+    }
+
+    foreach ($adiciones as $cedula => $sol_adicion) {
+        if (isset($eliminaciones[$cedula])) {
+            $sol_eliminacion = $eliminaciones[$cedula];
+
+            $info_anterior = "Sale de " . $sol_eliminacion['tipo_docente'];
+            if ($sol_eliminacion['tipo_docente'] === 'Ocasional') {
+                $info_anterior .= " " . ($sol_eliminacion['tipo_dedicacion'] ?: $sol_eliminacion['tipo_dedicacion_r']);
+            } else {
+                $info_anterior .= " " . ($sol_eliminacion['horas'] ?: $sol_eliminacion['horas_r']) . " horas";
+            }
+
+            $sol_adicion['novedad'] = 'Cambio de Vinculación';
+            $obs_existente = trim($sol_adicion['s_observacion']);
+            $sol_adicion['s_observacion'] = $obs_existente . ($obs_existente ? ' ' : '') . '(' . $info_anterior . ')';
+
+            $resultado_final[] = $sol_adicion;
+            unset($eliminaciones[$cedula]);
+        } else {
+            $resultado_final[] = $sol_adicion;
+        }
+    }
+    
+    return array_merge($resultado_final, array_values($eliminaciones), $otras_novedades);
+}
+// =================================================================
+
+// =================================================================
     require 'cn.php';
     // Consulta SQL para obtener los tipos de docentes
 $consulta_tipo = "SELECT DISTINCT tipo_docente AS tipo_d
@@ -1932,7 +2020,7 @@ echo ")</h4>";
 
                 <div class='d-flex gap-2'>
                     <button type='submit' class='btn btn-primary'>
-                        <i class='fas fa-plus'></i> Agregar Solicitud Profesor
+                        <i class='fas fa-plus'></i> solicitar nuevo profesor
                     </button>
 
                 
@@ -2223,18 +2311,7 @@ if (
 
     } else {
         echo "<p style='text-align: center;'>No se encontraron resultados.</p>";
-       /* if ($tipo_usuario == 3) {
-            if ($tipo_usuario == 3 && $estadoDepto != 'CERRADO') {
-                echo '
-                <div class="row mt-3">
-                    <div class="col-md-12 text-center">
-                        <a href="indexsolicitud.php?tipo_docente=' . urlencode($tipo_docente) . '&anio_semestre=' . urlencode($anio_semestre) . '" class="btn btn-cargue-masivo">
-                            <i class="fas fa-upload"></i> Cargue Masivo - Tipo: ' . htmlspecialchars($tipo_docente) . '
-                        </a>
-                    </div>
-                </div>';
-            }
-        }*///no es neceasrio en ete punto 
+      
     }
 
     echo "</div>"; // Close the section-id div
@@ -2353,82 +2430,75 @@ if (
 document.addEventListener('DOMContentLoaded', function() {
     const actaModal = document.getElementById('actaModal');
 
-    if (actaModal) {
+  if (actaModal) {
         actaModal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
-            actaModal.currentButton = button; // Guardar referencia al botón que abrió el modal
+            actaModal.currentButton = button;
 
-            // Campos de la solicitud
+            // --- 1. CAPTURAR TODOS LOS DATOS DEL BOTÓN ---
             const id_solicitud = button.getAttribute('data-id-solicitud');
             const departamento_id = button.getAttribute('data-departamento-id');
             const anio_semestre = button.getAttribute('data-anio-semestre');
+            const cedulaProfesor = button.getAttribute('data-cedula-profesor');
             const numero_acta = button.getAttribute('data-numero-acta');
             const fecha_acta = button.getAttribute('data-fecha-acta');
+            
+            // Datos de estudio y experiencia del botón
+            const pregrado_btn = button.getAttribute('data-pregrado');
+            const especializacion_btn = button.getAttribute('data-especializacion');
+            const maestria_btn = button.getAttribute('data-maestria');
+            const doctorado_btn = button.getAttribute('data-doctorado');
+            const otro_estudio_btn = button.getAttribute('data-otro_estudio');
+            const exp_docente_btn = button.getAttribute('data-experiencia-docente');
+            const exp_profesional_btn = button.getAttribute('data-experiencia-profesional');
+            const otra_exp_btn = button.getAttribute('data-otra-experiencia');
 
-            // Campos de estudio y experiencia desde el botón (prioridad 1)
-            let pregrado = button.getAttribute('data-pregrado');
-            let especializacion = button.getAttribute('data-especializacion');
-            let maestria = button.getAttribute('data-maestria');
-            let doctorado = button.getAttribute('data-doctorado');
-            let otro_estudio = button.getAttribute('data-otro_estudio');
-            let exp_docente = button.getAttribute('data-experiencia-docente');
-            let exp_profesional = button.getAttribute('data-experiencia-profesional');
-            let otra_exp = button.getAttribute('data-otra-experiencia');
-
-            // Obtener la cédula del profesor del nuevo data-attribute
-            const cedulaProfesor = button.getAttribute('data-cedula-profesor'); 
+            // --- 2. ASIGNAR VALORES QUE NO DEPENDEN DEL AJAX ---
+            document.getElementById('modal_id_solicitud').value = id_solicitud || '';
+            document.getElementById('modal_departamento_id').value = departamento_id || '';
+            document.getElementById('modal_anio_semestre').value = anio_semestre || '';
             document.getElementById('modal_cedula_profesor').value = cedulaProfesor || '';
+            document.getElementById('numero_acta').value = numero_acta || '';
+            document.getElementById('fecha_actab').value = fecha_acta || '';
 
-            // ¡¡¡NUEVAS LÍNEAS PARA MOSTRAR LOS DATOS DE PRUEBA EN EL MODAL!!!
-            document.getElementById('display_id_solicitud').textContent = id_solicitud || 'N/A';
-            document.getElementById('display_cedula_profesor').textContent = cedulaProfesor || 'N/A';
-            document.getElementById('display_departamento_id').textContent = departamento_id || 'N/A';
-            document.getElementById('display_anio_semestre').textContent = anio_semestre || 'N/A';
-            // FIN DE LAS LÍNEAS DE PRUEBA
-document.getElementById('modal_anio_semestre').value = anio_semestre || '';
+            // --- 3. LÓGICA CONDICIONAL PARA LLENAR LOS CAMPOS ---
+            const allStudyFieldsEmpty = !pregrado_btn && !especializacion_btn && !maestria_btn && !doctorado_btn;
 
-            // Verificar si TODOS los campos de estudio están vacíos
-            const allStudyFieldsEmpty =
-                !pregrado && !especializacion && !maestria && !doctorado && !otro_estudio;
-
-            // Si todos los campos de estudio están vacíos Y tenemos la cédula, hacemos la llamada AJAX
+            // CASO A: Si los campos de estudio en el botón están vacíos, usar AJAX
             if (allStudyFieldsEmpty && cedulaProfesor) {
+                // Limpiar campos por si tenían datos de un modal anterior
+                document.getElementById('pregrado').value = '';
+                document.getElementById('especializacion').value = '';
+                document.getElementById('maestria').value = '';
+                document.getElementById('doctorado').value = '';
+
                 fetch(`get_profesor_data.php?cedula=${cedulaProfesor}&anioSemestre=${anio_semestre}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.titulos) {
-                            const titulosStr = data.titulos;
-                            const parsedTitulos = parseTitulos(titulosStr);
-
-                            // Asignar los valores parseados solo si el campo correspondiente está vacío
+                            const parsedTitulos = parseTitulos(data.titulos);
+                            // Llenar el formulario con los datos del AJAX
                             document.getElementById('pregrado').value = parsedTitulos.pregrado || '';
                             document.getElementById('especializacion').value = parsedTitulos.especializacion || '';
                             document.getElementById('maestria').value = parsedTitulos.maestria || '';
                             document.getElementById('doctorado').value = parsedTitulos.doctorado || '';
-                            // 'otro_estudio' de la función no se está parseando, se mantiene el comportamiento original
                         }
                     })
-                    .catch(error => {
-                        console.error('Error al obtener datos del profesor:', error);
-                    });
+                    .catch(error => console.error('Error al obtener datos del profesor:', error));
+            
+            // CASO B: Si los campos tienen datos, usarlos directamente
+            } else {
+                document.getElementById('pregrado').value = pregrado_btn || '';
+                document.getElementById('especializacion').value = especializacion_btn || '';
+                document.getElementById('maestria').value = maestria_btn || '';
+                document.getElementById('doctorado').value = doctorado_btn || '';
             }
 
-            // Setear valores en el formulario (siempre se asignan los que vienen del botón primero)
-            document.getElementById('modal_id_solicitud').value = id_solicitud;
-            document.getElementById('modal_departamento_id').value = departamento_id;
-            document.getElementById('modal_anio_semestre').value = anio_semestre;
-            document.getElementById('numero_acta').value = numero_acta || '';
-            document.getElementById('fecha_actab').value = fecha_acta || '';
-
-            // Setear campos de estudio y experiencia desde los data-attributes del botón
-            document.getElementById('pregrado').value = pregrado || '';
-            document.getElementById('especializacion').value = especializacion || '';
-            document.getElementById('maestria').value = maestria || '';
-            document.getElementById('doctorado').value = doctorado || '';
-            document.getElementById('otro_estudio').value = otro_estudio || '';
-            document.getElementById('experiencia_docente').value = exp_docente || '';
-            document.getElementById('experiencia_profesional').value = exp_profesional || '';
-            document.getElementById('otra_experiencia').value = otra_exp || '';
+            // Asignar siempre los otros campos que no dependen de la condición
+            document.getElementById('otro_estudio').value = otro_estudio_btn || '';
+            document.getElementById('experiencia_docente').value = exp_docente_btn || '';
+            document.getElementById('experiencia_profesional').value = exp_profesional_btn || '';
+            document.getElementById('otra_experiencia').value = otra_exp_btn || '';
         });
 
         // Función para parsear el string de títulos (¡AHORA USA startsWith() Y PRIORIZA!)
@@ -2590,24 +2660,7 @@ document.getElementById('modal_anio_semestre').value = anio_semestre || '';
             
 // Consulta SQL para obtener los datos
 $sqlb = "SELECT 
-    depto_periodo.fk_depto_dp, 
-    deparmanentos.depto_nom_propio AS nombre_departamento,
-
-    -- Docente Ocasional por sede
-    SUM(CASE WHEN solicitudes_working_copy.tipo_docente = 'Ocasional' AND solicitudes_working_copy.sede = 'Popayán' THEN 1 ELSE 0 END) AS total_ocasional_popayan,
-    SUM(CASE WHEN solicitudes_working_copy.tipo_docente = 'Ocasional' AND solicitudes_working_copy.sede = 'Regionalización' THEN 1 ELSE 0 END) AS total_ocasional_regionalizacion,
-    SUM(CASE WHEN solicitudes_working_copy.tipo_docente = 'Ocasional' AND solicitudes_working_copy.sede = 'Popayán-Regionalización' THEN 1 ELSE 0 END) AS total_ocasional_popayan_regionalizacion,
-
-    depto_periodo.dp_estado_ocasional,
-    depto_periodo.dp_estado_total,
-
-    -- Docente Cátedra por sede
-    SUM(CASE WHEN solicitudes_working_copy.tipo_docente = 'Catedra' AND solicitudes_working_copy.sede = 'Popayán' THEN 1 ELSE 0 END) AS total_catedra_popayan,
-    SUM(CASE WHEN solicitudes_working_copy.tipo_docente = 'Catedra' AND solicitudes_working_copy.sede = 'Regionalización' THEN 1 ELSE 0 END) AS total_catedra_regionalizacion,
-    SUM(CASE WHEN solicitudes_working_copy.tipo_docente = 'Catedra' AND solicitudes_working_copy.sede = 'Popayán-Regionalización' THEN 1 ELSE 0 END) AS total_catedra_popayan_regionalizacion,
-
-    depto_periodo.dp_estado_catedra
-
+    depto_periodo.fk_depto_dp
 FROM 
     depto_periodo
 JOIN
@@ -2662,11 +2715,296 @@ if ($stmt_count) {
     
 <div class="container-fluid mt-1">
 <h2 class="section-subtitleb">Novedades propuestas</h2>
+  
+<div class="card mb-5 shadow-lg">
+    <div class="card-header bg-secondary text-white">
+        <h4 class="mb-0"><i class="fas fa-pencil-alt me-3"></i>Modificación</h4>
+    </div>
+    <div class="card-body p-2">
+        
+        
+<div class="mb-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0" title="Ocurre cuando un profesor cambia de tipo Ocasional a Cátedra, o viceversa, dentro del mismo periodo.">
+            1. Cambio de Vinculación <i class="fas fa-info-circle fa-xs text-light ms-1"></i>
+        </h5>    </div>
+  
+        <?php if (!empty($data_cambios_vinculacion)): ?>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Cédula</th>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Sede</th>
+                            <th>Dedic/Hrs</th>
+                            <th>Observación</th>
+                            
+                            <th>Deshacer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($data_cambios_vinculacion as $row): ?>
+                            <?php
+                            $row_class = '';
+                            $estado_depto_current = strtolower(trim($row['estado_depto'] ?? ''));
+                            if ($estado_depto_current === 'pendiente') {
+                                $row_class = 'fw-bold';
+                            }
+                            ?>
+                            <tr class="<?= $row_class ?>">
+                                <td><?= htmlspecialchars($row['cedula']) ?></td>
+                                <td title="<?= htmlspecialchars($row['nombre']) ?>">
+                                    <?= htmlspecialchars(mb_strimwidth($row['nombre'], 0, 14, '…')) ?>
+                                </td>
+                                <td><?= htmlspecialchars($row['tipo_docente']) ?></td>
+                                <td>
+                                    <?php
+                                    $sede = $row['sede'];
+                                    if ($sede === 'Popayán') {
+                                        echo 'Pop';
+                                    } elseif ($sede === 'Regionalización') {
+                                        echo 'Reg';
+                                    } elseif ($sede === 'Popayán-Regionalización') {
+                                        echo 'Pop-Reg';
+                                    } else {
+                                        echo htmlspecialchars($sede);
+                                    }
+                                    ?>
+                                </td>
+                                <?php if (($row['tipo_docente'] ?? '') === 'Ocasional'): ?>
+                                    <?php if (($row['sede'] ?? '') === 'Popayán'): ?>
+                                        <td><?= htmlspecialchars($row['tipo_dedicacion']) ?></td>
+                                    <?php elseif (($row['sede'] ?? '') === 'Regionalización'): ?>
+                                        <td><?= htmlspecialchars($row['tipo_dedicacion_r']) ?></td>
+                                    <?php else: ?>
+                                        <td><?= htmlspecialchars($row['tipo_dedicacion']) ?></td>
+                                    <?php endif; ?>
+                                <?php elseif (($row['tipo_docente'] ?? '') === 'Catedra'): ?>
+                                    <?php if (($row['sede'] ?? '') === 'Popayán'): ?>
+                                        <td><?= htmlspecialchars($row['horas']) ?></td>
+                                    <?php elseif (($row['sede'] ?? '') === 'Regionalización'): ?>
+                                        <td><?= htmlspecialchars($row['horas_r']) ?></td>
+                                    <?php elseif (($row['sede'] ?? '') === 'Popayán-Regionalización'): ?>
+                                        <td><?= htmlspecialchars($row['horas']) . '; ' . htmlspecialchars($row['horas_r']) ?></td>
+                                    <?php else: ?>
+                                        <td><?= htmlspecialchars($row['horas']) ?></td>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <td><?= htmlspecialchars($row['tipo_dedicacion']) ?></td>
+                                <?php endif; ?>
+                                <td title="<?= htmlspecialchars($row['s_observacion']) ?>">
+                                    <?= htmlspecialchars(mb_strimwidth($row['s_observacion'], 0, 14, '…')) ?>
+                                </td>
+                                
+                                <td class="td-simple" style="padding: 0; vertical-align: middle;">
+    <?php if ($tipo_usuario == 3): ?>
+        <?php
+        // La lógica para deshabilitar el botón no cambia
+        $estado_facultad = strtolower(trim($row['estado_facultad'] ?? ''));
+        $estado_depto = strtolower(trim($row['estado_depto'] ?? ''));
+        
+        $deshacer_disabled_attr = '';
+        $deshacer_title_message = 'Deshacer Cambio de Vinculación';
+        
+        if ($estado_facultad === 'aprobado') {
+            $deshacer_disabled_attr = 'disabled';
+            $deshacer_title_message = 'No se puede deshacer un cambio ya aprobado por la facultad.';
+        } elseif ($estado_depto === 'enviado' && $estado_facultad !== 'rechazado') {
+            $deshacer_disabled_attr = 'disabled';
+            $deshacer_title_message = 'No se puede deshacer un cambio ya enviado (a menos que esté rechazado).';
+        }
+        ?>
 
+        <form action='deshacer_cambio_vinculacion.php' method='POST' style='display:inline;' id='formDeshacerCambio_<?= htmlspecialchars($row["id_solicitud"]) ?>'>
+            <input type='hidden' name='id_solicitud' value='<?= htmlspecialchars($row["id_solicitud"]) ?>'>
+            <input type='hidden' name='anio_semestre' value='<?= htmlspecialchars($anio_semestre) ?>'>
+            <input type='hidden' name='departamento_id' value='<?= htmlspecialchars($departamento_id) ?>'>
+            
+            <button type='button'
+                    title='<?= htmlspecialchars($deshacer_title_message) ?>'
+                    style="padding: 0; margin: 0; border: none; background: none; line-height: 1; font-size: 14px;"
+                    <?= $deshacer_disabled_attr ?>
+                    onclick="confirmDeshacer('Cambio de Vinculación', 'formDeshacerCambio_<?= htmlspecialchars($row["id_solicitud"]) ?>');">
+                <i class='fas fa-undo'></i>
+            </button>
+        </form>
+        <?php endif; ?>
+</td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="alert alert-light text-center" role="alert">
+                No se han detectado cambios de vinculación.
+            </div>
+        <?php endif; ?>
+   
+</div>
+   
+
+<div>
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0" title="Ocurre cuando un profesor Ocasional cambia de dedicación (ej: Tiempo Completo TC a Medio Tiempo MT) o cuando a un Cátedra se le modifica el número de horas.">
+            2. Cambio de Dedicación / Horas <i class="fas fa-info-circle fa-xs text-dark ms-1"></i>
+        </h5>    
+    </div>
+   
+        <?php if (!empty($data_modificar)): ?>
+            <div class="table-responsive">
+                <table id="tableModificar" class="table table-striped table-hover table-bordered dt-responsive nowrap" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Cédula</th>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Sede</th>
+                            <?php
+                            $hasOcasional = false;
+                            $hasCatedra = false;
+                            // Asegúrate de usar $data_modificar para esta sección
+                            foreach ($data_modificar as $row_check) {
+                                if (($row_check['tipo_docente'] ?? '') === 'Ocasional') {
+                                    $hasOcasional = true;
+                                } elseif (($row_check['tipo_docente'] ?? '') === 'Catedra') {
+                                    $hasCatedra = true;
+                                }
+                            }
+
+                            if ($hasOcasional && !$hasCatedra) {
+                                echo '<th>Dedic</th>';
+                            } elseif ($hasCatedra && !$hasOcasional) {
+                                echo '<th>Horas</th>';
+                            } else {
+                                echo '<th>Dedic/hrs</th>';
+                            }
+                            ?>
+                            <th>Observación</th>
+                            
+                            <th>Deshacer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($data_modificar as $row): ?>
+    <?php
+    // Definir la clase para la fila basada en el estado_depto
+    $row_class = '';
+    $estado_depto_current = strtolower(trim($row['estado_depto'] ?? ''));
+    if ($estado_depto_current === 'pendiente') {
+        $row_class = 'fw-bold'; // Clase de Bootstrap 5 para texto en negrilla
+    }
+    ?>
+    <tr class="<?= $row_class ?>">
+                                <td><?= htmlspecialchars($row['cedula']) ?></td>
+                                <td title="<?= htmlspecialchars($row['nombre']) ?>">
+                                    <?= htmlspecialchars(mb_strimwidth($row['nombre'], 0, 14, '…')) ?>
+                                </td>
+                                <td><?= htmlspecialchars($row['tipo_docente']) ?></td>
+                                <td>
+                                <?php
+                                    $sede = $row['sede'];
+                                    if ($sede === 'Popayán') {
+                                        echo 'Pop';
+                                    } elseif ($sede === 'Regionalización') {
+                                        echo 'Reg';
+                                    } elseif ($sede === 'Popayán-Regionalización') {
+                                        echo 'Pop-Reg';
+                                    } else {
+                                        echo htmlspecialchars($sede); // por si aparece otra sede
+                                    }
+                                ?>
+                                </td>                           
+                                <?php if (($row['tipo_docente'] ?? '') === 'Ocasional'): ?>
+                                    <?php if (($row['sede'] ?? '') === 'Popayán'): ?>
+                                        <td><?= htmlspecialchars($row['tipo_dedicacion']) ?></td>
+                                        <td style="display:none;"></td>
+                                    <?php elseif (($row['sede'] ?? '') === 'Regionalización'): ?>
+                                        <td><?= htmlspecialchars($row['tipo_dedicacion_r']) ?></td>
+                                        <td style="display:none;"></td>
+                                    <?php else: ?>
+                                        <td><?= htmlspecialchars($row['tipo_dedicacion']) ?></td>
+                                        <td style="display:none;"></td>
+                                    <?php endif; ?>
+                                <?php elseif (($row['tipo_docente'] ?? '') === 'Catedra'): ?>
+                                    <?php if (($row['sede'] ?? '') === 'Popayán'): ?>
+                                        <td style="display:none;"></td>
+                                        <td><?= htmlspecialchars($row['horas']) ?></td>
+                                    <?php elseif (($row['sede'] ?? '') === 'Regionalización'): ?>
+                                        <td style="display:none;"></td>
+                                        <td><?= htmlspecialchars($row['horas_r']) ?></td>
+                                    <?php elseif (($row['sede'] ?? '') === 'Popayán-Regionalización'): ?>
+                                        <td style="display:none;"></td>
+                                        <td><?= htmlspecialchars($row['horas']) . '; ' . htmlspecialchars($row['horas_r']) ?></td>
+                                    <?php else: ?>
+                                        <td style="display:none;"></td>
+                                        <td><?= htmlspecialchars($row['horas']) ?></td>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <td><?= htmlspecialchars($row['tipo_dedicacion']) ?></td>
+                                    <td><?= htmlspecialchars($row['horas']) ?></td>
+                                <?php endif; ?>
+                                <td title="<?= htmlspecialchars($row['s_observacion']) ?>">
+                                    <?= htmlspecialchars(mb_strimwidth($row['s_observacion'], 0, 14, '…')) ?>
+                                </td>
+                             
+                                
+                               <?php
+                           $estado_facultad = strtolower(trim($row['estado_facultad'] ?? ''));
+                                $estado_depto = strtolower(trim($row['estado_depto'] ?? ''));
+
+                                $deshacer_disabled_attr = '';
+                                $deshacer_title_message = 'Deshacer Modificación';
+
+                                // Caso 1: Si está aprobado por facultad → Deshabilitar
+                                if ($estado_facultad === 'aprobado') {
+                                    $deshacer_disabled_attr = 'disabled';
+                                    $deshacer_title_message = 'No se puede deshacer una novedad ya aprobada por la facultad.';
+                                } 
+                                // Caso 2: Si está enviado pero NO rechazado → Deshabilitar
+                                elseif ($estado_depto === 'enviado' && $estado_facultad !== 'rechazado') {
+                                    $deshacer_disabled_attr = 'disabled';
+                                    $deshacer_title_message = 'No se puede deshacer una novedad ya enviada a la facultad (a menos que esté rechazada).';
+                                }
+                            ?>
+                            <td class="td-simple" style="padding: 0; vertical-align: middle;">
+                                <?php if ($tipo_usuario == 3): ?>
+                                    <form action='deshacer_novedad_mod.php' method='POST' style='display:inline;' id='formDeshacerMod_<?= htmlspecialchars($row["id_solicitud"]) ?>'>
+                                        <input type='hidden' name='id_solicitud' value='<?= htmlspecialchars($row["id_solicitud"]) ?>'>
+                                        <input type='hidden' name='anio_semestre' value='<?= htmlspecialchars($anio_semestre) ?>'>
+                                        <input type='hidden' name='departamento_id' value='<?= htmlspecialchars($departamento_id) ?>'>
+                                        <input type='hidden' name='novedad_a_deshacer' value='modificar'>
+                                        <button type='button'
+                                                title='<?= htmlspecialchars($deshacer_title_message) ?>'
+                                                style="padding: 0; margin: 0; border: none; background: none; line-height: 1; font-size: 14px;"
+                                                <?= $deshacer_disabled_attr ?>
+                                                onclick="confirmDeshacer('Modificación', 'formDeshacerMod_<?= htmlspecialchars($row["id_solicitud"]) ?>');"
+                                        >
+                                            <i class='fas fa-undo'></i>
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                            </td>
+                                </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="alert alert-info text-center" role="alert">
+                <i class="fas fa-info-circle me-2"></i>No hay novedades de tipo "Modificar" para este período y departamento.
+            </div>
+        <?php endif; ?>
+   
+</div>
+        
+        </div> </div>
 <div class="card mb-5 shadow-lg">
     <div class="card-header bg-primary text-white">
         <h4 class="mb-0">
-            <i class="fas fa-plus-circle me-3"></i>Novedades: Adicionar
+            <i class="fas fa-plus-circle me-3"></i>Adicionar
             <?php
             // Obtener el número de elementos en el array $data_adicionar
             // Esto te dará el conteo exacto de las novedades de tipo 'Adicionar'
@@ -2690,7 +3028,7 @@ if ($stmt_count) {
                         <tr>
                             <th>Cédula</th>
                             <th>Nombre</th>
-                            <th>Tipo Docente</th>
+                            <th>Tipo</th>
                             <th>Sede</th>
                             <?php
                             // Determinar si al menos un docente es Ocasional o Catedra para mostrar los encabezados
@@ -2722,21 +3060,21 @@ if ($stmt_count) {
                             ?>
                             <th>Observación</th>
                             
-                            <th>Enviado</th> <th>Rta. Fac</th><th>Deshacer</th>
+                           <th>Deshacer</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($data_adicionar as $row): ?>
-    <?php
-    // Definir la clase para la fila basada en el estado_depto
-    $row_class = '';
-    $estado_depto_current = strtolower(trim($row['estado_depto'] ?? ''));
-    if ($estado_depto_current === 'pendiente') {
-        $row_class = 'fw-bold'; // Clase de Bootstrap 5 para texto en negrilla
-    }
-    ?>
-    <tr class="<?= $row_class ?>">
-                                <td><?= htmlspecialchars($row['cedula']) ?></td>
+                            <?php
+                            // Definir la clase para la fila basada en el estado_depto
+                            $row_class = '';
+                            $estado_depto_current = strtolower(trim($row['estado_depto'] ?? ''));
+                            if ($estado_depto_current === 'pendiente') {
+                                $row_class = 'fw-bold'; // Clase de Bootstrap 5 para texto en negrilla
+                            }
+                            ?>
+                            <tr class="<?= $row_class ?>">
+                                                        <td><?= htmlspecialchars($row['cedula']) ?></td>
                                 <td title="<?= htmlspecialchars($row['nombre']) ?>">
                                     <?= htmlspecialchars(mb_strimwidth($row['nombre'], 0, 14, '…')) ?>
                                 </td>
@@ -2790,52 +3128,7 @@ if ($stmt_count) {
                                 </td>
 
                               
-                                <td class="text-center">
-                                    <?php
-                                    $estado_depto = strtolower(trim($row['estado_depto'] ?? ''));
-                                    if ($estado_depto === 'enviado') {
-                                        echo '<i class="fas fa-paper-plane text-info" title="Enviado"></i>'; // Icono para "Enviado"
-                                    } elseif ($estado_depto === 'pendiente') {
-                                        echo '<i class="fas fa-hourglass-half text-secondary" title="Pendiente"></i>'; // Icono para "Pendiente"
-                                    } else {
-                                        echo htmlspecialchars($row['estado_depto']); // Mostrar texto si no coincide con los estados esperados
-                                    }
-                                    ?>
-                                </td>
-                              <td class="text-center">
-                            <?php
-                            $estado = strtolower(trim($row['estado_facultad'] ?? ''));
-                            $observacion_facultad = htmlspecialchars($row['observacion_facultad'] ?? ''); // Obtener y sanear la observación
-
-                            if ($estado === 'aprobado') {
-                                $title_aprobado = 'Aprobado';
-                                if (!empty($observacion_facultad)) {
-                                    $title_aprobado .= ': ' . $observacion_facultad;
-                                }
-                                echo '<i class="fas fa-check-circle text-success" title="' . $title_aprobado . '"></i>';
-                            } elseif ($estado === 'rechazado') {
-                                $title_rechazado = 'Rechazado';
-                                if (!empty($observacion_facultad)) {
-                                    $title_rechazado .= ': ' . $observacion_facultad;
-                                }
-                                echo '<i class="fas fa-times-circle text-danger" title="' . $title_rechazado . '"></i>';
-                            } elseif ($estado === 'pendiente') {
-                                $title_pendiente = 'Pendiente';
-                                if (!empty($observacion_facultad)) {
-                                    $title_pendiente .= ': ' . $observacion_facultad;
-                                }
-                                echo '<i class="fas fa-clock text-warning" title="' . $title_pendiente . '"></i>';
-                            } else {
-                                // === CAMBIO AQUÍ: Añadir observacion_facultad al title para el estado genérico ===
-                                $generic_status_text = htmlspecialchars($row['estado_facultad']);
-                                $title_generic = $generic_status_text;
-                                if (!empty($observacion_facultad)) {
-                                    $title_generic .= ': ' . $observacion_facultad;
-                                }
-                                echo '<span title="' . $title_generic . '">' . $generic_status_text . '</span>'; // Usar <span> para mostrar el texto con tooltip
-                            }
-                            ?>
-                        </td>
+                                
                                               <?php
                         // Asegúrate de que $estado_facultad y $estado_depto están definidos y normalizados
                         $estado_facultad = strtolower(trim($row['estado_facultad'] ?? ''));
@@ -2892,9 +3185,9 @@ if ($stmt_count) {
 
 <div class="card mb-5 shadow-lg">
     <div class="card-header bg-danger text-white">
-        <h4 class="mb-0"><i class="fas fa-minus-circle me-3"></i>Novedades: Eliminar</h4>
+        <h4 class="mb-0"><i class="fas fa-minus-circle me-3"></i>Eliminar</h4>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-2">
         <?php if (!empty($data_eliminar)): ?>
             <div class="table-responsive">
                 <table id="tableEliminar" class="table table-striped table-hover table-bordered dt-responsive nowrap" style="width:100%">
@@ -2902,7 +3195,7 @@ if ($stmt_count) {
                         <tr>
                             <th>Cédula</th>
                             <th>Nombre</th>
-                            <th>Tipo Docente</th>
+                            <th>Tipo</th>
                             <th>Sede</th>
                             <?php
                             $hasOcasional = false;
@@ -2925,7 +3218,7 @@ if ($stmt_count) {
                             ?>
                             <th>Observación</th>
                            
-                            <th>Enviado</th> <th>Rta. Fac</th> <th>Deshacer</th>
+                           <th>Deshacer</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2992,47 +3285,7 @@ if ($stmt_count) {
                                 </td>
 
                               
-                                <td class="text-center">
-                                    <?php
-                                    $estado_depto = strtolower(trim($row['estado_depto'] ?? ''));
-                                    if ($estado_depto === 'enviado') {
-                                        echo '<i class="fas fa-paper-plane text-info" title="Enviado"></i>';
-                                    } elseif ($estado_depto === 'pendiente') {
-                                        echo '<i class="fas fa-hourglass-half text-secondary" title="Pendiente"></i>';
-                                    } else {
-                                        echo htmlspecialchars($row['estado_depto']);
-                                    }
-                                    ?>
-                                </td>
-                              <td class="text-center">
-                        <?php
-                        $estado = strtolower(trim($row['estado_facultad'] ?? ''));
-                        $observacion_facultad = htmlspecialchars($row['observacion_facultad'] ?? ''); // Obtener y sanear la observación
-
-                        if ($estado === 'aprobado') {
-                            // === CAMBIO AQUÍ: Añadir observacion_facultad al título para "Aprobado" ===
-                            $title_aprobado = 'Aprobado';
-                            if (!empty($observacion_facultad)) {
-                                $title_aprobado .= ': ' . $observacion_facultad;
-                            }
-                            echo '<i class="fas fa-check-circle text-success" title="' . $title_aprobado . '"></i>';
-                        } elseif ($estado === 'rechazado') {
-                            $title_rechazado = 'Rechazado';
-                            if (!empty($observacion_facultad)) {
-                                $title_rechazado .= ': ' . $observacion_facultad;
-                            }
-                            echo '<i class="fas fa-times-circle text-danger" title="' . $title_rechazado . '"></i>';
-                        } elseif ($estado === 'pendiente') {
-                            $title_pendiente = 'Pendiente';
-                            if (!empty($observacion_facultad)) {
-                                $title_pendiente .= ': ' . $observacion_facultad;
-                            }
-                            echo '<i class="fas fa-clock text-warning" title="' . $title_pendiente . '"></i>';
-                        } else {
-                            echo htmlspecialchars($row['estado_facultad']); // Mostrar texto si no coincide con los estados esperados
-                        }
-                        ?>
-                    </td>
+                                
                                     <?php
                         // Asegúrate de que $estado_facultad y $estado_depto se definen y normalizan ANTES de este bloque
                         $estado_facultad = strtolower(trim($row['estado_facultad'] ?? ''));
@@ -3087,193 +3340,7 @@ if ($stmt_count) {
 
 <hr>
 
-<div class="card mb-5 shadow-lg">
-    <div class="card-header bg-warning text-dark">
-        <h4 class="mb-0"><i class="fas fa-edit me-3"></i>Novedades: Modificar</h4>
-    </div>
-    <div class="card-body p-4">
-        <?php if (!empty($data_modificar)): ?>
-            <div class="table-responsive">
-                <table id="tableModificar" class="table table-striped table-hover table-bordered dt-responsive nowrap" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>Cédula</th>
-                            <th>Nombre</th>
-                            <th>Tipo Docente</th>
-                            <th>Sede</th>
-                            <?php
-                            $hasOcasional = false;
-                            $hasCatedra = false;
-                            // Asegúrate de usar $data_modificar para esta sección
-                            foreach ($data_modificar as $row_check) {
-                                if (($row_check['tipo_docente'] ?? '') === 'Ocasional') {
-                                    $hasOcasional = true;
-                                } elseif (($row_check['tipo_docente'] ?? '') === 'Catedra') {
-                                    $hasCatedra = true;
-                                }
-                            }
 
-                            if ($hasOcasional && !$hasCatedra) {
-                                echo '<th>Dedic</th>';
-                            } elseif ($hasCatedra && !$hasOcasional) {
-                                echo '<th>Horas</th>';
-                            } else {
-                                echo '<th>Dedic/hrs</th>';
-                            }
-                            ?>
-                            <th>Observación</th>
-                            
-                            <th>Enviado</th> <th>Rta. Fac</th><th>Deshacer</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($data_modificar as $row): ?>
-    <?php
-    // Definir la clase para la fila basada en el estado_depto
-    $row_class = '';
-    $estado_depto_current = strtolower(trim($row['estado_depto'] ?? ''));
-    if ($estado_depto_current === 'pendiente') {
-        $row_class = 'fw-bold'; // Clase de Bootstrap 5 para texto en negrilla
-    }
-    ?>
-    <tr class="<?= $row_class ?>">
-                                <td><?= htmlspecialchars($row['cedula']) ?></td>
-                                <td title="<?= htmlspecialchars($row['nombre']) ?>">
-                                    <?= htmlspecialchars(mb_strimwidth($row['nombre'], 0, 14, '…')) ?>
-                                </td>
-                                <td><?= htmlspecialchars($row['tipo_docente']) ?></td>
-                                <td>
-                                <?php
-                                    $sede = $row['sede'];
-                                    if ($sede === 'Popayán') {
-                                        echo 'Pop';
-                                    } elseif ($sede === 'Regionalización') {
-                                        echo 'Reg';
-                                    } elseif ($sede === 'Popayán-Regionalización') {
-                                        echo 'Pop-Reg';
-                                    } else {
-                                        echo htmlspecialchars($sede); // por si aparece otra sede
-                                    }
-                                ?>
-                                </td>                           
-                                <?php if (($row['tipo_docente'] ?? '') === 'Ocasional'): ?>
-                                    <?php if (($row['sede'] ?? '') === 'Popayán'): ?>
-                                        <td><?= htmlspecialchars($row['tipo_dedicacion']) ?></td>
-                                        <td style="display:none;"></td>
-                                    <?php elseif (($row['sede'] ?? '') === 'Regionalización'): ?>
-                                        <td><?= htmlspecialchars($row['tipo_dedicacion_r']) ?></td>
-                                        <td style="display:none;"></td>
-                                    <?php else: ?>
-                                        <td><?= htmlspecialchars($row['tipo_dedicacion']) ?></td>
-                                        <td style="display:none;"></td>
-                                    <?php endif; ?>
-                                <?php elseif (($row['tipo_docente'] ?? '') === 'Catedra'): ?>
-                                    <?php if (($row['sede'] ?? '') === 'Popayán'): ?>
-                                        <td style="display:none;"></td>
-                                        <td><?= htmlspecialchars($row['horas']) ?></td>
-                                    <?php elseif (($row['sede'] ?? '') === 'Regionalización'): ?>
-                                        <td style="display:none;"></td>
-                                        <td><?= htmlspecialchars($row['horas_r']) ?></td>
-                                    <?php elseif (($row['sede'] ?? '') === 'Popayán-Regionalización'): ?>
-                                        <td style="display:none;"></td>
-                                        <td><?= htmlspecialchars($row['horas']) . '; ' . htmlspecialchars($row['horas_r']) ?></td>
-                                    <?php else: ?>
-                                        <td style="display:none;"></td>
-                                        <td><?= htmlspecialchars($row['horas']) ?></td>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    <td><?= htmlspecialchars($row['tipo_dedicacion']) ?></td>
-                                    <td><?= htmlspecialchars($row['horas']) ?></td>
-                                <?php endif; ?>
-                                <td title="<?= htmlspecialchars($row['s_observacion']) ?>">
-                                    <?= htmlspecialchars(mb_strimwidth($row['s_observacion'], 0, 14, '…')) ?>
-                                </td>
-                             
-                                <td class="text-center">
-                                    <?php
-                                    $estado_depto = strtolower(trim($row['estado_depto'] ?? ''));
-                                    if ($estado_depto === 'enviado') {
-                                        echo '<i class="fas fa-paper-plane text-info" title="Enviado"></i>';
-                                    } elseif ($estado_depto === 'pendiente') {
-                                        echo '<i class="fas fa-hourglass-half text-secondary" title="Pendiente"></i>';
-                                    } else {
-                                        echo htmlspecialchars($row['estado_depto']);
-                                    }
-                                    ?>
-                                </td>
-                              <td class="text-center">
-                                <?php
-                                $estado = strtolower(trim($row['estado_facultad'] ?? ''));
-                                $observacion_facultad = htmlspecialchars($row['observacion_facultad'] ?? ''); // Obtener y sanear la observación
-
-                                if ($estado === 'aprobado') {
-                                    echo '<i class="fas fa-check-circle text-success" title="Aprobado"></i>';
-                                } elseif ($estado === 'rechazado') {
-                                    $title_rechazado = 'Rechazado';
-                                    if (!empty($observacion_facultad)) {
-                                        $title_rechazado .= ': ' . $observacion_facultad;
-                                    }
-                                    echo '<i class="fas fa-times-circle text-danger" title="' . $title_rechazado . '"></i>';
-                                } elseif ($estado === 'pendiente') {
-                                    // === CAMBIO AQUÍ: Añadir observacion_facultad al título para "Pendiente" ===
-                                    $title_pendiente = 'Pendiente';
-                                    if (!empty($observacion_facultad)) {
-                                        $title_pendiente .= ': ' . $observacion_facultad;
-                                    }
-                                    echo '<i class="fas fa-clock text-warning" title="' . $title_pendiente . '"></i>';
-                                } else {
-                                    echo htmlspecialchars($row['estado_facultad']); // Mostrar texto si no coincide con los estados esperados
-                                }
-                                ?>
-                            </td>
-                               <?php
-                           $estado_facultad = strtolower(trim($row['estado_facultad'] ?? ''));
-                                $estado_depto = strtolower(trim($row['estado_depto'] ?? ''));
-
-                                $deshacer_disabled_attr = '';
-                                $deshacer_title_message = 'Deshacer Modificación';
-
-                                // Caso 1: Si está aprobado por facultad → Deshabilitar
-                                if ($estado_facultad === 'aprobado') {
-                                    $deshacer_disabled_attr = 'disabled';
-                                    $deshacer_title_message = 'No se puede deshacer una novedad ya aprobada por la facultad.';
-                                } 
-                                // Caso 2: Si está enviado pero NO rechazado → Deshabilitar
-                                elseif ($estado_depto === 'enviado' && $estado_facultad !== 'rechazado') {
-                                    $deshacer_disabled_attr = 'disabled';
-                                    $deshacer_title_message = 'No se puede deshacer una novedad ya enviada a la facultad (a menos que esté rechazada).';
-                                }
-                            ?>
-                            <td class="td-simple" style="padding: 0; vertical-align: middle;">
-                                <?php if ($tipo_usuario == 3): ?>
-                                    <form action='deshacer_novedad_mod.php' method='POST' style='display:inline;' id='formDeshacerMod_<?= htmlspecialchars($row["id_solicitud"]) ?>'>
-                                        <input type='hidden' name='id_solicitud' value='<?= htmlspecialchars($row["id_solicitud"]) ?>'>
-                                        <input type='hidden' name='anio_semestre' value='<?= htmlspecialchars($anio_semestre) ?>'>
-                                        <input type='hidden' name='departamento_id' value='<?= htmlspecialchars($departamento_id) ?>'>
-                                        <input type='hidden' name='novedad_a_deshacer' value='modificar'>
-                                        <button type='button'
-                                                title='<?= htmlspecialchars($deshacer_title_message) ?>'
-                                                style="padding: 0; margin: 0; border: none; background: none; line-height: 1; font-size: 14px;"
-                                                <?= $deshacer_disabled_attr ?>
-                                                onclick="confirmDeshacer('Modificación', 'formDeshacerMod_<?= htmlspecialchars($row["id_solicitud"]) ?>');"
-                                        >
-                                            <i class='fas fa-undo'></i>
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
-                            </td>
-                                </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php else: ?>
-            <div class="alert alert-info text-center" role="alert">
-                <i class="fas fa-info-circle me-2"></i>No hay novedades de tipo "Modificar" para este período y departamento.
-            </div>
-        <?php endif; ?>
-    </div>
-</div>
 <div class="row mt-3 unacauca-actions-section">
     
 
@@ -3284,7 +3351,7 @@ if ($stmt_count) {
     <i class="fas fa-file-download me-2"></i> Enviar a Facultad (Descargar Oficio)
 </button>
   <div class="col-md-12 text-center mb-3 d-grid">
-  <a href="consulta_facultad_novedad.php?departamento_id=<?= $departamento_id ?>&anio_semestre=<?= $anio_semestre ?>" 
+  <a href="consulta_facultad_novedad12.php?departamento_id=<?= $departamento_id ?>&anio_semestre=<?= $anio_semestre ?>" 
      class="mt-2 d-block small text-muted">
     Ver listado completo de novedades
   </a>
@@ -3536,25 +3603,33 @@ if ($stmt_count) {
         const url = `oficio_depto_reimpr.php?departamento_id=${departamento_id}&anio_semestre=${anio_semestre}`;
         window.location.href = url;
     }
+function submitForm() {
+    const form = document.getElementById('modalForm');
+    const numOficioInput = document.getElementById('num_oficio');
+    const numOficio = numOficioInput.value.trim();
 
-    function submitForm() {
-        const form = document.getElementById('modalForm');
-        if (form.checkValidity()) {
-            alert('Formulario de envío de Oficio de Departamento enviado.');
-            // Here you would typically use AJAX to submit the form data
-            // e.g., fetch('your_submit_endpoint.php', { method: 'POST', body: new FormData(form) });
+    // Validación: que después del "/" haya un número válido
+    const partes = numOficio.split('/');
+    const ultimo = partes[partes.length - 1].trim();
 
-            // Correct way to close Bootstrap 5 modal with vanilla JS
-            // Debes asegurarte de que `bootstrap` esté disponible globalmente aquí
-            var myModalInstance = bootstrap.Modal.getInstance(document.getElementById('myModal'));
-            if (myModalInstance) {
-                myModalInstance.hide();
-            }
-        } else {
-            // Trigger browser's default validation UI
-            form.reportValidity();
-        }
+    if (ultimo === '' || isNaN(ultimo)) {
+        alert('Debe ingresar un número válido después del "/" en el número de oficio.');
+        numOficioInput.focus();
+        return false; // Detiene envío
     }
+
+    if (form.checkValidity()) {
+        alert('Formulario de envío de Oficio de Departamento enviado.');
+        // Aquí iría el envío (AJAX, fetch, etc.)
+        
+        var myModalInstance = bootstrap.Modal.getInstance(document.getElementById('myModal'));
+        if (myModalInstance) {
+            myModalInstance.hide();
+        }
+    } else {
+        form.reportValidity();
+    }
+}
 
     // Existing jQuery-dependent scripts (mantener estos si dependen de jQuery + Bootstrap JS)
     $(document).ready(function() {
@@ -3675,48 +3750,68 @@ if ($stmt_count) {
         document.getElementById('folios').value = totalFolios;
         document.getElementById('totalFoliosDisplay').innerHTML = "<strong>" + totalFolios + "</strong>";
     }
+// Reemplaza tu función submitForm() existente con esta
+async function submitForm() {
+    updateFoliosTotal(); // Mantenemos esta línea
 
-    function submitForm() {
-        updateFoliosTotal();
+    const numOficioInput = document.getElementById('num_oficio');
+    const numOficio = (numOficioInput.value || '').trim();
 
-        var numOficio = document.getElementById('num_oficio').value;
-        var fechaOficio = document.getElementById('fecha_oficio').value;
-        var elaboro = document.getElementById('elaboro').value;
-        var acta = document.getElementById('acta').value;
-        var fechaActa = document.getElementById('fecha_acta').value;
-        var folios = document.getElementById('folios').value;
-        var folios3 = document.getElementById('folios3').value;
+    // VALIDACIÓN 1: Formato del oficio (la que ya tenías)
+    const tieneNumeroAlFinal = /\/\s*\d+\s*$/.test(numOficio);
+    if (!tieneNumeroAlFinal) {
+        alert('Debe ingresar un número válido después del "/" en el campo Número de Oficio. Ej: TRD-DEP001/123');
+        numOficioInput.focus();
+        return;
+    }
 
-        folios3 = folios3.trim() === '' ? 0 : parseInt(folios3, 10);
+    // VALIDACIÓN 2: Verificar si el oficio ya existe en la BD
+    const departamentoId = "<?php echo urlencode($departamento_id); ?>";
+    const anioSemestre = "<?php echo urlencode($anio_semestre); ?>";
+    const checkUrl = `verificar_oficio_depto.php?oficio=${encodeURIComponent(numOficio)}&anio_semestre=${anioSemestre}&departamento_id=${departamentoId}`;
 
-        // var contadorHV = <?php //echo $contadorHV; ?>; // Uncomment if needed
+    try {
+        const response = await fetch(checkUrl);
+        const data = await response.json();
 
-        // Re-enable validation if needed
-        /*if (folios3 < contadorHV) {
-            var mensaje = contadorHV === 1
-                ? 'Verificar número de folios de ' + contadorHV + ' hoja de vida nueva y/o actualización informada.'
-                : 'Verificar número de folios de las ' + contadorHV + ' hojas de vida nuevas y/o actualizaciones informadas.';
-            alert(mensaje);
-            return;
-        }*/
-
-        if (numOficio === '' || fechaOficio === '' || elaboro === '') {
-            alert('Por favor, diligencie los campos obligatorios (*).');
+        // Si el oficio ya existe, mostrar alerta y detener
+        if (data.existe) {
+            alert('Error: El número de oficio ya ha sido utilizado en este período para este departamento. Por favor, ingrese un número diferente.');
             return;
         }
 
-        var departamentoId = "<?php echo urlencode($departamento_id); ?>";
-        var anioSemestre = "<?php echo urlencode($anio_semestre); ?>";
-        var nombrefac = "<?php echo urlencode($nombre_fac); ?>";
+        // Si todas las validaciones pasan, procedemos a construir la URL y redirigir
+        const fechaOficio = document.getElementById('fecha_oficio').value;
+        const elaboro = document.getElementById('elaboro').value;
+        const acta = document.getElementById('acta').value;
+        const fechaActa = document.getElementById('fecha_acta').value;
+        const folios = document.getElementById('folios').value;
+        const nombrefac = "<?php echo urlencode($nombre_fac); ?>";
 
-        var url = 'oficio_depto_novedad.php?folios=' + folios + '&departamento_id=' + departamentoId + '&anio_semestre=' + anioSemestre + '&nombre_fac=' + nombrefac + '&num_oficio=' + encodeURIComponent(numOficio) + '&fecha_oficio=' + encodeURIComponent(fechaOficio) + '&elaboro=' + encodeURIComponent(elaboro) + '&acta=' + encodeURIComponent(acta) + '&fecha_acta=' + encodeURIComponent(fechaActa);
-
+        // Construimos la URL para el script que genera el Word
+        const url = 'oficio_depto_novedad.php?folios=' + folios +
+            '&departamento_id=' + departamentoId +
+            '&anio_semestre=' + anioSemestre +
+            '&nombre_fac=' + nombrefac +
+            '&num_oficio=' + encodeURIComponent(numOficio) +
+            '&fecha_oficio=' + encodeURIComponent(fechaOficio) +
+            '&elaboro=' + encodeURIComponent(elaboro) +
+            '&acta=' + encodeURIComponent(acta) +
+            '&fecha_acta=' + encodeURIComponent(fechaActa);
+        
+        // Redirigimos a la página para generar el Word
         window.location.href = url;
 
+        // Opcional: recargar la página después de un tiempo
         setTimeout(function() {
             window.location.reload();
         }, 1000);
+
+    } catch (error) {
+        console.error('Error al verificar el oficio:', error);
+        alert('No se pudo verificar el número de oficio. Intente de nuevo.');
     }
+}
 </script>
             
 <?php
