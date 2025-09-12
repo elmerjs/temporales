@@ -396,9 +396,39 @@ $conn->close();
 .hover\:bg-blue-100:hover {
     background-color: #DBEAFE;
 }
-    </style>
-<body class="bg-gray-100">
+  
+    /* Estilos para la Notificación Temporal (Toast) */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #2f855a; /* Un verde oscuro y profesional */
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        z-index: 100;
+        
+        /* Oculto por defecto */
+        opacity: 0;
+        visibility: hidden;
+        
+        /* Transición suave */
+        transition: opacity 0.5s, visibility 0.5s, transform 0.5s;
+        transform: translateY(-20px);
+    }
 
+    .toast-container.show {
+        /* Visible cuando tiene la clase 'show' */
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+</style>
+<body class="bg-gray-100">
+<div id="toast-notification" class="toast-container">
+    <p id="toast-message">Mensaje de éxito</p>
+</div>
     <div class="container mx-auto p-8">
 
         <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
@@ -773,12 +803,10 @@ if ($status_fac === 'En Proceso') {
                 <input type="number" id="folios" name="folios" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" min="1" required>
             </div>
             
-            <div class="flex items-center justify-end space-x-4">
-                <button type="button" id="btnCloseAndReload" onclick="document.getElementById('wordGenModal').classList.add('hidden'); location.reload();" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded disabled:bg-gray-300" disabled>
-                    Cerrar y Recargar
-                </button>
+            <div class="flex items-center justify-end">
                 <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                    Generar Oficio
+                    <i class="fas fa-file-word mr-2"></i>
+                    Generar Oficio y Finalizar
                 </button>
             </div>
         </form>
@@ -1332,10 +1360,11 @@ if (btnLimpiar) {
 
     // --- ACCIÓN DE AVALAR ---
  // --- ACCIÓN DE AVALAR (MEJORADA) ---
+// --- ACCIÓN DE AVALAR (MEJORADA CON NOTIFICACIÓN TEMPORAL) ---
 btnAvalar.addEventListener('click', () => {
     if (solicitudesSeleccionadas.length === 0) return alert('Por favor, seleccione al menos una solicitud.');
 
-    toggleLoading(true, 'Procesando aval... Enviando correo...'); // <-- MOSTRAR MENSAJE
+    toggleLoading(true, 'Procesando aval... Enviando correo...');
 
     const formData = new FormData();
     formData.append('action', 'avalar');
@@ -1343,21 +1372,30 @@ btnAvalar.addEventListener('click', () => {
     solicitudesSeleccionadas.forEach(id => formData.append('selected_ids[]', id));
 
     fetch('procesar_facultad_seleccion.php', { method: 'POST', body: formData })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) throw new Error('La respuesta del servidor no fue exitosa.');
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
-            alert(data.message);
+            // ===== ¡AQUÍ ESTÁ EL CAMBIO! =====
+            // 1. Reemplazamos el alert() por nuestra notificación temporal.
+            showToast(data.message, 5000); 
+
+            // 2. El formulario de Word ahora aparece INMEDIATAMENTE.
             document.getElementById('wordGenSelectedIds').value = data.data.processed_ids.join(',');
             document.getElementById('fecha_oficio').value = new Date().toISOString().split('T')[0];
             wordGenModal.classList.remove('hidden');
         } else {
+            // Si hay un error, sí usamos un alert para detener el proceso.
             alert('Error: ' + data.message);
         }
     }).catch(error => {
         console.error('Error de conexión o script:', error);
         alert('Ocurrió un error inesperado al procesar la solicitud.');
     }).finally(() => {
-        toggleLoading(false); // <-- OCULTAR MENSAJE (SIEMPRE se ejecuta)
+        // Ocultamos la pantalla de carga principal
+        toggleLoading(false);
     });
 });
 
@@ -1456,13 +1494,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     return; 
                 }
                 
-                // Si todo está correcto, habilitamos el botón y enviamos el formulario
-                if (btnCloseAndReload) {
-                    btnCloseAndReload.disabled = false;
-                }
-                
-                // Si todas las validaciones pasaron, ahora sí enviamos el formulario
-                this.submit(); 
+                  // 1. Mostramos una notificación de éxito temporal
+                showToast('Oficio validado. Generando documento y recargando...', 3000);
+
+                // 2. Enviamos el formulario para iniciar la descarga del Word
+                this.submit();
+
+                // 3. Programamos el cierre del modal y la recarga automática
+                setTimeout(() => {
+                    wordGenModal.classList.add('hidden'); // Ocultar el modal
+                    location.reload();                    // Recargar la página
+                }, 3000); // 3 segundos de espera
 
             } catch (error) {
                 console.error('Error al verificar el oficio:', error);
@@ -1471,6 +1513,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+        // Añade esta función en tu <script>
+// Reemplaza tu función showToast con esta
+function showToast(message, duration = 3000) {
+    const toast = document.getElementById('toast-notification');
+    const toastMessage = document.getElementById('toast-message');
+
+    if (toast) {
+        // Ponemos el mensaje y añadimos la clase 'show' para hacerlo visible
+        toastMessage.textContent = message;
+        toast.classList.add('show');
+        
+        // Creamos un temporizador para quitar la clase 'show' y ocultarlo de nuevo
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, duration);
+    }
+}
 </script>
 </body>
 </html>

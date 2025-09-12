@@ -22,7 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
               : '';
 $tipoEliminacion = $_POST['tipo_eliminacion'] ?? '';
 
-    $cierreperiodo = obtenerperiodo($anio_semestre);
+    $cierreperiodo = obtenerperiodonov($anio_semestre);
 
     // Conexión
     $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');

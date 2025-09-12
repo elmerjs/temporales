@@ -36,26 +36,7 @@ if ($currentMonth >= 7) {
 }
 
 
-// NUEVO: Verificar si hay registros pendientes para Novedades
-$hasPendingNovelties = false;
-if ($tipo_usuario != 1 && isset($fk_fac_user) && $fk_fac_user > 0) {
-    $con_check = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-    if (!$con_check->connect_error) {
-        $sql_check = "SELECT 1 FROM solicitudes_working_copy 
-                      WHERE facultad_id = ? 
-                      AND estado_facultad = 'PENDIENTE' 
-                      LIMIT 1";
-        $stmt = $con_check->prepare($sql_check);
-        if ($stmt) {
-            $stmt->bind_param("i", $fk_fac_user);
-            $stmt->execute();
-            $result_check = $stmt->get_result();
-            $hasPendingNovelties = $result_check->num_rows > 0;
-            $stmt->close();
-        }
-        $con_check->close();
-    }
-}
+
 //echo "nombre sesion: ". $nombre_sesion;
 $consultaf = "SELECT * FROM users WHERE users.Name= '$nombre_sesion'";
 $resultadof = $con->query($consultaf);
@@ -77,7 +58,26 @@ $profe_en_cargo= $row['u_nombre_en_cargo'];
         $where = "WHERE email_fac LIKE '%$email_fac%'";
     }
 }
-
+// NUEVO: Verificar si hay registros pendientes para Novedades
+$hasPendingNovelties = false;
+if ($tipo_usuario != 1 && isset($fk_fac_user) && $fk_fac_user > 0) {
+    $con_check = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+    if (!$con_check->connect_error) {
+        $sql_check = "SELECT 1 FROM solicitudes_working_copy 
+                      WHERE facultad_id = ? 
+                      AND estado_facultad = 'PENDIENTE' 
+                      LIMIT 1";
+        $stmt = $con_check->prepare($sql_check);
+        if ($stmt) {
+            $stmt->bind_param("i", $fk_fac_user);
+            $stmt->execute();
+            $result_check = $stmt->get_result();
+            $hasPendingNovelties = $result_check->num_rows > 0;
+            $stmt->close();
+        }
+        $con_check->close();
+    }
+}
 // Conectar a la base de datos
 $con = new mysqli('localhost', 'root', '', 'contratacion_temporales');
 if ($con->connect_error) {
@@ -993,7 +993,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                  <ul class="submenu novedades-submenu">
                     <?php
                     $periodosMostrados = [];
-                    if ($tipo_usuario == 1):
+                    if ($tipo_usuario == 1 && $id_user != 96 && $id_user != 93 && $id_user != 10):
                         foreach ($departamentos as $departamento):
                             if (!in_array($previousPeriod, $periodosMostrados)):
                                 $periodosMostrados[] = $previousPeriod; ?>
@@ -1195,7 +1195,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                 && (
                     $id_user == 92
                     || $id_user == 93
-                    || $id_user == 94 || $id_user == 4
+                     || $id_user == 4
                 )
             ): ?>
                 <li class="menu-item <?= ($active_menu_item == 'observaciones') ? 'active' : '' ?>">
@@ -1226,7 +1226,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                 </li>
             <?php endif; ?>
 
-            <?php if ($tipo_usuario == 1 && ! in_array($id_user, [92, 93, 94])): ?>
+            <?php if ($tipo_usuario == 1 && ! in_array($id_user, [92, 93, 94, 96])): ?>
                 <li class="<?= ($active_menu_item == 'gestion_periodos') ? 'active' : '' ?>">
                     <a href="../../temporales/gestion_periodos.php">Gestión periodos</a>
                 </li>

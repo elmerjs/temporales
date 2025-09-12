@@ -1,6 +1,6 @@
 <?php
 
-$active_menu_item = 'gestion_depto';
+$active_menu_item = 'novedades';
 
 require('include/headerz.php');
 require 'funciones.php';
