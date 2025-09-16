@@ -497,9 +497,7 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
         color: #ffc107 !important;
     }
 
-    .text-info {
-        color: #17a2b8 !important;
-    }
+    
 
     .text-muted {
         color: #6c757d !important;
@@ -842,7 +840,6 @@ function obtenerenvioaFacultad($facultad_id,$anio_semestre) { //deberia llalmrse
 .text-danger { color: var(--unicauca-red) !important; }
 .text-success { color: var(--unicauca-green-primary) !important; }
 .text-warning { color: var(--unicauca-orange) !important; }
-.text-info { color: var(--unicauca-cyan) !important; }
 
 /* Ajustes a las alertas y otros elementos de Bootstrap */
 .alert.alert-warning {
@@ -1239,7 +1236,7 @@ h2.section-title {
 }
 
 .text-info {
-    color: var(--unicauca-accent) !important;
+    color: var(--unicauca-warning) !important;
 }
 
 /* Botones de acción */

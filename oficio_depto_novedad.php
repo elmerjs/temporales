@@ -336,7 +336,7 @@ if (!empty($cambio_vinculacion_data)) {
     $iteracion++;
 
     foreach ($cambio_vinculacion_data as $cambio_row) {
-        $nombre_profesor = mb_strtoupper(utf8_decode($cambio_row['nombre_adicionar']), 'UTF-8');
+        $nombre_profesor = mb_strtoupper($cambio_row['nombre_adicionar'], 'UTF-8');
         $cedula_profesor = utf8_decode($cambio_row['cedula']);
         $tipo_docente_eliminar = utf8_decode($cambio_row['tipo_docente_eliminar']);
         $sede_eliminar = utf8_decode($cambio_row['sede_eliminar']);
@@ -368,9 +368,9 @@ if (!empty($cambio_vinculacion_data)) {
         }
         
         $section->addText($text_salida, $observationTextStyle, $paragraphStyleLeft);
-        if (!empty($observacion_adicionar)) {
+        /*if (!empty($observacion_adicionar)) {
             $section->addText('Observación: ' . $observacion_adicionar, $observationTextStyle, $paragraphStyleLeft);
-        }
+        }*/
         $section->addTextBreak(0); // Pequeño espacio antes de la tabla de adición
 
         // Tabla de "Adicionar" para este profesor
@@ -389,15 +389,16 @@ if (!empty($cambio_vinculacion_data)) {
         $textrun_header->addText('N', $cellTextStyle);
         $textrun_header->addText('o', array_merge($cellTextStyle, array('superScript' => true)));
         $row_header->addCell(1200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Cédula', $cellTextStyle, $paragraphStyle);
-        $row_header->addCell(4000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyle, $paragraphStyle);
+        $row_header->addCell(3600, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyle, $paragraphStyle);
         $row_header->addCell(700, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('Dedic/hr', $cellTextStyle, $paragraphStyle);
         $row_header->addCell(700, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('H.de Vida', $cellTextStyle, $paragraphStyle);
-        $row_header->addCell(1000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Tipo Docente', $cellTextStyle, $paragraphStyle);
-
+        //$row_header->addCell(1000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Tipo Docente', $cellTextStyle, $paragraphStyle);
+// --- CAMBIO 1: Encabezado de la tabla de "Cambio de Vinculación" ---
+$row_header->addCell(2200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Observación', $cellTextStyle, $paragraphStyle);
         $row_subheader = $table->addRow();
         $row_subheader->addCell(400, array('vMerge' => 'continue'));
         $row_subheader->addCell(1200, array('vMerge' => 'continue'));
-        $row_subheader->addCell(4000, array('vMerge' => 'continue'));
+        $row_subheader->addCell(3600, array('vMerge' => 'continue'));
         $row_subheader->addCell(350, $headerCellStyle)->addText('Pop', $cellTextStyleb, $paragraphStyle);
         $row_subheader->addCell(350, $headerCellStyle)->addText('Reg', $cellTextStyleb, $paragraphStyle);
         $row_subheader->addCell(350, $headerCellStyle)->addText('Nuevo', $cellTextStyleb, $paragraphStyle);
@@ -408,12 +409,36 @@ if (!empty($cambio_vinculacion_data)) {
         $table->addRow();
         $table->addCell(400, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(1, $cellTextStyle, $paragraphStyle); // Siempre 1 para esta tabla específica
         $table->addCell(1200, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($cedula_profesor, $cellTextStyle, $paragraphStyle);
-        $table->addCell(4000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($nombre_profesor, $cellTextStyle, $paragraphStyle);
+        $table->addCell(3600, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($nombre_profesor, $cellTextStyle, $paragraphStyle);
 
-        if ($cambio_row['tipo_docente_adicionar'] == "Ocasional") {
-            $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($cambio_row['dedicacion_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
-            $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($cambio_row['dedicacion_r_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
-        } elseif ($cambio_row['tipo_docente_adicionar'] == "Catedra") {
+if ($cambio_row['tipo_docente_adicionar'] == "Ocasional") {
+    // --- LÓGICA PARA LA DEDICACIÓN EN POPAYÁN ---
+    $dedicacion_popayan = strtoupper(trim($cambio_row['dedicacion_adicionar'] ?: ''));
+    $display_popayan = ''; // Por defecto es vacío
+    if ($dedicacion_popayan === 'MT') {
+        $display_popayan = 'OMT';
+    } elseif ($dedicacion_popayan === 'TC') {
+        $display_popayan = 'OTC';
+    } elseif (!empty($dedicacion_popayan)) {
+        $display_popayan = 'O'; // Si hay algo, pero no es MT o TC
+    }
+    
+    // --- LÓGICA PARA LA DEDICACIÓN EN REGIONALIZACIÓN ---
+    $dedicacion_regional = strtoupper(trim($cambio_row['dedicacion_r_adicionar'] ?: ''));
+    $display_regional = ''; // Por defecto es vacío
+    if ($dedicacion_regional === 'MT') {
+        $display_regional = 'OMT';
+    } elseif ($dedicacion_regional === 'TC') {
+        $display_regional = 'OTC';
+    } elseif (!empty($dedicacion_regional)) {
+        $display_regional = 'O';
+    }
+
+    // Añadir las celdas con los nuevos valores formateados
+    $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_popayan), $cellTextStyle, $paragraphStyle);
+    $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_regional), $cellTextStyle, $paragraphStyle);
+}
+        elseif ($cambio_row['tipo_docente_adicionar'] == "Catedra") {
             $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($cambio_row['horas_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
             $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($cambio_row['horas_r_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
         } else {
@@ -422,12 +447,16 @@ if (!empty($cambio_vinculacion_data)) {
         }
 
         $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-            ->addText(mb_strtoupper(utf8_decode($cambio_row['anexa_hv_docente_nuevo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
-        $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-            ->addText(mb_strtoupper(utf8_decode($cambio_row['actualiza_hv_antiguo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
-        $table->addCell(1000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-            ->addText(utf8_decode($cambio_row['tipo_docente_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
+            ->addText(mb_strtoupper($cambio_row['anexa_hv_docente_nuevo'] ?: '', 'UTF-8'), $cellTextStyle, $paragraphStyle);
         
+        
+        $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
+            ->addText(mb_strtoupper($cambio_row['actualiza_hv_antiguo'] ?: '', 'UTF-8'), $cellTextStyle, $paragraphStyle);
+       /* $table->addCell(1000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
+            ->addText(utf8_decode($cambio_row['tipo_docente_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);*/
+        // --- CAMBIO 2: Celda de datos en la tabla de "Cambio de Vinculación" ---
+$table->addCell(2200, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
+      ->addText(utf8_decode($cambio_row['observacion_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
         $section->addTextBreak(1); // Espacio entre cada profesor de cambio de vinculación
 
         // Actualizar el estado de ambas solicitudes a 'ENVIADO'
@@ -541,7 +570,7 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
     }
 
     // Mostrar las observaciones como un párrafo concatenado si existen
-    if (!empty($unique_observations)) {
+   /* if (!empty($unique_observations)) {
         $observation_text_output = '';
         $first_obs_output = true;
         foreach ($unique_observations as $obs_content => $indices_array) {
@@ -562,7 +591,7 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
         $section->addText($observation_text_output, $observationTextStyle, $paragraphStyleLeft);
         $section->addTextBreak(0); // Añadir un salto de línea después de las observaciones y antes de la tabla
     }
-
+*/
     // Estilo de la tabla
     $styleTable = array(
         'borderSize' => 6,
@@ -588,7 +617,7 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
     $row->addCell(1200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Cédula', $cellTextStyle, $paragraphStyle);
     
     // Nombre (ancho ajustado para compensar la eliminación de la columna Observación)
-    $row->addCell(4000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyle, $paragraphStyle); // Aumentado el ancho del nombre
+    $row->addCell(3400, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyle, $paragraphStyle); // Aumentado el ancho del nombre
     
     // Dedicación/hr
     $row->addCell(700, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('Dedic/hr', $cellTextStyle, $paragraphStyle);
@@ -597,15 +626,16 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
     $row->addCell(700, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('H.de Vida', $cellTextStyle, $paragraphStyle);
 
     // Tipo Docente
-    $row->addCell(1000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Tipo Docente', $cellTextStyle, $paragraphStyle);
-    
+  //  $row->addCell(1000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Tipo Docente', $cellTextStyle, $paragraphStyle);
+    // --- CAMBIO 3: Encabezado de las tablas de novedades normales ---
+$row->addCell(2200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Observación', $cellTextStyle, $paragraphStyle);
 
     // Encabezados de la tabla - Segunda fila (para celdas fusionadas, ¡Sin Observación!)
     $row = $table->addRow();
     // Celdas 'continue' para los vMerge 'restart' de la fila anterior
     $row->addCell(400, array('vMerge' => 'continue')); // Nº
     $row->addCell(1200, array('vMerge' => 'continue')); // Cédula
-    $row->addCell(4000, array('vMerge' => 'continue')); // Nombre (ancho ajustado)
+    $row->addCell(3400, array('vMerge' => 'continue')); // Nombre (ancho ajustado)
     
     // Sub-encabezados de Dedicación/hr
     $row->addCell(350, $headerCellStyle)->addText('Pop', $cellTextStyleb, $paragraphStyle);
@@ -616,8 +646,9 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
     $row->addCell(350, $headerCellStyle)->addText('Antig', $cellTextStyleb, $paragraphStyle);
 
     // Celdas 'continue' para Tipo Docente
-    $row->addCell(1000, array('vMerge' => 'continue')); // Tipo Docente
+   // $row->addCell(1000, array('vMerge' => 'continue')); // Tipo Docente
 
+$row->addCell(2200, array('vMerge' => 'continue')); // Celda 'continue' para Observación
 
     $cont = 0; // Contador de filas dentro de cada tabla de novedad
     // Ahora iteramos sobre los resultados almacenados temporalmente
@@ -640,13 +671,41 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
         // Columna Nombre
         $full_nombre = utf8_decode($row['nombre'] ?: '');
         $display_nombre_in_word = $full_nombre; 
-        $table->addCell(4000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($display_nombre_in_word, $cellTextStyle, $paragraphStyle); // Ancho ajustado
+        $table->addCell(3400, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($display_nombre_in_word, $cellTextStyle, $paragraphStyle); // Ancho ajustado
 
         // Columnas de Dedicación/horas según el tipo de docente
-        if ($row['tipo_docente'] == "Ocasional") {
-            $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($row['tipo_dedicacion'] ?: ''), $cellTextStyle, $paragraphStyle);
-            $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($row['tipo_dedicacion_r'] ?: ''), $cellTextStyle, $paragraphStyle);
-        } elseif ($row['tipo_docente'] == "Catedra") {
+        // Columnas de Dedicación/horas según el tipo de docente
+if ($row['tipo_docente'] == "Ocasional") {
+    // --- LÓGICA PARA LA DEDICACIÓN EN POPAYÁN ---
+    $dedicacion_popayan = strtoupper(trim($row['tipo_dedicacion'] ?: ''));
+    $display_popayan = 'O'; // Valor por defecto
+    if ($dedicacion_popayan === 'MT') {
+        $display_popayan = 'OMT';
+    } elseif ($dedicacion_popayan === 'TC') {
+        $display_popayan = 'OTC';
+    }
+    
+    // --- LÓGICA PARA LA DEDICACIÓN EN REGIONALIZACIÓN ---
+    $dedicacion_regional = strtoupper(trim($row['tipo_dedicacion_r'] ?: ''));
+    $display_regional = 'O'; // Valor por defecto
+    if ($dedicacion_regional === 'MT') {
+        $display_regional = 'OMT';
+    } elseif ($dedicacion_regional === 'TC') {
+        $display_regional = 'OTC';
+    }
+    
+    // Si la dedicación original estaba vacía, mostramos la celda vacía para no poner una "O" solitaria.
+    if (empty($dedicacion_popayan)) {
+        $display_popayan = '';
+    }
+    if (empty($dedicacion_regional)) {
+        $display_regional = '';
+    }
+
+    // Añadir las celdas con los nuevos valores formateados
+    $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_popayan), $cellTextStyle, $paragraphStyle);
+    $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_regional), $cellTextStyle, $paragraphStyle);
+} elseif ($row['tipo_docente'] == "Catedra") {
             $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($row['horas'] ?: ''), $cellTextStyle, $paragraphStyle);
             $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($row['horas_r'] ?: ''), $cellTextStyle, $paragraphStyle);
         } else {
@@ -656,14 +715,20 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
 
         // Columnas de Hoja de Vida
         $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-            ->addText(mb_strtoupper(utf8_decode($row['anexa_hv_docente_nuevo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
+            ->addText(mb_strtoupper($row['anexa_hv_docente_nuevo'] ?: '', 'UTF-8'), $cellTextStyle, $paragraphStyle);
 
         $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-            ->addText(mb_strtoupper(utf8_decode($row['actualiza_hv_antiguo'] ?: ''), 'UTF-8'), $cellTextStyle, $paragraphStyle);
+            ->addText(mb_strtoupper($row['actualiza_hv_antiguo'] ?: '', 'UTF-8'), $cellTextStyle, $paragraphStyle);
 
         // Columna Tipo Docente
-        $table->addCell(1000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
+        /*$table->addCell(1000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
             ->addText(utf8_decode($row['tipo_docente'] ?: ''), $cellTextStyle, $paragraphStyle); 
+        */
+        
+        // --- CAMBIO 4: Celda de datos en las tablas de novedades normales ---
+        $table->addCell(2200, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
+      ->addText(utf8_decode($row['s_observacion'] ?: ''), $cellTextStyle, $paragraphStyle);
+        
         
         // --- INICIO: Nuevo UPDATE para cada registro mostrado en la tabla ---
         $id_solicitud_actual = $row['id_solicitud'];
@@ -691,7 +756,7 @@ $fontStyleSmall = array('name' => 'Arial', 'size' => 7, 'italic' => true);
 $paragraphStyleSmall = array('spaceBefore' => 0, 'spaceAfter' => 0);
 
 $section->addText(
-    'hr=Horas, nuevo=Anexa Hoja de vida, Antig = Actualiza Hoja de vida Antiguo, TC = Tiempo Completo, MT = Medio Tiempo', 
+    'Dedic/hr=Dedicación (Ocasional) u Horas(Cátedra), nuevo=Anexa Hoja de vida, Antig = Actualiza Hoja de vida Antiguo, OTC = Ocasional Tiempo Completo, OMT = Ocasional Medio Tiempo', 
     $fontStyleSmall, 
     $paragraphStyleSmall
 );

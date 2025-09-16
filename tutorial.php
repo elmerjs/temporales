@@ -7,9 +7,14 @@ $tipo_usuario = isset($_GET['tipo_usuario']) ? (int)$_GET['tipo_usuario'] : 3;
 
 // Definir URLs de video según tipo de usuario
 $video_url_aceptacion_envio = "https://www.youtube.com/embed/YlYGvVT5SiQ?si=0fzXKrahc9-hrDtm";
-$video_url_devolucion = "https://www.youtube.com/embed/J_G73KqmPi0?si=xDtCNPz1NyssT8r6"; 
+
+// Cambiamos este al de Google Drive para devoluciones tipo 2
+$video_url_devolucion = "https://drive.google.com/file/d/1b5Qd5Yvi2GaFkL4J2mcasMF7guKrHaRP/preview"; 
+
 $video_url_tipo_3 = "https://www.youtube.com/embed/K9xK_DY7JIE?si=NoIwuSQAobIdhPQ1";
-$video_url_gestion_novedades = "https://www.youtube.com/embed/m9b4UWGf-Bk?si=kmLXpWQNGF35L0gA";
+
+// Cambiamos este al de Google Drive para novedades tipo 2
+$video_url_gestion_novedades = "https://drive.google.com/file/d/165vSrq7SoW9fnSea9KyetFbXQjORy90W/preview";
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -47,10 +52,11 @@ $video_url_gestion_novedades = "https://www.youtube.com/embed/m9b4UWGf-Bk?si=kmL
                 <?php if ($tipo_usuario == 2): ?>
                     <div class="row">
                         <div class="col-md-4">
-                            <h4 class="mb-3">Aceptación y Envío</h4>
-                            <div class="video-container">
-                                <iframe src="<?php echo htmlspecialchars($video_url_aceptacion_envio); ?>" allowfullscreen loading="lazy"></iframe>
-                            </div>
+                            <h4 class="mb-3">Aceptación y envío</h4>
+    <div class="video-container">
+        <iframe src="https://drive.google.com/file/d/1y_kGJA-5x50CY_xfmqdqjQDVB2BkKFiD/preview"
+                allowfullscreen loading="lazy"></iframe>
+    </div>
                         </div>
                         <div class="col-md-4">
                             <h4 class="mb-3">Devolución (Rechazo)</h4>
@@ -71,19 +77,17 @@ $video_url_gestion_novedades = "https://www.youtube.com/embed/m9b4UWGf-Bk?si=kmL
                         <div class="col-md-6">
                             <h4 class="mb-3">Solicitud inicial del periodo</h4>
                             <div class="video-container">
-                                <iframe src="<?php echo htmlspecialchars($video_url_tipo_3); ?>"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        referrerpolicy="strict-origin-when-cross-origin"
-                                        allowfullscreen loading="lazy"></iframe>
+                                <iframe src="https://drive.google.com/file/d/1hinNHPnNXRIPoHsjplEioWpxQlc6IoTg/preview"
+                                        width="640" height="480"
+                                        allow="autoplay" allowfullscreen loading="lazy"></iframe>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <h4 class="mb-3">Novedades</h4>
                             <div class="video-container">
-                                <iframe src="https://www.youtube.com/embed/bIvD2RBN0H4?si=5xOL63_UG9u-ud2o"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        referrerpolicy="strict-origin-when-cross-origin"
-                                        allowfullscreen loading="lazy"></iframe>
+                                <iframe src="https://drive.google.com/file/d/1eQo7YlnHOSnH_PTikIEt12EABirhR015/preview" 
+                                        width="640" height="480" 
+                                        allow="autoplay"></iframe>
                             </div>
                         </div>
                     </div>

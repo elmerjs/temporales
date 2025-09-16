@@ -1280,7 +1280,7 @@ function toggleLinkAnexos(index) {
 
     if (showLink) {
         linkAnexosContainer.style.display = 'flex'; // Mostrar si hay un "Sí"
-        linkAnexosInput.required = true; // Hacerlo obligatorio
+        linkAnexosInput.required = false; // Hacerlo obligatorio
     } else {
         linkAnexosContainer.style.display = 'none'; // Ocultar si ambos son "No"
         linkAnexosInput.required = false; // No obligatorio

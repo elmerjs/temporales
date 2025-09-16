@@ -720,8 +720,8 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
 </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-<header>
+<body class="cargando">
+    <header>
     <div class="header-top-row">
  <div class="logo-and-title">
     <div class="logo-container text-center">
@@ -897,6 +897,20 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
         margin-bottom: 8px;
         color: #6c757d;
     }
+    
+     /* Mantiene el contenido principal invisible mientras la página termina de cargar */
+        .cargando {
+            opacity: 0;
+            transition: opacity 0.3s ease-in;
+        }
+
+        /* --- Mantenemos la regla anterior por si acaso --- */
+        .hide-by-default {
+            display: none;
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
 </style>
 </div>
 
@@ -1604,6 +1618,10 @@ document.querySelectorAll('.novedades-periodo').forEach(function(link) {
             });
         });
 </script>
- 
+ <script>
+        // Esta línea se ejecuta inmediatamente después de que el menú es leído por el navegador.
+        // Hace que la página se vuelva visible de forma suave.
+        document.body.classList.remove('cargando');
+    </script>
 </body>
 </html>
