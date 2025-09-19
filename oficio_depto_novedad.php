@@ -332,7 +332,7 @@ if (!empty($cambio_vinculacion_cedulas)) {
 // 2. Sección para "Cambio de vinculación" si hay casos
 if (!empty($cambio_vinculacion_data)) {
     $section->addTextBreak(1); // Espacio antes de esta nueva sección
-    $section->addText('Novedad: Cambio de Vinculación', $fontStyleb, $paragraphStyleb);
+    $section->addText('Novedad: Modificación - Cambio de Vinculación', $fontStyleb, $paragraphStyleb);
     $iteracion++;
 
     foreach ($cambio_vinculacion_data as $cambio_row) {
@@ -500,7 +500,7 @@ $consulta_novedad_tipos = "SELECT DISTINCT novedad
 if (!empty($cedulas_excluir_str)) {
     $consulta_novedad_tipos .= " AND cedula NOT IN ($cedulas_excluir_str)";
 }
-$consulta_novedad_tipos .= " ORDER BY CASE WHEN novedad = 'adicionar' THEN 1 WHEN novedad = 'eliminar' THEN 2 ELSE 3 END";
+$consulta_novedad_tipos .= " ORDER BY CASE WHEN novedad = 'Modificar' THEN 1 WHEN novedad = 'adicionar' THEN 2 ELSE 3 END";
 
 
 $resultado_novedad_tipos = $con->query($consulta_novedad_tipos);
@@ -521,10 +521,14 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
         $section->addTextBreak(1);
     }
 
-    // Título de la sección con la novedad actual
-    $novedad_mostrar = ucfirst($novedad_actual); // Poner la primera letra en mayúscula
-    $section->addText('Novedad: ' . $novedad_mostrar, $fontStyleb, $paragraphStyleb);
-    $iteracion++;
+    if ($novedad_actual === 'Modificar') {
+    $novedad_mostrar = 'Modificación - Cambio de Dedicación';
+} else {
+    $novedad_mostrar = ucfirst($novedad_actual); // Primera letra en mayúscula
+}
+
+$section->addText('Novedad: ' . $novedad_mostrar, $fontStyleb, $paragraphStyleb);
+  $iteracion++;
 
     // Consulta para obtener las solicitudes para la novedad actual
     // Incluye 's_observacion' para poder extraerlo antes de la tabla

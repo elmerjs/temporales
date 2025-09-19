@@ -266,7 +266,7 @@ if (!empty($ids_excluir)) {
     $sql .= " AND sw.id_solicitud NOT IN ($placeholders_excluir)";
 }
 
-$sql .= " ORDER BY d.depto_nom_propio ASC, sw.novedad ASC, sw.nombre ASC";
+$sql .= " ORDER BY d.depto_nom_propio ASC, sw.novedad DESC, sw.nombre ASC";
 
 $stmt = $conn->prepare($sql);
 if ($stmt) {
@@ -452,7 +452,7 @@ foreach ($todos_los_departamentos as $departamento_nombre) {
 
     // --- SECCIÓN 1: CAMBIOS DE VINCULACIÓN (si existen para este depto) ---
     if (isset($grouped_cambio_vinculacion[$departamento_nombre])) {
-        $section->addText('Novedad: Cambio de Vinculación', ['bold' => true, 'size' => 11]);
+        $section->addText('Novedad: Modificación - Cambio de Vinculación', ['bold' => true, 'size' => 11]);
         $section->addTextBreak(0);
 
         foreach ($grouped_cambio_vinculacion[$departamento_nombre] as $cambio) {
@@ -719,25 +719,27 @@ $table_cambio->addCell(2200, ['borderSize' => 1, 'valign' => 'center'])->addText
 
     // --- SECCIÓN 2: NOVEDADES REGULARES (si existen para este depto) ---
     if (isset($grouped_solicitudes[$departamento_nombre])) {
-        foreach ($grouped_solicitudes[$departamento_nombre] as $novedad_tipo => $solicitudes_por_novedad) {
-            $novedad_mostrar = ucfirst($novedad_tipo);
-            $section->addText('Novedad: ' . htmlspecialchars($novedad_mostrar), $fontStyleb, $paragraphStyleLeft);
+ // 1. Guardamos las novedades en una variable
+    $solicitudes_novedades = $grouped_solicitudes[$departamento_nombre];
 
-            // Observaciones (si las hay)
-         /*   $observations = [];
-            foreach ($solicitudes_por_novedad as $sol) {
-                if (!empty($sol['s_observacion']) && !in_array($sol['s_observacion'], $observations)) {
-                    $observations[] = $sol['s_observacion'];
-                }
-            }
-            if (!empty($observations)) {
-                $observation_text = '';
-                foreach ($observations as $index => $obs) {
-                    $observation_text .= '(' . ($index + 1) . ') ' . htmlspecialchars($obs) . ' ';
-                }
-                $section->addText($observation_text, $observationTextStyle, $paragraphStyleLeft);
-                $section->addTextBreak(0);
-            }*/
+    // 2. Reordenamos para que "Modificar" salga primero
+    if (isset($solicitudes_novedades['Modificar'])) {
+        $modificar = ['Modificar' => $solicitudes_novedades['Modificar']];
+        unset($solicitudes_novedades['Modificar']);
+        $solicitudes_novedades = $modificar + $solicitudes_novedades;
+    }
+
+    // 3. Recorremos ya reordenado
+    foreach ($solicitudes_novedades as $novedad_tipo => $solicitudes_por_novedad) {
+        if (strtolower($novedad_tipo) === 'modificar') {
+            $novedad_mostrar = 'Modificación - Cambio de Dedicación';
+        } else {
+            $novedad_mostrar = ucfirst($novedad_tipo);
+        }
+
+        $section->addText('Novedad: ' . htmlspecialchars($novedad_mostrar), $fontStyleb, $paragraphStyleLeft);
+
+
             $section->addTextBreak(0);
 
             $table = $section->addTable('ColspanRowspan');

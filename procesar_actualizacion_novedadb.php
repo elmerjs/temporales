@@ -190,27 +190,30 @@ if (!empty($observacion_cambios_detectados)) {
 
     // Preparar la consulta INSERT para la novedad de modificación
     $sql_insert_novedad = "
-        INSERT INTO `$working_table_name` (
-            `fk_id_solicitud_original`, `anio_semestre`, `facultad_id`, `departamento_id`,
-            `tipo_docente`, `cedula`, `nombre`, `tipo_dedicacion`, `tipo_dedicacion_r`,
-            `horas`, `horas_r`, `sede`, `anexa_hv_docente_nuevo`, `actualiza_hv_antiguo`,
-            `visado`, `estado`, `novedad`, `puntos`, `s_observacion`, `tipo_reemplazo`,
-            `costo`, `anexos`, `pregrado`, `especializacion`, `maestria`, `doctorado`,
-            `otro_estudio`, `experiencia_docente`, `experiencia_profesional`, `otra_experiencia`,
-            `estado_depto`, `oficio_depto`, `fecha_envio_depto`, `aprobador_depto_id`,
-            `estado_facultad`, `observacion_facultad`, `fecha_aprobacion_facultad`, `aprobador_facultad_id`,
-            `estado_vra`, `observacion_vra`, `fecha_aprobacion_vra`, `aprobador_vra_id`
-        ) VALUES (
-            ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            ?, ?, 'Modificar', ?, ?, ?,
-            ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?,
-            'PENDIENTE', NULL, NOW(), ?, 
-            'PENDIENTE', NULL, NULL, NULL,
-            'PENDIENTE', NULL, NULL, NULL
-        )";
+    INSERT INTO `$working_table_name` (
+        `fk_id_solicitud_original`, `anio_semestre`, `facultad_id`, `departamento_id`,
+        `tipo_docente`, `cedula`, `nombre`, `tipo_dedicacion`, `tipo_dedicacion_r`,
+        `horas`, `horas_r`, `sede`, `anexa_hv_docente_nuevo`, `actualiza_hv_antiguo`,
+        `visado`, `estado`, `novedad`, `puntos`, `s_observacion`, `tipo_reemplazo`,
+        `tipo_dedicacion_inicial`, `tipo_dedicacion_r_inicial`,
+        `horas_inicial`, `horas_r_inicial`,
+        `costo`, `anexos`, `pregrado`, `especializacion`, `maestria`, `doctorado`,
+        `otro_estudio`, `experiencia_docente`, `experiencia_profesional`, `otra_experiencia`,
+        `estado_depto`, `oficio_depto`, `fecha_envio_depto`, `aprobador_depto_id`,
+        `estado_facultad`, `observacion_facultad`, `fecha_aprobacion_facultad`, `aprobador_facultad_id`,
+        `estado_vra`, `observacion_vra`, `fecha_aprobacion_vra`, `aprobador_vra_id`
+    ) VALUES (
+        ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, 'Modificar', ?, ?, ?,
+        ?, ?, ?, ?, 
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        'PENDIENTE', NULL, NOW(), ?, 
+        'PENDIENTE', NULL, NULL, NULL,
+        'PENDIENTE', NULL, NULL, NULL
+    )";
 
     $stmt_insert = $conn->prepare($sql_insert_novedad);
 
@@ -242,6 +245,10 @@ if (!empty($observacion_cambios_detectados)) {
         $original_data['puntos'],
         $observacion_final_para_db,
         $tipo_reemplazo,
+         $original_data['tipo_dedicacion'],
+        $original_data['tipo_dedicacion_r'],
+        $original_data['horas'],
+        $original_data['horas_r'],
         $original_data['costo'],
         $anexos,
         $original_data['pregrado'],
@@ -256,7 +263,7 @@ if (!empty($observacion_cambios_detectados)) {
     ];
 
     // Corregimos la cadena de tipos para que coincida con los 30 parámetros
-    $types = "isiisssssssssiisdssdsssssssssi";
+$types = "isiisssssssssiisdss" . "ssdd" . "dsssssssssi";
     
     // Bind de parámetros de forma robusta
     $refs = [];

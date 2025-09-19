@@ -75,14 +75,14 @@ if ($row['count'] == 0) {
 
 // Verificar si la cédula no es '222'
 if ($cedula !== '222') {
-    $verificarSolicitudSql = "SELECT COUNT(*) AS count 
+    $verificarSolicitudSql ="SELECT COUNT(*) AS count 
             FROM solicitudes_working_copy
             WHERE cedula = ?
               AND anio_semestre = ?
               AND (estado <> 'an' OR estado IS NULL)
               AND (novedad IS NULL OR novedad <> 'Eliminar')
               AND (estado_facultad IS NULL OR estado_facultad <> 'RECHAZADO')
-              AND (estado_vra IS NULL OR estado_vra <> 'RECHAZADO');"; // <--- ¡CAMBIO AQUÍ!
+              AND (estado_vra IS NULL OR estado_vra NOT IN ('RECHAZADO','APROBADO'));"; // <--- ¡CAMBIO AQUÍ!
     $stmt = $conn->prepare($verificarSolicitudSql);
     $stmt->bind_param("ss", $cedula, $anio_semestre);
     $stmt->execute();

@@ -653,9 +653,9 @@ $nombre_usuario = htmlspecialchars($_SESSION['name'] ?? ''); // No se usa direct
                 </div>
 
                 <div class="form-group">
-                    <label for="observacion">Observación <span class="required">*</span></label>
+                    <label for="observacion">Justificación <span class="required">*</span></label>
                     <textarea class="form-control" name="observacion" id="observacion" rows="3"
-                              placeholder="Ej: Oficio 5.5./31 no se acepta cambio a ocasional, se mantiene como cátedra..."
+                              placeholder="Ej: Reemplazo por incapacidad del profsoer de planta......."
                               oninput="detectarTipoReemplazo()" required></textarea>
                 </div>
 

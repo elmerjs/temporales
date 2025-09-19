@@ -1504,7 +1504,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     wordGenModal.classList.add('hidden'); // Ocultar el modal
                     location.reload();                    // Recargar la página
-                }, 3000); // 3 segundos de espera
+                }, 1000); // 1 segundos de espera
 
             } catch (error) {
                 console.error('Error al verificar el oficio:', error);

@@ -143,7 +143,6 @@ $estructura_vra_json = json_encode($datos_agrupados_vra);
 
 // *** FIN DE LA MODIFICACIÓN ***
 
-$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -175,8 +174,8 @@ $conn->close();
         
     /* Estilo para el contenedor de la FACULTAD que tiene pendientes */
     .has-pending-fac {
-        background-color: #fefce8; /* Un amarillo muy suave (Color de Tailwind: yellow-50) */
-        border-left: 4px solid #facc15; /* Borde amarillo (yellow-400) */
+        background-color: #fef2f2; /* Un amarillo muy suave (Color de Tailwind: yellow-50) */
+        border-left: 4px solid #b91c1c; /* Borde amarillo (yellow-400) */
     }
 
     /* Estilo para el botón del DEPARTAMENTO que tiene pendientes */
@@ -187,6 +186,51 @@ $conn->close();
          font-weight: 600; /* semi-bold */
          color: #b91c1c; /* red-700 */
     }
+        
+        /* --- ESTILO MODERNO PARA LA DATATABLE DE VRA --- */
+
+/* Reseteo general de la tabla para quitar bordes de Bootstrap */
+#tablaAprobadosVRA, 
+#tablaAprobadosVRA th, 
+#tablaAprobadosVRA td {
+    border: none !important;
+}
+
+/* Estilo para la cabecera (thead) */
+#tablaAprobadosVRA thead th {
+    background-color: #F9FAFB;  /* Fondo gris muy claro */
+    color: #6B7280;             /* Texto gris oscuro */
+    font-size: 0.75rem;         /* Letra más pequeña */
+    text-transform: uppercase;  /* Mayúsculas */
+    letter-spacing: 0.05em;     /* Espacio entre letras */
+    font-weight: 600;
+    padding: 0.75rem 1rem;      /* Relleno para más aire */
+    border-bottom: 2px solid #E5E7EB; /* Borde inferior más grueso */
+    text-align: left;
+}
+
+/* Estilo para las celdas del cuerpo (tbody) */
+/* Estilo para las celdas del cuerpo (tbody) */
+#tablaAprobadosVRA tbody td {
+    background-color: #FFFFFF;
+    /* --- ESTA ES LA LÍNEA QUE CAMBIA --- */
+    color: #374151;             /* <-- Un gris oscuro, casi negro, muy elegante */
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #E5E7EB;
+    vertical-align: middle;
+    font-family: sans-serif;
+    font-size: 0.85rem;
+}
+
+/* Efecto hover: la fila cambia de color al pasar el ratón */
+#tablaAprobadosVRA tbody tr:hover td {
+    background-color: #F3F4F6; /* Un gris un poco más oscuro que el de la cabecera */
+}
+
+/* Estilo para el checkbox de la cabecera */
+#tablaAprobadosVRA thead th input[type="checkbox"] {
+    cursor: pointer;
+}
     </style>
 </head>
 <body class="bg-gray-100">
@@ -267,8 +311,234 @@ $conn->close();
                 <p class="text-gray-500 text-center p-10">No hay novedades aprobadas por las facultades para este periodo.</p>
             <?php endif; ?>
         </div>
-    </div>
+        
+        
+    
+    <?php
+// --- INICIO: CÓDIGO PARA LA NUEVA DATATABLE DE APROBADOS ---
 
+$sql_aprobados = "
+    SELECT 
+        s.id_solicitud, f.Nombre_fac_minb, d.depto_nom_propio,
+        s.tipo_docente, s.cedula, s.nombre, s.novedad,
+        
+        -- === CAMBIO CLAVE: Tomamos los puntos de la tabla 'solicitudes' ===
+        s_orig.puntos, 
+        
+        s.tipo_reemplazo, s.oficio_fac, s.fecha_oficio_fac,
+        s.tipo_dedicacion, s.tipo_dedicacion_r,
+        s.horas, s.horas_r,
+        s.tipo_dedicacion_inicial, s.tipo_dedicacion_r_inicial,
+        s.horas_inicial, s.horas_r_inicial
+    FROM 
+        solicitudes_working_copy s
+    JOIN 
+        deparmanentos d ON d.PK_DEPTO = s.departamento_id
+    JOIN 
+        facultad f ON f.PK_FAC = d.FK_FAC
+    -- === CAMBIO CLAVE: Unimos con la tabla 'solicitudes' para obtener los puntos correctos ===
+    LEFT JOIN 
+        solicitudes s_orig ON s_orig.id_novedad = s.id_solicitud
+    WHERE 
+        s.estado_vra = 'APROBADO' 
+        AND (s.archivado IS NULL OR s.archivado = 0)
+    ORDER BY
+        s.novedad, f.Nombre_fac_minb, d.depto_nom_propio, s.nombre;
+";
+
+$resultado_aprobados = $conn->query($sql_aprobados);
+
+$datos_para_tabla = [];
+
+if ($resultado_aprobados && $resultado_aprobados->num_rows > 0) {
+    // PASO 1: Agrupar todas las solicitudes por cédula
+    $solicitudes_agrupadas = [];
+    while ($fila = $resultado_aprobados->fetch_assoc()) {
+        $cedula = $fila['cedula'];
+        $novedad = strtolower($fila['novedad']);
+        $solicitudes_agrupadas[$cedula][$novedad] = $fila;
+    }
+
+    // PASO 2: Consolidar los "dúos" y procesar el resto
+    foreach ($solicitudes_agrupadas as $cedula => $novedades) {
+        
+        // **CASO A: Es un "Cambio de Vinculación"**
+        if (isset($novedades['adicionar']) && isset($novedades['eliminar'])) {
+            $fila_final = $novedades['adicionar'];
+            $fila_inicial = $novedades['eliminar'];
+            $fila_final['novedad_display'] = 'Modificar (Vinculación)';
+            
+            // Calculamos Vinculación INICIAL (de la fila 'eliminar')
+            $vinculacion_inicial = '';
+            if ($fila_inicial['tipo_docente'] === 'Ocasional') {
+                $vinculacion_inicial = !empty($fila_inicial['tipo_dedicacion']) ? $fila_inicial['tipo_dedicacion'] : ($fila_inicial['tipo_dedicacion_r'] ?? '');
+            } elseif ($fila_inicial['tipo_docente'] === 'Catedra') {
+                $total_horas = floatval($fila_inicial['horas']) + floatval($fila_inicial['horas_r']);
+                $vinculacion_inicial = $total_horas . ' hrs';
+            }
+            $fila_final['dedicacion_unificada_inicial'] = $vinculacion_inicial;
+
+            // Calculamos Vinculación FINAL (de la fila 'adicionar')
+            $vinculacion_final = '';
+            if ($fila_final['tipo_docente'] === 'Ocasional') {
+                $vinculacion_final = !empty($fila_final['tipo_dedicacion']) ? $fila_final['tipo_dedicacion'] : ($fila_final['tipo_dedicacion_r'] ?? '');
+            } elseif ($fila_final['tipo_docente'] === 'Catedra') {
+                $total_horas = floatval($fila_final['horas']) + floatval($fila_final['horas_r']);
+                $vinculacion_final = $total_horas . ' hrs';
+            }
+            $fila_final['dedicacion_unificada_final'] = $vinculacion_final;
+
+            $datos_para_tabla[] = $fila_final;
+
+        } else {
+            // **CASO B: No es un dúo, procesar individualmente**
+            foreach ($novedades as $novedad => $fila) {
+                
+                // --- Asignamos el nuevo nombre para mostrar ---
+                switch (strtolower($fila['novedad'])) {
+                    case 'modificar':
+                        $fila['novedad_display'] = 'Modificar (Dedicación)';
+                        break;
+                    case 'eliminar':
+                        $fila['novedad_display'] = 'Liberar';
+                        break;
+                    case 'adicionar':
+                        $fila['novedad_display'] = 'Vincular';
+                        break;
+                    default:
+                        $fila['novedad_display'] = $fila['novedad'];
+                }
+
+                // Calculamos Vinculación FINAL (sin cambios)
+                $fila['dedicacion_unificada_final'] = '';
+                if ($fila['tipo_docente'] === 'Ocasional') {
+                    $fila['dedicacion_unificada_final'] = !empty($fila['tipo_dedicacion']) ? $fila['tipo_dedicacion'] : ($fila['tipo_dedicacion_r'] ?? '');
+                } elseif ($fila['tipo_docente'] === 'Catedra') {
+                    $total_horas = floatval($fila['horas']) + floatval($fila['horas_r']);
+                    $fila['dedicacion_unificada_final'] = $total_horas . ' hrs';
+                }
+
+                // Calculamos Vinculación INICIAL (sin cambios)
+                $fila['dedicacion_unificada_inicial'] = '';
+                if (strtolower($fila['novedad']) === 'modificar') {
+                    if ($fila['tipo_docente'] === 'Ocasional') {
+                        $fila['dedicacion_unificada_inicial'] = !empty($fila['tipo_dedicacion_inicial']) ? $fila['tipo_dedicacion_inicial'] : ($fila['tipo_dedicacion_r_inicial'] ?? '');
+                    } elseif ($fila['tipo_docente'] === 'Catedra') {
+                        $total_horas_inicial = floatval($fila['horas_inicial']) + floatval($fila['horas_r_inicial']);
+                        $fila['dedicacion_unificada_inicial'] = $total_horas_inicial . ' hrs';
+                    }
+                }
+                
+                $datos_para_tabla[] = $fila;
+            }
+        }
+    }
+    
+    // --- INICIO: NUEVO BLOQUE DE ORDENAMIENTO PERSONALIZADO ---
+    usort($datos_para_tabla, function($a, $b) {
+        // 1. Asignamos una prioridad numérica a cada tipo de novedad
+        $prioridad = [
+            'Modificar (Vinculación)' => 1,
+            'Modificar (Dedicación)' => 1,
+            'Vincular' => 2,
+            'Liberar'  => 3
+        ];
+        
+        // Obtenemos la prioridad para A y B (si no existe, le damos una prioridad baja)
+        $prioridadA = $prioridad[$a['novedad_display']] ?? 99;
+        $prioridadB = $prioridad[$b['novedad_display']] ?? 99;
+
+        // 2. Comparamos primero por la prioridad de la novedad
+        if ($prioridadA !== $prioridadB) {
+            return $prioridadA <=> $prioridadB; // El operador <=> hace la comparación por nosotros
+        }
+        
+        // 3. Si la prioridad es la misma, usamos los criterios originales para desempatar
+        // (Facultad -> Departamento -> Nombre del profesor)
+        $compFacultad = strcmp($a['Nombre_fac_minb'], $b['Nombre_fac_minb']);
+        if ($compFacultad !== 0) {
+            return $compFacultad;
+        }
+
+        $compDepto = strcmp($a['depto_nom_propio'], $b['depto_nom_propio']);
+        if ($compDepto !== 0) {
+            return $compDepto;
+        }
+
+        return strcmp($a['nombre'], $b['nombre']);
+    });
+    // --- FIN: NUEVO BLOQUE DE ORDENAMIENTO ---
+}
+$conn->close();
+
+
+?>
+    
+<div class="bg-white rounded-lg shadow-md overflow-hidden mt-5">
+    
+    <button class="accordion-header-vra w-full text-left py-3 px-6 flex justify-between items-center bg-blue-50 hover:bg-blue-100 focus:outline-none transition-colors duration-200">
+        <span class="text-xl font-semibold text-blue-800">
+            <i class="fas fa-check-circle me-3"></i>
+             Solicitar Trámite de vinculación en RRHH
+        </span>
+        <svg class="w-6 h-6 transform transition-transform text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+    </button>
+    
+    <div class="accordion-body-vra hidden p-4 border-t border-gray-200">
+        
+ <div class="mb-3">
+    <button id="btnGenerarWord" 
+            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+        <i class="fas fa-file-word mr-2"></i>
+        Generar Oficio
+    </button>
+</div>
+<table id="tablaAprobadosVRA" class="table" style="width:100%">
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="selectAll"></th>
+            <th>Novedad</th>
+            <th>Oficio</th>
+            <th>Departamento</th>
+            <th>Tipo</th>
+            <th>Cédula</th>
+            <th>Nombre</th>
+            <th>Vinc. Inicial</th> <th>Vinc. Final</th>  <th>Puntos</th>
+            <th>Observación</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($datos_para_tabla as $solicitud): ?>
+            <?php
+                // --- Preparamos los datos combinados y truncados ---
+                $oficio_completo = htmlspecialchars($solicitud['oficio_fac'] . ' (' . $solicitud['fecha_oficio_fac'] . ')');
+                $oficio_corto = mb_strimwidth($oficio_completo, 0, 15, '…');
+                $depto_completo = htmlspecialchars($solicitud['depto_nom_propio'] . ' / ' . $solicitud['Nombre_fac_minb']);
+                $nombre_completo = htmlspecialchars($solicitud['nombre']);
+                $nombre_corto = mb_strimwidth($nombre_completo, 0, 15, '…');
+                $observacion_completa = htmlspecialchars($solicitud['tipo_reemplazo'] ?? '');
+                $observacion_corta = mb_strimwidth($observacion_completa, 0, 15, '…');
+            ?>
+            <tr data-id="<?= htmlspecialchars($solicitud['id_solicitud']) ?>">
+                <td><input type="checkbox" class="row-checkbox"></td>
+<td><?= htmlspecialchars($solicitud['novedad_display']) ?></td>
+                <td title="<?= $oficio_completo ?>"><?= $oficio_corto ?></td>
+                <td><?= $depto_completo ?></td>
+                <td><?= htmlspecialchars($solicitud['tipo_docente']) ?></td>
+                <td><?= htmlspecialchars($solicitud['cedula']) ?></td>
+                <td title="<?= $nombre_completo ?>"><?= $nombre_corto ?></td>
+                <td><?= htmlspecialchars($solicitud['dedicacion_unificada_inicial']) ?></td> <td><?= htmlspecialchars($solicitud['dedicacion_unificada_final']) ?></td>   <td contenteditable="true" class="editable-cell" data-field="puntos"><?= htmlspecialchars($solicitud['puntos'] ?? '') ?></td>
+                <td contenteditable="true" class="editable-cell" data-field="tipo_reemplazo" title="<?= $observacion_completa ?>"><?= $observacion_corta ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
+        </div>
+    </div>
+</div>
+    
+   
+    
     <div id="detailsModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 h-full w-full hidden z-50">
         <div class="relative top-40 mx-auto p-5 border w-11/12 lg-w-4/5 shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center pb-3 border-b">
@@ -293,7 +563,7 @@ $conn->close();
         <th rowspan="2" class="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase align-middle">Estado Facultad</th>
         <th rowspan="2" class="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase align-middle">Estado VRA</th>
         <th rowspan="2" class="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase align-middle">Observación VRA</th>
-    <th rowspan="2" class="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase align-middle">Tipo Reemplazo</th>
+    <th rowspan="2" class="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase align-middle">Tipo Observ.</th>
 
     </tr>
     <tr>
@@ -503,7 +773,7 @@ function llenarModalVRA(oficio_fac) {
                 const currentTipoReemplazo = sol.tipo_reemplazo || 'Otro'; // 'Otro' por defecto
                 let optionsHtml = '';
 
-                if (currentNovedad === 'adicionar' || currentNovedad === 'modificar') {
+if (currentNovedad === 'adicionar' || currentNovedad === 'modificar' || currentNovedad === 'cambio vinculación') {
                     const options = ["Ajuste de Matrículas", "No legalizó", "Otras fuentes de financiacion", "Reemplazo", "Reemplazo jubilación", "Reemplazo necesidad docente", "Reemplazo por Fallecimiento", "Reemplazo por Licencia", "Reemplazo renuncia", "Reemplazos NN", "Ajuste Puntos", "Ajuste por VRA", "Otro"];
                     options.forEach(opt => {
                         optionsHtml += `<option value="${opt}" ${currentTipoReemplazo === opt ? 'selected' : ''}>${opt}</option>`;
@@ -905,6 +1175,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             if (mensajeNoPendientes) mensajeNoPendientes.classList.add('hidden');
         }
+        
+        
     }
 
     filtroRadios.forEach(radio => {
@@ -916,6 +1188,100 @@ document.addEventListener('DOMContentLoaded', () => {
 // Añadir el evento a los botones de radio para que ejecuten el filtro
     radiosFiltro.forEach(radio => {
         radio.addEventListener('change', aplicarFiltro);
+    });
+</script>
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+
+<script>
+$(document).ready(function() {
+    // 1. Inicializamos la DataTable con opciones para hacerla elegante
+    var table = $('#tablaAprobadosVRA').DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json" // Traducción al español
+        },
+        "paging": true,
+        "lengthChange": true,
+        "searching": true,
+        "ordering": true,
+        "info": true,
+        "autoWidth": false,
+        "responsive": true
+    });
+
+    // 2. Lógica para el checkbox "Seleccionar Todo"
+    $('#selectAll').on('click', function() {
+        var rows = table.rows({ 'search': 'applied' }).nodes();
+        $('input.row-checkbox', rows).prop('checked', this.checked);
+    });
+
+    // 3. Lógica para que "Seleccionar Todo" se desmarque si quitamos una selección
+    $('#tablaAprobadosVRA tbody').on('change', 'input.row-checkbox', function() {
+        if (!this.checked) {
+            var el = $('#selectAll').get(0);
+            if (el && el.checked && ('indeterminate' in el)) {
+                el.indeterminate = true;
+            }
+        }
+    });
+
+        // 4. Funcionalidad del botón "Generar Oficio"
+        $('#btnGenerarWord').on('click', function() {
+            var seleccionados = [];
+            // Recolecta los datos de las filas seleccionadas (incluyendo los valores editados)
+            table.rows({ 'search': 'applied' }).every(function() {
+                var rowNode = this.node();
+                if ($(rowNode).find('input.row-checkbox').is(':checked')) {
+                    var fila = {
+                        id: $(rowNode).data('id'),
+                        puntos: $(rowNode).find('td[data-field="puntos"]').text(),
+                        tipo_reemplazo: $(rowNode).find('td[data-field="tipo_reemplazo"]').text()
+                    };
+                    seleccionados.push(fila);
+                }
+            });
+
+            if (seleccionados.length === 0) {
+                alert('Por favor, seleccione al menos una solicitud para generar el oficio.');
+                return;
+            }
+
+            // --- LÓGICA MEJORADA PARA LLAMAR AL SCRIPT PHP ---
+
+            // 1. Convertimos el array de objetos a una cadena JSON
+            const dataToSend = JSON.stringify(seleccionados);
+
+            // 2. Creamos un formulario invisible en la memoria
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'generar_word_vra_srh.php'; // El nombre de nuestro nuevo archivo PHP
+            form.target = '_blank'; // Opcional: abre el resultado en una nueva pestaña
+
+            // 3. Creamos un campo oculto para enviar los datos
+            const hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = 'seleccionados';
+            hiddenField.value = dataToSend;
+            form.appendChild(hiddenField);
+
+            // 4. Añadimos el formulario a la página y lo enviamos
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form); // Lo removemos después de enviarlo
+        });
+        });
+     // --- NUEVO SCRIPT PARA EL ACORDEÓN DE SOLICITUDES APROBADAS ---
+    document.querySelector('.accordion-header-vra').addEventListener('click', function() {
+        const accordionBody = this.nextElementSibling; // El div que contiene la tabla
+        const arrowIcon = this.querySelector('svg');   // La flecha
+
+        // Muestra u oculta el cuerpo del acordeón
+        accordionBody.classList.toggle('hidden');
+
+        // Gira la flecha 180 grados
+        arrowIcon.classList.toggle('rotate-180');
     });
 </script>
 </body>

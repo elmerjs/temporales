@@ -97,17 +97,29 @@ $stmt_update_wc->bind_param("sssii", $estado_db, $observacion, $tipo_reemplazo, 
             if ($novedad_actual === 'adicionar') $novedad_pareja = 'eliminar';
             if ($novedad_actual === 'eliminar') $novedad_pareja = 'adicionar';
 
-            if ($novedad_pareja) {
-                $sql_update_pair = "UPDATE solicitudes_working_copy SET estado_vra = ?, observacion_vra = ?, fecha_aprobacion_vra = NOW(), aprobador_vra_id = ? 
-                                    WHERE cedula = ? AND anio_semestre = ? AND LOWER(novedad) = ? AND estado_vra = 'PENDIENTE'";
-                $stmt_update_pair = $conn->prepare($sql_update_pair);
-                $stmt_update_pair->bind_param("ssisss", $estado_db, $observacion, $aprobador_id, $cedula_actual, $anio_semestre, $novedad_pareja);
-                if (!$stmt_update_pair->execute()) {
-                    throw new Exception("Error al actualizar la pareja de la solicitud ID: $id.");
+           if ($novedad_pareja) {
+                    // 1. Modificamos el SQL para que incluya "tipo_reemplazo = ?"
+                    $sql_update_pair = "UPDATE solicitudes_working_copy 
+                                        SET 
+                                            estado_vra = ?, 
+                                            observacion_vra = ?, 
+                                            tipo_reemplazo = ?, 
+                                            fecha_aprobacion_vra = NOW(), 
+                                            aprobador_vra_id = ? 
+                                        WHERE 
+                                            cedula = ? AND anio_semestre = ? AND LOWER(novedad) = ? AND estado_vra = 'PENDIENTE'";
+
+                    $stmt_update_pair = $conn->prepare($sql_update_pair);
+
+                    // 2. Añadimos la variable $tipo_reemplazo y su tipo 's' al bind_param
+                    $stmt_update_pair->bind_param("ssssiss", $estado_db, $observacion, $tipo_reemplazo, $aprobador_id, $cedula_actual, $anio_semestre, $novedad_pareja);
+
+                    if (!$stmt_update_pair->execute()) {
+                        throw new Exception("Error al actualizar la pareja de la solicitud ID: $id.");
+                    }
+                    $stmt_update_pair->close();
                 }
-                $stmt_update_pair->close();
-            }
-        }
+                        }
 
         // --- PARTE 2: APLICAR CAMBIOS A LA TABLA 'solicitudes' (SOLO SI SE APRUEBA) ---
         if ($accion === 'aprobar') {
@@ -123,19 +135,38 @@ $stmt_update_wc->bind_param("sssii", $estado_db, $observacion, $tipo_reemplazo, 
                 $id_original = $wc_row['fk_id_solicitud_original'];
 
                 if ($novedad === 'modificar') {
-                    if (!$id_original) throw new Exception("ID original no encontrado para modificación (ID: $id).");
-                    $sql_update_sol = "UPDATE solicitudes SET tipo_dedicacion = ?, tipo_dedicacion_r = ?, horas = ?, horas_r = ?, sede = ?, anexa_hv_docente_nuevo = ?, actualiza_hv_antiguo = ?, novedad = 'Modificar', id_novedad = ? WHERE id_solicitud = ?";
-                    $stmt_update_sol = $conn->prepare($sql_update_sol);
-                    $stmt_update_sol->bind_param("ssddssssi", $wc_row['tipo_dedicacion'], $wc_row['tipo_dedicacion_r'], $wc_row['horas'], $wc_row['horas_r'], $wc_row['sede'], $wc_row['anexa_hv_docente_nuevo'], $wc_row['actualiza_hv_antiguo'], $id_original, $id_original);
-                    if (!$stmt_update_sol->execute()) throw new Exception("Error al modificar en 'solicitudes' para ID: $id_original.");
-                    $stmt_update_sol->close();
-                }
+                if (!$id_original) throw new Exception("ID original no encontrado para modificación (ID: $id).");
+
+                $sql_update_sol = "UPDATE solicitudes SET tipo_dedicacion = ?, tipo_dedicacion_r = ?, horas = ?, horas_r = ?, sede = ?, anexa_hv_docente_nuevo = ?, actualiza_hv_antiguo = ?, novedad = 'Modificar', id_novedad = ? WHERE id_solicitud = ?";
+                $stmt_update_sol = $conn->prepare($sql_update_sol);
+
+                // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+                // El penúltimo parámetro ahora es el ID de la working_copy.
+                $stmt_update_sol->bind_param("ssddssssi", 
+                    $wc_row['tipo_dedicacion'], $wc_row['tipo_dedicacion_r'], 
+                    $wc_row['horas'], $wc_row['horas_r'], $wc_row['sede'], 
+                    $wc_row['anexa_hv_docente_nuevo'], $wc_row['actualiza_hv_antiguo'], 
+                    $wc_row['id_solicitud'], // <-- Valor correcto para id_novedad
+                    $id_original           // <-- Valor correcto para el WHERE
+                );
+
+                if (!$stmt_update_sol->execute()) throw new Exception("Error al modificar en 'solicitudes' para ID: $id_original.");
+                $stmt_update_sol->close();
+            }
                 
                 elseif ($novedad === 'eliminar') {
                     if (!$id_original) throw new Exception("ID original no encontrado para eliminación (ID: $id).");
+
                     $sql_delete_sol = "UPDATE solicitudes SET estado = 'an', novedad = 'Eliminar', id_novedad = ? WHERE id_solicitud = ?";
                     $stmt_delete_sol = $conn->prepare($sql_delete_sol);
-                    $stmt_delete_sol->bind_param("ii", $id_original, $id_original);
+
+                    // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+                    // El primer parámetro ahora es el ID de la working_copy.
+                    $stmt_delete_sol->bind_param("ii", 
+                        $wc_row['id_solicitud'], // <-- Valor correcto para id_novedad
+                        $id_original           // <-- Valor correcto para el WHERE
+                    );
+
                     if (!$stmt_delete_sol->execute()) throw new Exception("Error al eliminar en 'solicitudes' para ID: $id_original.");
                     $stmt_delete_sol->close();
                 }

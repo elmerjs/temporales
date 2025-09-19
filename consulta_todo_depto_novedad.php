@@ -1651,7 +1651,22 @@ $conn->close();
   margin-top: -1.3rem !important;
         margin-bottom: 1.3rem !important;
 
-}      
+}   
+        /* La nueva clase para el estilo "píldora" */
+/* Estilo para la píldora/cápsula */
+.header-pill {
+    display: inline-block;
+    width: auto;
+    border-radius: 50px;       /* Lo hace ovalado */
+    padding: 0.4rem 1.5rem;    /* Controla el espacio: 0.4rem arriba/abajo y 1.5rem a los lados */
+    line-height: 0.2;          /* Ajusta la altura de la línea del texto */
+}
+
+/* Regla CLAVE: Elimina los márgenes del texto que está adentro */
+.header-pill h5 {
+    margin: 0;                 /* ¡Esto quita el espacio extra que infla la cápsula! */
+    font-size: 1rem;           /* Opcional: Puedes ajustar el tamaño del texto si es necesario */
+}
 </style>
 </head>
 <body>
@@ -2720,14 +2735,15 @@ if ($stmt_count) {
     <div class="card-header bg-secondary text-white">
         <h4 class="mb-0"><i class="fas fa-pencil-alt me-3"></i>Modificación</h4>
     </div>
-    <div class="card-body p-2">
+    <div class="card-body p-2" >
         
         
-<div class="mb-4">
-    <div class="card-header bg-success text-white">
+<div class="mb-4 text-center">
+    <div class="header bg-success text-white  header-pill">
         <h5 class="mb-0" title="Ocurre cuando un profesor cambia de tipo Ocasional a Cátedra, o viceversa, dentro del mismo periodo.">
             1. Cambio de Vinculación <i class="fas fa-info-circle fa-xs text-light ms-1"></i>
-        </h5>    </div>
+        </h5>   
+    </div>
   
         <?php if (!empty($data_cambios_vinculacion)): ?>
             <div class="table-responsive">
@@ -2846,8 +2862,8 @@ if ($stmt_count) {
 </div>
    
 
-<div>
-    <div class="card-header bg-warning text-dark">
+<div class="mb-4 text-center">
+<div class="header bg-warning text-dark header-pill">
         <h5 class="mb-0" title="Ocurre cuando un profesor Ocasional cambia de dedicación (ej: Tiempo Completo TC a Medio Tiempo MT) o cuando a un Cátedra se le modifica el número de horas.">
             2. Cambio de Dedicación / Horas <i class="fas fa-info-circle fa-xs text-dark ms-1"></i>
         </h5>    
