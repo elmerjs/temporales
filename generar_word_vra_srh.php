@@ -70,8 +70,17 @@ if (!empty($cedulas_a_verificar)) {
         }
     }
 }
-
-// --- 4. PROCESAR Y CONSOLIDAR DATOS (LÓGICA IDÉNTICA A LA PÁGINA PRINCIPAL) ---
+// --- 4. NUEVO: ACTUALIZAR REGISTROS A 'ARCHIVADO' ---
+$todos_los_ids_para_archivar = array_keys($filas_completas);
+if (!empty($todos_los_ids_para_archivar)) {
+    $ids_para_archivar_string = implode(',', $todos_los_ids_para_archivar);
+    $sql_archivar = "UPDATE solicitudes_working_copy SET archivado = 1 WHERE id_solicitud IN ($ids_para_archivar_string)";
+    
+    // Se ejecuta la consulta, pero no se detiene el script si falla, para no impedir la generación del Word.
+    // En un entorno de producción, se podría añadir un manejo de errores más robusto aquí.
+    $conn->query($sql_archivar);
+}
+// --- 4.2 PROCESAR Y CONSOLIDAR DATOS (LÓGICA IDÉNTICA A LA PÁGINA PRINCIPAL) ---
 $datos_para_word = [];
 $solicitudes_agrupadas = [];
 foreach ($filas_completas as $fila) {
