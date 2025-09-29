@@ -39,53 +39,86 @@ if ($tipo_usuario === null) {
 }
 
 // *** INICIO DE LA MODIFICACIÓN ***
-
-// --- FUNCIÓN DE PROCESAMIENTO DE DATOS ---
-// Se añade la función para detectar y consolidar los cambios de vinculación.
 function procesarCambiosVinculacion($solicitudes) {
     $adiciones = [];
     $eliminaciones = [];
     $otras_novedades = [];
     $resultado_final = [];
 
-    // 1. Clasificar solicitudes
+    // --- PASO 1: Clasificar todas las solicitudes ---
     foreach ($solicitudes as $sol) {
         $cedula = $sol['cedula'];
-        if (strtolower($sol['novedad']) === 'adicion' || strtolower($sol['novedad']) === 'adicionar') {
-            $adiciones[$cedula] = $sol;
-        } elseif (strtolower($sol['novedad']) === 'eliminar') {
-            $eliminaciones[$cedula] = $sol;
+        $novedad = strtolower($sol['novedad']);
+
+        // Usamos un array para cada cédula para manejar múltiples novedades por persona
+        if (!isset($adiciones[$cedula])) $adiciones[$cedula] = [];
+        if (!isset($eliminaciones[$cedula])) $eliminaciones[$cedula] = [];
+
+        if ($novedad === 'adicion' || $novedad === 'adicionar') {
+            // Se guarda la solicitud de adición usando su ID único como clave
+            $adiciones[$cedula][$sol['id_solicitud']] = $sol;
+        } elseif ($novedad === 'eliminar') {
+            // Se guarda la solicitud de eliminación
+            $eliminaciones[$cedula][$sol['id_solicitud']] = $sol;
         } else {
+            // El resto (Modificar, etc.) va a otra lista
             $otras_novedades[] = $sol;
         }
     }
 
-    // 2. Procesar coincidencias
-    foreach ($adiciones as $cedula => $sol_adicion) {
-        if (isset($eliminaciones[$cedula])) {
-            $sol_eliminacion = $eliminaciones[$cedula];
+    // --- PASO 2: Buscar pares (Adición/Eliminación) que compartan el MISMO OFICIO ---
+    foreach ($adiciones as $cedula => $solicitudes_adicion) {
+        foreach ($solicitudes_adicion as $id_adicion => $sol_adicion) {
+            $oficio_adicion = $sol_adicion['oficio_con_fecha'];
+            $par_encontrado = false;
 
-            $tipo_docente_anterior = ($sol_eliminacion['tipo_docente'] === 'Catedra') ? 'Cátedra' : $sol_eliminacion['tipo_docente'];
-            $estado_anterior = "Sale de " . $tipo_docente_anterior;
-            if ($sol_eliminacion['tipo_docente'] === 'Ocasional') {
-                if ($sol_eliminacion['tipo_dedicacion']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion'] . " Popayán";
-                elseif ($sol_eliminacion['tipo_dedicacion_r']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion_r'] . " Regionalización";
-            } elseif ($sol_eliminacion['tipo_docente'] === 'Catedra') {
-                if ($sol_eliminacion['horas'] && $sol_eliminacion['horas'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas'] . " horas Popayán";
-                elseif ($sol_eliminacion['horas_r'] && $sol_eliminacion['horas_r'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas_r'] . " horas Regionalización";
+            if (!empty($eliminaciones[$cedula])) {
+                foreach ($eliminaciones[$cedula] as $id_eliminacion => $sol_eliminacion) {
+                    // ¡LA CLAVE! El par solo es válido si la cédula Y el oficio coinciden
+                    if ($sol_eliminacion['oficio_con_fecha'] === $oficio_adicion) {
+                        
+                        // --- Lógica para construir la descripción (sin cambios) ---
+                        $tipo_docente_anterior = ($sol_eliminacion['tipo_docente'] === 'Catedra') ? 'Cátedra' : $sol_eliminacion['tipo_docente'];
+                        $estado_anterior = "Sale de " . $tipo_docente_anterior;
+                        if ($sol_eliminacion['tipo_docente'] === 'Ocasional') {
+                            if ($sol_eliminacion['tipo_dedicacion']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion'] . " Popayán";
+                            elseif ($sol_eliminacion['tipo_dedicacion_r']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion_r'] . " Regionalización";
+                        } elseif ($sol_eliminacion['tipo_docente'] === 'Catedra') {
+                            if ($sol_eliminacion['horas'] && $sol_eliminacion['horas'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas'] . " horas Popayán";
+                            elseif ($sol_eliminacion['horas_r'] && $sol_eliminacion['horas_r'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas_r'] . " horas Regionalización";
+                        }
+                        
+                        // Modificamos la solicitud de "adición" para que represente el cambio completo
+                        $sol_adicion['novedad'] = 'Cambio Vinculación';
+                        $observacion_existente = trim($sol_adicion['s_observacion']);
+                        $sol_adicion['s_observacion'] = $observacion_existente . ($observacion_existente ? ' ' : '') . '(' . $estado_anterior . ')';
+                        
+                        $resultado_final[] = $sol_adicion;
+
+                        // Se marca como encontrado y se elimina de la lista de pendientes
+                        $par_encontrado = true;
+                        unset($eliminaciones[$cedula][$id_eliminacion]);
+                        break; // Salimos del bucle de eliminaciones
+                    }
+                }
             }
-
-            $sol_adicion['novedad'] = 'Cambio Vinculación';
-            $observacion_existente = trim($sol_adicion['s_observacion']);
-            $sol_adicion['s_observacion'] = $observacion_existente . ($observacion_existente ? ' ' : '') . '(' . $estado_anterior . ')';
-
-            $resultado_final[] = $sol_adicion;
-            unset($eliminaciones[$cedula]);
-        } else {
-            $resultado_final[] = $sol_adicion;
+            
+            // Si después de buscar no se encontró pareja, se trata como una adición normal
+            if (!$par_encontrado) {
+                $resultado_final[] = $sol_adicion;
+            }
         }
     }
-    return array_merge($resultado_final, array_values($eliminaciones), $otras_novedades);
+
+    // --- PASO 3: Añadir las eliminaciones que quedaron sin pareja ---
+    foreach ($eliminaciones as $cedula => $solicitudes_eliminacion) {
+        foreach ($solicitudes_eliminacion as $sol_eliminacion) {
+            $resultado_final[] = $sol_eliminacion;
+        }
+    }
+
+    // Unimos los cambios procesados con las otras novedades.
+    return array_merge($resultado_final, $otras_novedades);
 }
 
 // --- LÓGICA PARA VICERRECTORÍA ACADÉMICA (VRA) ---
@@ -325,7 +358,7 @@ $sql_aprobados = "
         -- === CAMBIO CLAVE: Tomamos los puntos de la tabla 'solicitudes' ===
         s_orig.puntos, 
         
-        s.tipo_reemplazo, s.oficio_fac, s.fecha_oficio_fac,
+        s.tipo_reemplazo, s.oficio_fac, s.fecha_oficio_fac, s.oficio_con_fecha_fac,
         s.tipo_dedicacion, s.tipo_dedicacion_r,
         s.horas, s.horas_r,
         s.tipo_dedicacion_inicial, s.tipo_dedicacion_r_inicial,
@@ -355,20 +388,26 @@ if ($resultado_aprobados && $resultado_aprobados->num_rows > 0) {
     $solicitudes_agrupadas = [];
     while ($fila = $resultado_aprobados->fetch_assoc()) {
         $cedula = $fila['cedula'];
+        $oficioKey = $fila['oficio_con_fecha_fac'];  // identificador único por oficio
         $novedad = strtolower($fila['novedad']);
-        $solicitudes_agrupadas[$cedula][$novedad] = $fila;
+        $id = $fila['id_solicitud']; // siempre único
+
+        $solicitudes_agrupadas[$cedula][$oficioKey][$novedad][$id] = $fila;
     }
 
-    // PASO 2: Consolidar los "dúos" y procesar el resto
-    foreach ($solicitudes_agrupadas as $cedula => $novedades) {
-        
-        // **CASO A: Es un "Cambio de Vinculación"**
-        if (isset($novedades['adicionar']) && isset($novedades['eliminar'])) {
-            $fila_final = $novedades['adicionar'];
-            $fila_inicial = $novedades['eliminar'];
+   // PASO 2: Procesar los grupos con una lógica de un solo paso (VERSIÓN FINAL)
+foreach ($solicitudes_agrupadas as $cedula => $oficios) {
+    foreach ($oficios as $oficioKey => $novedades) {
+
+        // --- CASO 1: Es un "Cambio de Vinculación" completo (adicionar + eliminar) ---
+        if (!empty($novedades['adicionar']) && !empty($novedades['eliminar'])) {
+            // Asumimos un par 1 a 1 por oficio y cédula
+            $fila_final = reset($novedades['adicionar']);
+            $fila_inicial = reset($novedades['eliminar']);
+
             $fila_final['novedad_display'] = 'Modificar (Vinculación)';
-            
-            // Calculamos Vinculación INICIAL (de la fila 'eliminar')
+
+            // --- Lógica para calcular vinculaciones (sin cambios) ---
             $vinculacion_inicial = '';
             if ($fila_inicial['tipo_docente'] === 'Ocasional') {
                 $vinculacion_inicial = !empty($fila_inicial['tipo_dedicacion']) ? $fila_inicial['tipo_dedicacion'] : ($fila_inicial['tipo_dedicacion_r'] ?? '');
@@ -377,8 +416,7 @@ if ($resultado_aprobados && $resultado_aprobados->num_rows > 0) {
                 $vinculacion_inicial = $total_horas . ' hrs';
             }
             $fila_final['dedicacion_unificada_inicial'] = $vinculacion_inicial;
-
-            // Calculamos Vinculación FINAL (de la fila 'adicionar')
+            
             $vinculacion_final = '';
             if ($fila_final['tipo_docente'] === 'Ocasional') {
                 $vinculacion_final = !empty($fila_final['tipo_dedicacion']) ? $fila_final['tipo_dedicacion'] : ($fila_final['tipo_dedicacion_r'] ?? '');
@@ -389,50 +427,51 @@ if ($resultado_aprobados && $resultado_aprobados->num_rows > 0) {
             $fila_final['dedicacion_unificada_final'] = $vinculacion_final;
 
             $datos_para_tabla[] = $fila_final;
-
+        
         } else {
-            // **CASO B: No es un dúo, procesar individualmente**
-            foreach ($novedades as $novedad => $fila) {
-                
-                // --- Asignamos el nuevo nombre para mostrar ---
-                switch (strtolower($fila['novedad'])) {
-                    case 'modificar':
-                        $fila['novedad_display'] = 'Modificar (Dedicación)';
-                        break;
-                    case 'eliminar':
-                        $fila['novedad_display'] = 'Liberar';
-                        break;
-                    case 'adicionar':
-                        $fila['novedad_display'] = 'Vincular';
-                        break;
-                    default:
-                        $fila['novedad_display'] = $fila['novedad'];
-                }
-
-                // Calculamos Vinculación FINAL (sin cambios)
-                $fila['dedicacion_unificada_final'] = '';
-                if ($fila['tipo_docente'] === 'Ocasional') {
-                    $fila['dedicacion_unificada_final'] = !empty($fila['tipo_dedicacion']) ? $fila['tipo_dedicacion'] : ($fila['tipo_dedicacion_r'] ?? '');
-                } elseif ($fila['tipo_docente'] === 'Catedra') {
-                    $total_horas = floatval($fila['horas']) + floatval($fila['horas_r']);
-                    $fila['dedicacion_unificada_final'] = $total_horas . ' hrs';
-                }
-
-                // Calculamos Vinculación INICIAL (sin cambios)
-                $fila['dedicacion_unificada_inicial'] = '';
-                if (strtolower($fila['novedad']) === 'modificar') {
-                    if ($fila['tipo_docente'] === 'Ocasional') {
-                        $fila['dedicacion_unificada_inicial'] = !empty($fila['tipo_dedicacion_inicial']) ? $fila['tipo_dedicacion_inicial'] : ($fila['tipo_dedicacion_r_inicial'] ?? '');
-                    } elseif ($fila['tipo_docente'] === 'Catedra') {
-                        $total_horas_inicial = floatval($fila['horas_inicial']) + floatval($fila['horas_r_inicial']);
-                        $fila['dedicacion_unificada_inicial'] = $total_horas_inicial . ' hrs';
+            // --- CASO 2: No es un dúo, procesar cada novedad individualmente ---
+            foreach ($novedades as $tipoNovedad => $grupo) {
+                foreach ($grupo as $fila) {
+                    
+                    switch ($tipoNovedad) {
+                        case 'modificar':
+                            $fila['novedad_display'] = 'Modificar (Dedicación)';
+                            break;
+                        case 'eliminar':
+                            $fila['novedad_display'] = 'Liberar';
+                            break;
+                        case 'adicionar':
+                            $fila['novedad_display'] = 'Vincular';
+                            break;
+                        default:
+                            $fila['novedad_display'] = $fila['novedad'];
                     }
+
+                    // --- Lógica para calcular vinculaciones (sin cambios) ---
+                    $fila['dedicacion_unificada_final'] = '';
+                    if ($fila['tipo_docente'] === 'Ocasional') {
+                        $fila['dedicacion_unificada_final'] = !empty($fila['tipo_dedicacion']) ? $fila['tipo_dedicacion'] : ($fila['tipo_dedicacion_r'] ?? '');
+                    } elseif ($fila['tipo_docente'] === 'Catedra') {
+                        $total_horas = floatval($fila['horas']) + floatval($fila['horas_r']);
+                        $fila['dedicacion_unificada_final'] = $total_horas . ' hrs';
+                    }
+
+                    $fila['dedicacion_unificada_inicial'] = '';
+                    if ($tipoNovedad === 'modificar') {
+                        if ($fila['tipo_docente'] === 'Ocasional') {
+                            $fila['dedicacion_unificada_inicial'] = !empty($fila['tipo_dedicacion_inicial']) ? $fila['tipo_dedicacion_inicial'] : ($fila['tipo_dedicacion_r_inicial'] ?? '');
+                        } elseif ($fila['tipo_docente'] === 'Catedra') {
+                            $total_horas_inicial = floatval($fila['horas_inicial']) + floatval($fila['horas_r_inicial']);
+                            $fila['dedicacion_unificada_inicial'] = $total_horas_inicial . ' hrs';
+                        }
+                    }
+
+                    $datos_para_tabla[] = $fila;
                 }
-                
-                $datos_para_tabla[] = $fila;
             }
         }
     }
+}
     
     // --- INICIO: NUEVO BLOQUE DE ORDENAMIENTO PERSONALIZADO ---
     usort($datos_para_tabla, function($a, $b) {
@@ -475,65 +514,101 @@ $conn->close();
 ?>
     
 <div class="bg-white rounded-lg shadow-md overflow-hidden mt-5">
-    
-    <button class="accordion-header-vra w-full text-left py-3 px-6 flex justify-between items-center bg-blue-50 hover:bg-blue-100 focus:outline-none transition-colors duration-200">
-        <span class="text-xl font-semibold text-blue-800">
-            <i class="fas fa-check-circle me-3"></i>
-             Solicitar Trámite de vinculación en RRHH
-        </span>
-        <svg class="w-6 h-6 transform transition-transform text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+   <?php
+// --- LÓGICA PARA BOTÓN DINÁMICO (VERSIÓN CORREGIDA) ---
+$tieneDatos = !empty($datos_para_tabla);
+
+if (!$tieneDatos) {
+    // Estado normal: Hay datos, clases azules, botón 100% funcional.
+    $headerClasses = 'bg-blue-50 hover:bg-blue-100 text-blue-800';
+    $iconClasses   = 'fa-check-circle text-blue-800';
+    $arrowClasses  = 'text-blue-800';
+    $extraAttrs    = ''; 
+} else {
+    // Estado vacío: Clases rosa, PERO EL BOTÓN SIGUE SIENDO FUNCIONAL para mostrar el mensaje.
+    // 1. Eliminamos 'cursor-not-allowed' y añadimos un hover rosado.
+    $headerClasses = 'bg-pink-50 hover:bg-pink-100 text-pink-800';
+    $iconClasses   = 'fa-info-circle text-pink-800';
+    $arrowClasses  = 'text-pink-800'; // Hacemos que la flecha coincida con el texto.
+    // 2. ELIMINAMOS el atributo 'disabled'.
+    $extraAttrs    = 'title="No hay solicitudes pendientes. Haga clic para ver detalles."'; 
+}
+?>
+ <button class="accordion-header-vra w-full text-left py-3 px-6 flex justify-between items-center focus:outline-none transition-colors duration-200 <?= $headerClasses ?>" <?= $extraAttrs ?>>
+    <span class="text-xl font-semibold">
+        <i class="fas <?= $iconClasses ?> me-3"></i>
+        Solicitar Trámite de vinculación en RRHH
+    </span>
+    <svg class="w-6 h-6 transform transition-transform <?= $arrowClasses ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+</button>
+
+<div class="accordion-body-vra hidden p-4 border-t border-gray-200">
+
+    <?php if ($tieneDatos): ?>
+        <table id="tablaAprobadosVRA" class="table" style="width:100%">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll"></th>
+                    <th>Novedad</th>
+                    <th>Oficio</th>
+                    <th>Departamento</th>
+                    <th>Tipo</th>
+                    <th>Cédula</th>
+                    <th>Nombre</th>
+                    <th>Vinc. Inicial</th> <th>Vinc. Final</th> <th>Puntos</th>
+                    <th>Observación</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($datos_para_tabla as $solicitud): ?>
+                    <?php
+                        // --- Preparamos los datos combinados y truncados ---
+                        $oficio_completo = htmlspecialchars($solicitud['oficio_fac'] . ' (' . $solicitud['fecha_oficio_fac'] . ')');
+                        $oficio_corto = mb_strimwidth($oficio_completo, 0, 15, '…');
+                        $depto_completo = htmlspecialchars($solicitud['depto_nom_propio'] . ' / ' . $solicitud['Nombre_fac_minb']);
+                        $nombre_completo = htmlspecialchars($solicitud['nombre']);
+                        $nombre_corto = mb_strimwidth($nombre_completo, 0, 15, '…');
+                        $observacion_completa = htmlspecialchars($solicitud['tipo_reemplazo'] ?? '');
+                        $observacion_corta = mb_strimwidth($observacion_completa, 0, 15, '…');
+                    ?>
+                    <tr data-id="<?= htmlspecialchars($solicitud['id_solicitud']) ?>">
+                        <td><input type="checkbox" class="row-checkbox"></td>
+                        <td><?= htmlspecialchars($solicitud['novedad_display']) ?></td>
+                        <td title="<?= $oficio_completo ?>"><?= $oficio_corto ?></td>
+                        <td><?= $depto_completo ?></td>
+                        <td><?= htmlspecialchars($solicitud['tipo_docente']) ?></td>
+                        <td><?= htmlspecialchars($solicitud['cedula']) ?></td>
+                        <td title="<?= $nombre_completo ?>"><?= $nombre_corto ?></td>
+                        <td><?= htmlspecialchars($solicitud['dedicacion_unificada_inicial']) ?></td>
+                        <td><?= htmlspecialchars($solicitud['dedicacion_unificada_final']) ?></td>
+                        <td contenteditable="true" class="editable-cell" data-field="puntos"><?= htmlspecialchars($solicitud['puntos'] ?? '') ?></td>
+                        <td contenteditable="true" class="editable-cell" data-field="tipo_reemplazo" title="<?= $observacion_completa ?>"><?= $observacion_corta ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+   <div class="mt-4 flex items-center space-x-3">
+    <button id="btnGenerarPrevio" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">
+        <i class="fas fa-eye mr-2"></i>
+        Generar Previo
     </button>
     
-    <div class="accordion-body-vra hidden p-4 border-t border-gray-200">
-        
- <div class="mb-3">
-    <button id="btnGenerarWord" 
-            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+    <button id="btnGenerarWord" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
         <i class="fas fa-file-word mr-2"></i>
-        Generar Oficio
+        Generar Oficio Definitivo
     </button>
 </div>
-<table id="tablaAprobadosVRA" class="table" style="width:100%">
-    <thead>
-        <tr>
-            <th><input type="checkbox" id="selectAll"></th>
-            <th>Novedad</th>
-            <th>Oficio</th>
-            <th>Departamento</th>
-            <th>Tipo</th>
-            <th>Cédula</th>
-            <th>Nombre</th>
-            <th>Vinc. Inicial</th> <th>Vinc. Final</th>  <th>Puntos</th>
-            <th>Observación</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($datos_para_tabla as $solicitud): ?>
-            <?php
-                // --- Preparamos los datos combinados y truncados ---
-                $oficio_completo = htmlspecialchars($solicitud['oficio_fac'] . ' (' . $solicitud['fecha_oficio_fac'] . ')');
-                $oficio_corto = mb_strimwidth($oficio_completo, 0, 15, '…');
-                $depto_completo = htmlspecialchars($solicitud['depto_nom_propio'] . ' / ' . $solicitud['Nombre_fac_minb']);
-                $nombre_completo = htmlspecialchars($solicitud['nombre']);
-                $nombre_corto = mb_strimwidth($nombre_completo, 0, 15, '…');
-                $observacion_completa = htmlspecialchars($solicitud['tipo_reemplazo'] ?? '');
-                $observacion_corta = mb_strimwidth($observacion_completa, 0, 15, '…');
-            ?>
-            <tr data-id="<?= htmlspecialchars($solicitud['id_solicitud']) ?>">
-                <td><input type="checkbox" class="row-checkbox"></td>
-<td><?= htmlspecialchars($solicitud['novedad_display']) ?></td>
-                <td title="<?= $oficio_completo ?>"><?= $oficio_corto ?></td>
-                <td><?= $depto_completo ?></td>
-                <td><?= htmlspecialchars($solicitud['tipo_docente']) ?></td>
-                <td><?= htmlspecialchars($solicitud['cedula']) ?></td>
-                <td title="<?= $nombre_completo ?>"><?= $nombre_corto ?></td>
-                <td><?= htmlspecialchars($solicitud['dedicacion_unificada_inicial']) ?></td> <td><?= htmlspecialchars($solicitud['dedicacion_unificada_final']) ?></td>   <td contenteditable="true" class="editable-cell" data-field="puntos"><?= htmlspecialchars($solicitud['puntos'] ?? '') ?></td>
-                <td contenteditable="true" class="editable-cell" data-field="tipo_reemplazo" title="<?= $observacion_completa ?>"><?= $observacion_corta ?></td>
-            </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
+
+   <?php else: ?>
+        <div class="text-center text-gray-500 py-6">
+            <i class="fas fa-folder-open fa-3x mb-3 text-gray-400"></i>
+            <p class="font-semibold">No hay solicitudes aprobadas pendientes de trámite.</p>
+            
+            <p class="text-sm">Cuando las solicitudes sean aprobadas, aparecerán en esta sección.</p>
         </div>
+    <?php endif; ?>
+
+</div>
     </div>
 </div>
     
@@ -754,6 +829,29 @@ function llenarModalVRA(oficio_fac) {
     selectAllCheckbox.checked = false;
     const solicitudesFiltradas = todasLasSolicitudes.filter(sol => sol.oficio_con_fecha_fac === oficio_fac);
 
+    // ===================================================================
+    // ===== INICIA EL BLOQUE MODIFICADO: LÓGICA DE ORDENAMIENTO =====
+    // ===================================================================
+    // 1. Define el orden exacto y personalizado que deseas para las novedades.
+    const ordenNovedades = ['modificacion', 'cambio de vinculacion', 'adicionar', 'eliminar'];
+
+    // 2. Ordena el array 'solicitudesFiltradas' según el orden definido.
+    solicitudesFiltradas.sort((a, b) => {
+        const novedadA = (a.novedad || '').toLowerCase();
+        const novedadB = (b.novedad || '').toLowerCase();
+
+        // Encuentra la posición de cada novedad en tu lista de orden.
+        // Si una novedad no está en la lista, se le da un valor alto (999) para enviarla al final.
+        const indexA = ordenNovedades.indexOf(novedadA) !== -1 ? ordenNovedades.indexOf(novedadA) : 999;
+        const indexB = ordenNovedades.indexOf(novedadB) !== -1 ? ordenNovedades.indexOf(novedadB) : 999;
+
+        // Compara las posiciones para determinar el orden.
+        return indexA - indexB;
+    });
+    // ===================================================================
+    // ===== FIN DEL BLOQUE MODIFICADO =====
+    // ===================================================================
+
     if (solicitudesFiltradas.length > 0) {
         solicitudesFiltradas.forEach(sol => {
             let popayanData = '<span class="text-gray-400">N/A</span>';
@@ -773,7 +871,7 @@ function llenarModalVRA(oficio_fac) {
                 const currentTipoReemplazo = sol.tipo_reemplazo || 'Otro'; // 'Otro' por defecto
                 let optionsHtml = '';
 
-if (currentNovedad === 'adicionar' || currentNovedad === 'modificar' || currentNovedad === 'cambio vinculación') {
+                if (currentNovedad === 'adicionar' || currentNovedad === 'modificar' || currentNovedad === 'cambio vinculación') {
                     const options = ["Ajuste de Matrículas", "No legalizó", "Otras fuentes de financiacion", "Reemplazo", "Reemplazo jubilación", "Reemplazo necesidad docente", "Reemplazo por Fallecimiento", "Reemplazo por Licencia", "Reemplazo renuncia", "Reemplazos NN", "Ajuste Puntos", "Ajuste por VRA", "Otro"];
                     options.forEach(opt => {
                         optionsHtml += `<option value="${opt}" ${currentTipoReemplazo === opt ? 'selected' : ''}>${opt}</option>`;
@@ -792,25 +890,41 @@ if (currentNovedad === 'adicionar' || currentNovedad === 'modificar' || currentN
             }
             // ===== FIN DE LA NUEVA LÓGICA =====
 
-        const filaHTML = `<tr class="${sol.estado_vra !== 'PENDIENTE' ? 'bg-gray-200 opacity-60' : ''}">
-    <td class="px-4 py-2">${sol.estado_vra === 'PENDIENTE' ? `<input type="checkbox" class="solicitud-checkbox" value="${sol.solicitud_id}">` : ''}</td>
-    <td class="px-6 py-2 whitespace-nowrap text-sm text-gray-600">${sol.oficio_con_fecha || ''}</td>
-    <td class="px-6 py-2 whitespace-nowrap">${sol.novedad || ''}</td>
-    <td class="px-6 py-2 whitespace-normal max-w-xs break-words text-gray-700">${sol.s_observacion || ''}</td>
-    <td class="px-6 py-2 whitespace-nowrap text-gray-700">${sol.nombre}</td>
-    <td class="px-6 py-2 whitespace-nowrap text-gray-700">${sol.cedula}</td>
-    <td class="px-6 py-2 whitespace-nowrap text-gray-700">${tipoDocenteDisplay}</td>
-    <td class="px-6 py-2 whitespace-nowrap text-gray-700">${popayanData}</td>
-    <td class="px-6 py-2 whitespace-nowrap text-gray-700">${regionalizacionData}</td>
-    <td class="px-6 py-2 whitespace-nowrap text-gray-700">${estadoFacultadHtml}</td>
-    <td class="px-6 py-2 whitespace-nowrap text-gray-700">${estadoVraHtml}</td>
-    <td class="px-6 py-2 whitespace-nowrap">
-        ${sol.estado_vra === 'PENDIENTE' 
-            ? `<input type="text" class="observacion-vra-input w-full border-gray-300 rounded-md shadow-sm" data-id="${sol.solicitud_id}">` 
-            : '...'}
-    </td>
-    <td class="px-6 py-2 whitespace-nowrap">${tipoReemplazoHtml}</td>
-</tr>`;
+            // ===================================================================
+            // ===== BLOQUE MODIFICADO: LÓGICA PARA MOSTRAR NOVEDADES =====
+            // ===================================================================
+            // Si la novedad contiene "modificar" pero NO contiene "vinculación", mostrar "Modificar dedicación"
+            let novedadDisplay = sol.novedad || '';
+            const novedadLower = novedadDisplay.toLowerCase();
+            
+            if (novedadLower.includes('modificar') && !novedadLower.includes('vinculación') && !novedadLower.includes('vinculacion')) {
+                novedadDisplay = 'Modificar dedicación';
+            } else if (novedadDisplay === 'modificacion') {
+                novedadDisplay = 'Cambio de dedicacion';
+            }
+            // ===================================================================
+            // ===== FIN DEL BLOQUE MODIFICADO =====
+            // ===================================================================
+
+            const filaHTML = `<tr class="${sol.estado_vra !== 'PENDIENTE' ? 'bg-gray-200 opacity-60' : ''}">
+                <td class="px-4 py-2">${sol.estado_vra === 'PENDIENTE' ? `<input type="checkbox" class="solicitud-checkbox" value="${sol.solicitud_id}">` : ''}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-sm text-gray-600">${sol.oficio_con_fecha || ''}</td>
+                <td class="px-6 py-2 whitespace-nowrap">${novedadDisplay}</td>
+                <td class="px-6 py-2 whitespace-normal max-w-xs break-words text-gray-700">${sol.s_observacion || ''}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${sol.nombre}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${sol.cedula}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${tipoDocenteDisplay}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${popayanData}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${regionalizacionData}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${estadoFacultadHtml}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${estadoVraHtml}</td>
+                <td class="px-6 py-2 whitespace-nowrap">
+                    ${sol.estado_vra === 'PENDIENTE' 
+                        ? `<input type="text" class="observacion-vra-input w-full border-gray-300 rounded-md shadow-sm" data-id="${sol.solicitud_id}">` 
+                        : '...'}
+                </td>
+                <td class="px-6 py-2 whitespace-nowrap">${tipoReemplazoHtml}</td>
+            </tr>`;
             modalTableBody.innerHTML += filaHTML;
         });
     } else {
@@ -858,10 +972,17 @@ if (currentNovedad === 'adicionar' || currentNovedad === 'modificar' || currentN
         return;
     }
 
-    if (!confirm(`¿Está seguro de que desea ${accion} ${solicitudesData.length} solicitud(es)?`)) {
-        return;
-    }
-    
+       let mensaje = `¿Está seguro de que desea ${accion} ${solicitudesData.length} solicitud(es)?`;
+
+if (accion.toLowerCase() === "aprobar") {
+    mensaje += `\n\nRecuerde definir los tipos de observación correspondientes antes de continuar.`;
+}
+
+if (!confirm(mensaje)) {
+    return;
+}
+
+
     const mensajeCarga = (accion === 'aprobar') 
         ? 'Procesando aprobaciones y enviando notificaciones...' 
         : 'Procesando rechazos y enviando notificaciones...';
@@ -1197,10 +1318,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script>
 $(document).ready(function() {
-    // 1. Inicializamos la DataTable con opciones para hacerla elegante
+    // 1. Inicializamos la DataTable (sin cambios)
     var table = $('#tablaAprobadosVRA').DataTable({
         "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json" // Traducción al español
+            "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json"
         },
         "paging": true,
         "lengthChange": true,
@@ -1211,13 +1332,13 @@ $(document).ready(function() {
         "responsive": true
     });
 
-    // 2. Lógica para el checkbox "Seleccionar Todo"
+    // 2. Lógica para el checkbox "Seleccionar Todo" (sin cambios)
     $('#selectAll').on('click', function() {
         var rows = table.rows({ 'search': 'applied' }).nodes();
         $('input.row-checkbox', rows).prop('checked', this.checked);
     });
 
-    // 3. Lógica para que "Seleccionar Todo" se desmarque si quitamos una selección
+    // 3. Lógica para que "Seleccionar Todo" se desmarque (sin cambios)
     $('#tablaAprobadosVRA tbody').on('change', 'input.row-checkbox', function() {
         if (!this.checked) {
             var el = $('#selectAll').get(0);
@@ -1227,51 +1348,85 @@ $(document).ready(function() {
         }
     });
 
-        // 4. Funcionalidad del botón "Generar Oficio"
-        $('#btnGenerarWord').on('click', function() {
-            var seleccionados = [];
-            // Recolecta los datos de las filas seleccionadas (incluyendo los valores editados)
-            table.rows({ 'search': 'applied' }).every(function() {
-                var rowNode = this.node();
-                if ($(rowNode).find('input.row-checkbox').is(':checked')) {
-                    var fila = {
-                        id: $(rowNode).data('id'),
-                        puntos: $(rowNode).find('td[data-field="puntos"]').text(),
-                        tipo_reemplazo: $(rowNode).find('td[data-field="tipo_reemplazo"]').text()
-                    };
-                    seleccionados.push(fila);
-                }
-            });
-
-            if (seleccionados.length === 0) {
-                alert('Por favor, seleccione al menos una solicitud para generar el oficio.');
-                return;
+    // 4. Funcionalidad del botón "Generar Oficio Definitivo"
+    $('#btnGenerarWord').on('click', function() {
+        var seleccionados = [];
+        table.rows({ 'search': 'applied' }).every(function() {
+            var rowNode = this.node();
+            if ($(rowNode).find('input.row-checkbox').is(':checked')) {
+                var fila = {
+                    id: $(rowNode).data('id'),
+                    puntos: $(rowNode).find('td[data-field="puntos"]').text(),
+                    tipo_reemplazo: $(rowNode).find('td[data-field="tipo_reemplazo"]').text()
+                };
+                seleccionados.push(fila);
             }
-
-            // --- LÓGICA MEJORADA PARA LLAMAR AL SCRIPT PHP ---
-
-            // 1. Convertimos el array de objetos a una cadena JSON
-            const dataToSend = JSON.stringify(seleccionados);
-
-            // 2. Creamos un formulario invisible en la memoria
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = 'generar_word_vra_srh.php'; // El nombre de nuestro nuevo archivo PHP
-            form.target = '_blank'; // Opcional: abre el resultado en una nueva pestaña
-
-            // 3. Creamos un campo oculto para enviar los datos
-            const hiddenField = document.createElement('input');
-            hiddenField.type = 'hidden';
-            hiddenField.name = 'seleccionados';
-            hiddenField.value = dataToSend;
-            form.appendChild(hiddenField);
-
-            // 4. Añadimos el formulario a la página y lo enviamos
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form); // Lo removemos después de enviarlo
         });
+
+        if (seleccionados.length === 0) {
+            alert('Por favor, seleccione al menos una solicitud para generar el oficio.');
+            return;
+        }
+
+        const dataToSend = JSON.stringify(seleccionados);
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'generar_word_vra_srh.php';
+        form.target = '_blank';
+
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = 'seleccionados';
+        hiddenField.value = dataToSend;
+        form.appendChild(hiddenField);
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    });
+    
+    // 5. Funcionalidad del NUEVO botón "Generar Previo"
+    $('#btnGenerarPrevio').on('click', function() {
+        var seleccionados = [];
+        table.rows({ 'search': 'applied' }).every(function() {
+            var rowNode = this.node();
+            if ($(rowNode).find('input.row-checkbox').is(':checked')) {
+                var fila = {
+                    id: $(rowNode).data('id'),
+                    puntos: $(rowNode).find('td[data-field="puntos"]').text(),
+                    tipo_reemplazo: $(rowNode).find('td[data-field="tipo_reemplazo"]').text()
+                };
+                seleccionados.push(fila);
+            }
         });
+
+        if (seleccionados.length === 0) {
+            alert('Por favor, seleccione al menos una solicitud para generar el previo.');
+            return;
+        }
+
+        const dataToSend = JSON.stringify(seleccionados);
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'generar_previo_vra_srh.php'; 
+        form.target = '_blank';
+
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = 'seleccionados';
+        hiddenField.value = dataToSend;
+        form.appendChild(hiddenField);
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    });
+
+// --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+// Este es el cierre correcto para $(document).ready()
+// Debe ir al final, después de haber definido la función para AMBOS botones.
+}); 
+
      // --- NUEVO SCRIPT PARA EL ACORDEÓN DE SOLICITUDES APROBADAS ---
     document.querySelector('.accordion-header-vra').addEventListener('click', function() {
         const accordionBody = this.nextElementSibling; // El div que contiene la tabla

@@ -72,7 +72,7 @@ $video_url_gestion_novedades = "https://drive.google.com/file/d/165vSrq7SoW9fnSe
                         </div>
                     </div>
 
-                <?php elseif ($tipo_usuario == 3): ?>
+               <?php elseif ($tipo_usuario == 3): ?>
                     <div class="row">
                         <div class="col-md-6">
                             <h4 class="mb-3">Solicitud inicial del periodo</h4>
@@ -85,14 +85,14 @@ $video_url_gestion_novedades = "https://drive.google.com/file/d/165vSrq7SoW9fnSe
                         <div class="col-md-6">
                             <h4 class="mb-3">Novedades</h4>
                             <div class="video-container">
-                                <iframe src="https://drive.google.com/file/d/1eQo7YlnHOSnH_PTikIEt12EABirhR015/preview" 
+                                <iframe src="https://drive.google.com/file/d/1NBX7qcQ69VzeJS84AFsxsXR-xVUDeSo8/preview" 
                                         width="640" height="480" 
-                                        allow="autoplay"></iframe>
+                                        allow="autoplay" allowfullscreen loading="lazy"></iframe>
                             </div>
                         </div>
                     </div>
-
                 <?php else: ?>
+
                     <div class="video-container">
                         <iframe src="<?php echo htmlspecialchars($video_url_aceptacion_envio); ?>" allowfullscreen loading="lazy"></iframe>
                     </div>

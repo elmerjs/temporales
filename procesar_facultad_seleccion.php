@@ -214,7 +214,7 @@ try {
     // ===== TERMINA NUEVO BLOQUE =====
 
    if ($success_count > 0) {
-        responder_json(true, "$success_count registros han sido procesados exitosamente (incluyendo contrapartes de 'Cambio de Vinculación').", ['processed_ids' => array_values($ids_a_procesar)]);
+        responder_json(true, "$success_count registros procesados exitosamente,  Genere el oficio para finalizar el trámite de forma satisfactoria.", ['processed_ids' => array_values($ids_a_procesar)]);
     } else {
         responder_json(false, 'Ningún registro pudo ser actualizado.');
     }

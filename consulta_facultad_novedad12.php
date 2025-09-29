@@ -75,49 +75,64 @@ if ($tipo_usuario === null) {
 
 // --- FUNCIÓN DE PROCESAMIENTO DE DATOS ---
 function procesarCambiosVinculacion($solicitudes) {
-    $adiciones = [];
-    $eliminaciones = [];
+    $transacciones = [];
     $otras_novedades = [];
     $resultado_final = [];
 
-    // 1. Clasificar solicitudes
+    // PASO 1: Clasificar solicitudes por 'oficio' Y LUEGO por 'cédula'.
     foreach ($solicitudes as $sol) {
-        $cedula = $sol['cedula'];
-        if (strtolower($sol['novedad']) === 'adicion' || strtolower($sol['novedad']) === 'adicionar') {
-            $adiciones[$cedula] = $sol;
-        } elseif (strtolower($sol['novedad']) === 'eliminar') {
-            $eliminaciones[$cedula] = $sol;
+        $id_transaccion = $sol['oficio_con_fecha'] ?? null;
+        $cedula = $sol['cedula'] ?? null;
+        $novedad = strtolower($sol['novedad']);
+
+        if ($id_transaccion && $cedula && ($novedad === 'adicionar' || $novedad === 'adicion' || $novedad === 'eliminar')) {
+            // Agrupamos por oficio, y dentro, por cédula.
+            $transacciones[$id_transaccion][$cedula][$novedad] = $sol;
         } else {
+            // El resto (Modificar, etc.) va a otra lista.
             $otras_novedades[] = $sol;
         }
     }
 
-    // 2. Procesar coincidencias
-    foreach ($adiciones as $cedula => $sol_adicion) {
-        if (isset($eliminaciones[$cedula])) {
-            $sol_eliminacion = $eliminaciones[$cedula];
+    // PASO 2: Procesar las transacciones doblemente agrupadas
+    foreach ($transacciones as $id_transaccion => $cedulas_en_oficio) {
+        foreach ($cedulas_en_oficio as $cedula => $partes) {
+            
+            $sol_adicion = $partes['adicion'] ?? $partes['adicionar'] ?? null;
 
-            $tipo_docente_anterior = ($sol_eliminacion['tipo_docente'] === 'Catedra') ? 'Cátedra' : $sol_eliminacion['tipo_docente'];
-            $estado_anterior = "Sale de " . $tipo_docente_anterior;
-            if ($sol_eliminacion['tipo_docente'] === 'Ocasional') {
-                if ($sol_eliminacion['tipo_dedicacion']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion'] . " Popayán";
-                elseif ($sol_eliminacion['tipo_dedicacion_r']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion_r'] . " Regionalización";
-            } elseif ($sol_eliminacion['tipo_docente'] === 'Catedra') {
-                if ($sol_eliminacion['horas'] && $sol_eliminacion['horas'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas'] . " horas Popayán";
-                elseif ($sol_eliminacion['horas_r'] && $sol_eliminacion['horas_r'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas_r'] . " horas Regionalización";
+            // Verificamos si para ESTA CÉDULA DENTRO DE ESTE OFICIO, existe el par completo
+            if ($sol_adicion && isset($partes['eliminar'])) {
+                // ¡Es un verdadero "Cambio de Vinculación"!
+                $sol_eliminacion = $partes['eliminar'];
+
+                // --- Lógica para construir la descripción (sin cambios) ---
+                $tipo_docente_anterior = ($sol_eliminacion['tipo_docente'] === 'Catedra') ? 'Cátedra' : $sol_eliminacion['tipo_docente'];
+                $estado_anterior = "Sale de " . $tipo_docente_anterior;
+                if ($sol_eliminacion['tipo_docente'] === 'Ocasional') {
+                    if ($sol_eliminacion['tipo_dedicacion']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion'] . " Popayán";
+                    elseif ($sol_eliminacion['tipo_dedicacion_r']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion_r'] . " Regionalización";
+                } elseif ($sol_eliminacion['tipo_docente'] === 'Catedra') {
+                    if ($sol_eliminacion['horas'] && $sol_eliminacion['horas'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas'] . " horas Popayán";
+                    elseif ($sol_eliminacion['horas_r'] && $sol_eliminacion['horas_r'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas_r'] . " horas Regionalización";
+                }
+                
+                // Modificamos la solicitud de "adición" para que represente el cambio completo
+                $sol_adicion['novedad'] = 'Modificar Vinculación'; // O 'Cambio Vinculación' según prefieras
+                $observacion_existente = trim($sol_adicion['s_observacion']);
+                $sol_adicion['s_observacion'] = $observacion_existente . ($observacion_existente ? ' ' : '') . '(' . $estado_anterior . ')';
+
+                $resultado_final[] = $sol_adicion;
+
+            } else {
+                // Si no hay un par, se añaden las partes individuales a la lista de "otras"
+                if ($sol_adicion) $otras_novedades[] = $sol_adicion;
+                if (isset($partes['eliminar'])) $otras_novedades[] = $partes['eliminar'];
             }
-
-            $sol_adicion['novedad'] = 'Cambio Vinculación';
-            $observacion_existente = trim($sol_adicion['s_observacion']);
-            $sol_adicion['s_observacion'] = $observacion_existente . ($observacion_existente ? ' ' : '') . '(' . $estado_anterior . ')';
-
-            $resultado_final[] = $sol_adicion;
-            unset($eliminaciones[$cedula]);
-        } else {
-            $resultado_final[] = $sol_adicion;
         }
     }
-    return array_merge($resultado_final, array_values($eliminaciones), $otras_novedades);
+
+    // Unimos los cambios procesados con el resto de novedades
+    return array_merge($resultado_final, $otras_novedades);
 }
 
 
@@ -450,12 +465,12 @@ $conn->close();
                 if ($cierreperiodonov <> 1) { ?>
                     <a href="<?= htmlspecialchars($url_novedad); ?>" class="w-full md:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-[#003366] hover:bg-[#002244] shadow-sm transition-colors">
                         <i class="fas fa-plus mr-2"></i>
-                        Gestionar Novedades
+                        Crear Novedades
                     </a>
                 <?php } else { // Si el período de novedades está CERRADO ?>
                     <button disabled class="w-full md:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gray-400 cursor-not-allowed" title="El período para gestionar novedades se encuentra cerrado.">
                         <i class="fas fa-lock mr-2"></i>
-                        Gestionar Novedades
+                        Crear Novedades
                     </button>
                 <?php }
             }
@@ -938,10 +953,33 @@ function actualizarPanelDeAcciones() {
         return `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${clasesColor}" ${tooltip}>${texto}</span>`;
     }
 
-   function llenarModal(oficio) {
+function llenarModal(oficio) {
     modalTitle.textContent = 'Solicitudes del Oficio: ' + oficio;
     modalTableBody.innerHTML = '';
     const solicitudesFiltradas = todasLasSolicitudes.filter(sol => sol.oficio_con_fecha === oficio);
+
+    // ===================================================================
+    // ===== INICIA EL BLOQUE MODIFICADO: LÓGICA DE ORDENAMIENTO =====
+    // ===================================================================
+    // 1. Define el orden exacto y personalizado que deseas para las novedades.
+    const ordenNovedades = ['modificacion', 'cambio de vinculacion', 'adicionar', 'eliminar'];
+
+    // 2. Ordena el array 'solicitudesFiltradas' según el orden definido.
+    solicitudesFiltradas.sort((a, b) => {
+        const novedadA = (a.novedad || '').toLowerCase();
+        const novedadB = (b.novedad || '').toLowerCase();
+
+        // Encuentra la posición de cada novedad en tu lista de orden.
+        // Si una novedad no está en la lista, se le da un valor alto (999) para enviarla al final.
+        const indexA = ordenNovedades.indexOf(novedadA) !== -1 ? ordenNovedades.indexOf(novedadA) : 999;
+        const indexB = ordenNovedades.indexOf(novedadB) !== -1 ? ordenNovedades.indexOf(novedadB) : 999;
+
+        // Compara las posiciones para determinar el orden.
+        return indexA - indexB;
+    });
+    // ===================================================================
+    // ===== FIN DEL BLOQUE MODIFICADO =====
+    // ===================================================================
 
     if (solicitudesFiltradas.length > 0) {
         solicitudesFiltradas.forEach(sol => {
@@ -968,45 +1006,42 @@ function actualizarPanelDeAcciones() {
             }
             const tipoDocenteDisplay = (sol.tipo_docente === 'Catedra') ? 'Cátedra' : sol.tipo_docente;
             const estadoFacultadHtml = crearEtiquetaEstado(sol.estado_facultad, sol.observacion_facultad, 'facultad');
-let estadoVraHtml; // Creamos la variable que contendrá la etiqueta final
+            let estadoVraHtml;
 
-// Si la solicitud fue RECHAZADA por la Facultad...
-if (sol.estado_facultad === 'RECHAZADO') {
-    // ...creamos una etiqueta gris especial que dice '--' (No Aplica).
-    estadoVraHtml = `<span 
-                        class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700" 
-                        title="No aplica para trámite en VRA, fue devuelta por la Facultad.">
-                        --
-                     </span>`;
-} else {
-    // Si no fue rechazada, usamos la función normal para mostrar el estado real de VRA.
-    estadoVraHtml = crearEtiquetaEstado(sol.estado_vra, sol.observacion_vra, 'vra');
-}
+            if (sol.estado_facultad === 'RECHAZADO') {
+                estadoVraHtml = `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700" title="No aplica para trámite en VRA, fue devuelta por la Facultad.">--</span>`;
+            } else {
+                estadoVraHtml = crearEtiquetaEstado(sol.estado_vra, sol.observacion_vra, 'vra');
+            }
 
-// ===================================================================
-// ===== FIN DEL BLOQUE DE CÓDIGO REEMPLAZADO =====
-// ==
-            // ===================================================================
-            // ===== INICIA NUEVO BLOQUE: LÓGICA PARA LA COLUMNA "DETALLE FAC" =====
-            // ===================================================================
-            let detalleFacultadHtml = '<td class="px-6 py-2 whitespace-nowrap text-gray-700">--</td>'; // Valor por defecto para PENDIENTE
-
+            let detalleFacultadHtml = '<td class="px-6 py-2 whitespace-nowrap text-gray-700">--</td>';
             if (sol.estado_facultad === 'APROBADO') {
                 const oficioFac = sol.oficio_con_fecha_fac || 'No asignado';
                 detalleFacultadHtml = `<td class="px-6 py-2 whitespace-nowrap text-xs text-gray-600" title="Oficio Facultad: ${oficioFac}">Avalado Oficio: ${oficioFac}</td>`;
             } else if (sol.estado_facultad === 'RECHAZADO') {
                 const observacionFac = sol.observacion_facultad || 'Sin justificación.';
-                // Usamos clases para que el texto se ajuste si es muy largo
                 detalleFacultadHtml = `<td class="px-6 py-2 whitespace-normal max-w-xs break-words text-xs text-red-700 font-semibold" title="${observacionFac}">${observacionFac}</td>`;
             }
+
             // ===================================================================
-            // ===== FIN DEL NUEVO BLOQUE =====
+            // ===== BLOQUE MODIFICADO: LÓGICA PARA MOSTRAR NOVEDADES =====
             // ===================================================================
+            // Si la novedad contiene "modificar" pero NO contiene "vinculación", mostrar "Modificar dedicación"
+            let novedadDisplay = sol.novedad || '';
+            const novedadLower = novedadDisplay.toLowerCase();
             
-            // Se añade la nueva celda 'detalleFacultadHtml' a la fila
+            if (novedadLower.includes('modificar') && !novedadLower.includes('vinculación') && !novedadLower.includes('vinculacion')) {
+                novedadDisplay = 'Modificar Dedicación';
+            } else if (novedadDisplay === 'modificacion') {
+                novedadDisplay = 'Cambio de dedicacion';
+            }
+            // ===================================================================
+            // ===== FIN DEL BLOQUE MODIFICADO =====
+            // ===================================================================
+
             const filaHTML = `<tr class="${rowClass}">
                 ${checkboxHtml}
-                <td class="px-6 py-2 whitespace-nowrap">${sol.novedad || ''}</td>
+                <td class="px-6 py-2 whitespace-nowrap">${novedadDisplay}</td>
                 <td class="px-6 py-2 whitespace-normal max-w-xs break-words text-gray-700">${sol.s_observacion || ''}</td>
                 <td class="px-6 py-2 whitespace-nowrap text-gray-700">${sol.nombre}</td>
                 <td class="px-6 py-2 whitespace-nowrap text-gray-700">${sol.cedula}</td>
@@ -1014,17 +1049,16 @@ if (sol.estado_facultad === 'RECHAZADO') {
                 <td class="px-6 py-2 whitespace-nowrap text-gray-700">${popayanData}</td>
                 <td class="px-6 py-2 whitespace-nowrap text-gray-700">${regionalizacionData}</td>
                 <td class="px-6 py-2 whitespace-nowrap text-gray-700">${estadoFacultadHtml}</td>
-                ${detalleFacultadHtml} <td class="px-6 py-2 whitespace-nowrap text-gray-700">${estadoVraHtml}</td>
+                ${detalleFacultadHtml}
+                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${estadoVraHtml}</td>
             </tr>`;
             modalTableBody.innerHTML += filaHTML;
         });
     } else {
-        // <-- CAMBIO: Aumentamos el colspan para que la fila vacía ocupe todo el ancho
         const colspan = (tipoUsuario == 2) ? 11 : 10;
         modalTableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-4">No se encontraron solicitudes para este oficio.</td></tr>`;
     }
-    
-    // Asignar eventos solo si eres usuario de Facultad
+
     if (tipoUsuario == 2) {
         modalTableBody.querySelectorAll('.solicitud-checkbox').forEach(cb => {
             cb.addEventListener('change', () => manejarClickCheckbox(cb));

@@ -374,6 +374,46 @@ $nombre_usuario = htmlspecialchars($_SESSION['name'] ?? ''); // No se usa direct
             };
             xhr.send();
         }
+        function validarCedulaActiva(input) {
+        var numDocumento = input.value.trim();
+        
+        // Si el campo está vacío, no hacer nada para no mostrar errores innecesarios
+        if (!numDocumento) {
+            return;
+        }
+        
+        var anioSemestre = document.getElementById('anio_semestre').value;
+        var nombreTerceroInput = document.getElementById('nombre');
+
+        // Realizar una solicitud AJAX al nuevo archivo PHP
+        var xhr = new XMLHttpRequest();
+        xhr.open(
+            'GET',
+            'verificar_cedula_activa.php?cedula=' + encodeURIComponent(numDocumento) + '&anio_semestre=' + encodeURIComponent(anioSemestre),
+            true
+        );
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    // Procesamos la respuesta JSON del servidor
+                    var response = JSON.parse(xhr.responseText);
+
+                    if (response.existe) {
+                        // Si la cédula ya existe, mostramos una alerta y limpiamos los campos
+                        alert('Error: La cédula ' + numDocumento + ' ya tiene una solicitud activa para el período ' + anioSemestre + '. No se puede agregar nuevamente.');
+                        input.value = ''; // Limpiar campo de cédula
+                        nombreTerceroInput.value = ''; // Limpiar campo de nombre
+                        input.focus(); // Devolver el foco al campo de cédula para que lo corrijan
+                    }
+                } catch (e) {
+                    console.error("Error al procesar la respuesta del servidor:", e);
+                }
+            }
+        };
+        xhr.send();
+    }
+
 
         function validarCedulaUnica(input) {
             var cedulas = document.querySelectorAll('input[name="cedula"]');
@@ -573,7 +613,8 @@ $nombre_usuario = htmlspecialchars($_SESSION['name'] ?? ''); // No se usa direct
                 <div class="form-row">
                     <div class="form-group">
                         <label for="cedula">Cédula <span class="required">*</span></label>
-                        <input type="text" class="form-control" name="cedula" onblur="validarCedulaUnica(this); buscarTercero(this);" required>
+                        <input type="text" class="form-control" name="cedula" onblur="validarCedulaUnica(this); buscarTercero(this); validarCedulaActiva(this);" required>
+
                     </div>
                     
                     <div class="form-group">
@@ -655,7 +696,7 @@ $nombre_usuario = htmlspecialchars($_SESSION['name'] ?? ''); // No se usa direct
                 <div class="form-group">
                     <label for="observacion">Justificación <span class="required">*</span></label>
                     <textarea class="form-control" name="observacion" id="observacion" rows="3"
-                              placeholder="Ej: Reemplazo por incapacidad del profsoer de planta......."
+                              placeholder="Ej: Reemplazo por incapacidad del profsoer de planta....."
                               oninput="detectarTipoReemplazo()" required></textarea>
                 </div>
 

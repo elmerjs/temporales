@@ -36,7 +36,6 @@ if ($currentMonth >= 7) {
 }
 
 
-
 //echo "nombre sesion: ". $nombre_sesion;
 $consultaf = "SELECT * FROM users WHERE users.Name= '$nombre_sesion'";
 $resultadof = $con->query($consultaf);
@@ -58,11 +57,30 @@ $profe_en_cargo= $row['u_nombre_en_cargo'];
         $where = "WHERE email_fac LIKE '%$email_fac%'";
     }
 }
-// NUEVO: Verificar si hay registros pendientes para Novedades
+
+// NUEVO: Verificar si hay registros pendientes para Novedades (LÓGICA UNIFICADA)
 $hasPendingNovelties = false;
-if ($tipo_usuario != 1 && isset($fk_fac_user) && $fk_fac_user > 0) {
-    $con_check = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-    if (!$con_check->connect_error) {
+
+// (Opcional pero recomendado): Usar la conexión a BD existente '$conn' si ya está abierta,
+// en lugar de crear una nueva. Si no es posible, este código funciona bien.
+$con_check = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+
+if (!$con_check->connect_error) {
+
+    // CASO 1: El usuario es Administrador (Vicerrectoría, tipo 1)
+    if ($tipo_usuario == 1) {
+        $sql_check = "SELECT 1 FROM solicitudes_working_copy 
+                      WHERE estado_vra = 'PENDIENTE' 
+                      AND estado_facultad <> 'RECHAZADO'
+                      LIMIT 1";
+        // Esta consulta es simple, no necesita parámetros preparados.
+        $result_check = $con_check->query($sql_check);
+        if ($result_check) {
+            $hasPendingNovelties = $result_check->num_rows > 0;
+        }
+
+    // CASO 2: El usuario es de Facultad (tipo 2) o Departamento (tipo 3)
+    } elseif (isset($fk_fac_user) && $fk_fac_user > 0) {
         $sql_check = "SELECT 1 FROM solicitudes_working_copy 
                       WHERE facultad_id = ? 
                       AND estado_facultad = 'PENDIENTE' 
@@ -75,8 +93,9 @@ if ($tipo_usuario != 1 && isset($fk_fac_user) && $fk_fac_user > 0) {
             $hasPendingNovelties = $result_check->num_rows > 0;
             $stmt->close();
         }
-        $con_check->close();
     }
+
+    $con_check->close();
 }
 // Conectar a la base de datos
 $con = new mysqli('localhost', 'root', '', 'contratacion_temporales');
@@ -717,11 +736,46 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
     margin: 0; /* Remove default margin */
     border-bottom: 1px solid #e9ecef; /* A subtle line at the bottom */
 }
+
+        /* Oculta el menú por defecto para prevenir el "flash" al recargar */
+        .hide-by-default {
+            display: none;
+        }
+
+        /* Cuando Bootstrap lo hace visible, esta regla se anula y se muestra */
+        .dropdown-menu.show {
+            display: block;
+        }
+      /* Mantiene el contenido principal invisible mientras la página termina de cargar */
+        .cargando {
+            opacity: 0;
+            transition: opacity 0.3s ease-in;
+        }
+
+        /* --- Mantenemos la regla anterior por si acaso --- */
+        .hide-by-default {
+            display: none;
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
+      /* Estilo para el contenedor principal del cabezado */
+    header.main-header {
+        background-color: #F0F4F9; /* Este es un gris muy suave y profesional */
+        border-bottom: 1px solid #e9ecef; /* Opcional: añade una línea sutil para separar del contenido */
+    }
+
+    /* --- Solución al problema de "partes blancas" --- */
+    /* Le decimos a la barra de navegación que sea transparente */
+    /* para que muestre el color gris del header que está detrás */
+    header.main-header nav {
+        background-color: transparent !important;
+    }
 </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="cargando">
-    <header>
+<header class="main-header">
     <div class="header-top-row">
  <div class="logo-and-title">
     <div class="logo-container text-center">
@@ -760,7 +814,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                 </div>
             </button>
             
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+<ul class="dropdown-menu dropdown-menu-end hide-by-default" aria-labelledby="dropdownMenuButton">
                 <li>
                     <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">
                         <i class="fas fa-user me-2"></i> Perfil
@@ -897,20 +951,6 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
         margin-bottom: 8px;
         color: #6c757d;
     }
-    
-     /* Mantiene el contenido principal invisible mientras la página termina de cargar */
-        .cargando {
-            opacity: 0;
-            transition: opacity 0.3s ease-in;
-        }
-
-        /* --- Mantenemos la regla anterior por si acaso --- */
-        .hide-by-default {
-            display: none;
-        }
-        .dropdown-menu.show {
-            display: block;
-        }
 </style>
 </div>
 
@@ -1209,7 +1249,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                 && (
                     $id_user == 92
                     || $id_user == 93
-                     || $id_user == 4
+                    || $id_user == 94 || $id_user == 4
                 )
             ): ?>
                 <li class="menu-item <?= ($active_menu_item == 'observaciones') ? 'active' : '' ?>">
@@ -1240,7 +1280,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                 </li>
             <?php endif; ?>
 
-            <?php if ($tipo_usuario == 1 && ! in_array($id_user, [92, 93, 94, 96])): ?>
+            <?php if ($tipo_usuario == 1 && ! in_array($id_user, [92, 93, 94,96])): ?>
                 <li class="<?= ($active_menu_item == 'gestion_periodos') ? 'active' : '' ?>">
                     <a href="../../temporales/gestion_periodos.php">Gestión periodos</a>
                 </li>

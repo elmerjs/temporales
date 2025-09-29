@@ -55,9 +55,103 @@ try {
         throw new Exception('No se proporcionaron solicitudes válidas.');
     }
     
-    $estado_db = ($accion === 'aprobar') ? 'APROBADO' : 'RECHAZADO';
+// ==============================================================================
+// INICIO DE LA LÓGICA DE TRANSACCIONES COMPLETAS (PARA APROBAR Y RECHAZAR)
+// ==============================================================================
 
-    $conn->begin_transaction();
+// Paso 1.1: Preparar los datos iniciales
+$estado_db = ($accion === 'aprobar') ? 'APROBADO' : 'RECHAZADO';
+$ids_iniciales = array_column($solicitudes, 'id');
+$oficios_de_cambios = [];
+$datos_por_id = []; // Guardaremos las observaciones y otros datos aquí
+
+// Mapear los datos de entrada por ID para fácil acceso
+foreach ($solicitudes as $sol) {
+    $datos_por_id[$sol['id']] = [
+        'observacion' => trim($sol['observacion'] ?? ''),
+        'tipo_reemplazo' => $sol['tipo_reemplazo'] ?? 'Otro'
+    ];
+}
+
+// Paso 1.2: Identificar los oficios de las transacciones de cambio seleccionadas
+if (!empty($ids_iniciales)) {
+    $placeholders = implode(',', array_fill(0, count($ids_iniciales), '?'));
+    $stmt_find_oficios = $conn->prepare(
+        "SELECT DISTINCT oficio_con_fecha FROM solicitudes_working_copy 
+         WHERE id_solicitud IN ($placeholders) AND (novedad = 'adicionar' OR novedad = 'eliminar')"
+    );
+    $stmt_find_oficios->bind_param(str_repeat('i', count($ids_iniciales)), ...$ids_iniciales);
+    $stmt_find_oficios->execute();
+    $result_oficios = $stmt_find_oficios->get_result();
+    while ($row = $result_oficios->fetch_assoc()) {
+        if (!empty($row['oficio_con_fecha'])) {
+            $oficios_de_cambios[] = $row['oficio_con_fecha'];
+        }
+    }
+    $stmt_find_oficios->close();
+}
+
+$ids_completos_a_procesar = $ids_iniciales;
+
+// Paso 1.3: Si encontramos oficios, buscar las contrapartes de esas transacciones
+if (!empty($oficios_de_cambios)) {
+    $placeholders_oficios = implode(',', array_fill(0, count(array_unique($oficios_de_cambios)), '?'));
+    $stmt_find_parejas = $conn->prepare(
+        "SELECT id_solicitud FROM solicitudes_working_copy 
+         WHERE oficio_con_fecha IN ($placeholders_oficios) AND (novedad = 'adicionar' OR novedad = 'eliminar')"
+    );
+    $stmt_find_parejas->bind_param(str_repeat('s', count(array_unique($oficios_de_cambios))), ...array_unique($oficios_de_cambios));
+    $stmt_find_parejas->execute();
+    $result_parejas = $stmt_find_parejas->get_result();
+    while ($row = $result_parejas->fetch_assoc()) {
+        $ids_completos_a_procesar[] = (int)$row['id_solicitud'];
+    }
+    $stmt_find_parejas->close();
+}
+
+// El array final de IDs a procesar, asegurando que no haya duplicados
+$ids_a_procesar = array_unique($ids_completos_a_procesar);
+
+// ===== ¡NUEVO PASO CRÍTICO! Propagar la observación en caso de RECHAZO de un dúo =====
+if ($accion === 'rechazar' && !empty($oficios_de_cambios)) {
+    // 1. Crear un mapa de oficio -> observación a partir de la entrada del usuario
+    $observaciones_por_oficio = [];
+    foreach ($solicitudes as $sol) {
+        if (!empty($sol['observacion'])) {
+            // Necesitamos saber el oficio de este ID. Lo buscamos en los datos que ya tenemos.
+            $stmt_get_oficio = $conn->prepare("SELECT oficio_con_fecha FROM solicitudes_working_copy WHERE id_solicitud = ?");
+            $stmt_get_oficio->bind_param("i", $sol['id']);
+            $stmt_get_oficio->execute();
+            $result_oficio = $stmt_get_oficio->get_result()->fetch_assoc();
+            $stmt_get_oficio->close();
+            if ($result_oficio && !empty($result_oficio['oficio_con_fecha'])) {
+                $observaciones_por_oficio[$result_oficio['oficio_con_fecha']] = trim($sol['observacion']);
+            }
+        }
+    }
+
+    // 2. Propagar la observación a todos los IDs del dúo en nuestro mapa de datos
+    foreach ($ids_a_procesar as $id) {
+        $stmt_get_oficio = $conn->prepare("SELECT oficio_con_fecha FROM solicitudes_working_copy WHERE id_solicitud = ?");
+        $stmt_get_oficio->bind_param("i", $id);
+        $stmt_get_oficio->execute();
+        $result_oficio = $stmt_get_oficio->get_result()->fetch_assoc();
+        $stmt_get_oficio->close();
+        
+        $oficio_actual = $result_oficio['oficio_con_fecha'] ?? null;
+        if ($oficio_actual && isset($observaciones_por_oficio[$oficio_actual])) {
+            // Si este ID no tiene una observación, la llenamos con la del dúo.
+            if (empty($datos_por_id[$id]['observacion'])) {
+                $datos_por_id[$id]['observacion'] = $observaciones_por_oficio[$oficio_actual];
+            }
+        }
+    }
+}
+// ==============================================================================
+// FIN DE LA LÓGICA DE TRANSACCIONES
+// ==============================================================================
+
+$conn->begin_transaction();
 
     // ===== INICIO BLOQUE 2: INICIALIZACIÓN PARA CORREOS =====
     $email_data_por_destinatario = [];
@@ -67,10 +161,9 @@ try {
     $sql_update_wc = "UPDATE solicitudes_working_copy SET estado_vra = ?, observacion_vra = ?, tipo_reemplazo = ?, fecha_aprobacion_vra = NOW(), aprobador_vra_id = ? WHERE id_solicitud = ? AND estado_vra = 'PENDIENTE'";
     $stmt_update_wc = $conn->prepare($sql_update_wc);
 
-    foreach ($solicitudes as $sol) {
-        $id = $sol['id'] ?? null;
-        $observacion = trim($sol['observacion'] ?? '');
-    $tipo_reemplazo = $sol['tipo_reemplazo'] ?? 'Otro'; // Añade esta línea
+foreach ($ids_a_procesar as $id) {
+   $observacion = $datos_por_id[$id]['observacion'] ?? '';
+$tipo_reemplazo = $datos_por_id[$id]['tipo_reemplazo'] ?? 'Otro';
 
         if (!is_numeric($id)) continue;
         if ($estado_db === 'RECHAZADO' && empty($observacion)) {
@@ -83,44 +176,7 @@ $stmt_update_wc->bind_param("sssii", $estado_db, $observacion, $tipo_reemplazo, 
 
         // ... (Tu lógica existente para actualizar la pareja en 'Cambio de Vinculación' y para actualizar la tabla 'solicitudes' va aquí) ...
 // Ahora, buscamos si es parte de un "Cambio de Vinculación" para actualizar su pareja
-        $stmt_find_pair = $conn->prepare("SELECT cedula, novedad FROM solicitudes_working_copy WHERE id_solicitud = ?");
-        $stmt_find_pair->bind_param("i", $id);
-        $stmt_find_pair->execute();
-        $pair_info = $stmt_find_pair->get_result()->fetch_assoc();
-        $stmt_find_pair->close();
-
-        if ($pair_info) {
-            $novedad_actual = strtolower($pair_info['novedad']);
-            $cedula_actual = $pair_info['cedula'];
-            $novedad_pareja = '';
-
-            if ($novedad_actual === 'adicionar') $novedad_pareja = 'eliminar';
-            if ($novedad_actual === 'eliminar') $novedad_pareja = 'adicionar';
-
-           if ($novedad_pareja) {
-                    // 1. Modificamos el SQL para que incluya "tipo_reemplazo = ?"
-                    $sql_update_pair = "UPDATE solicitudes_working_copy 
-                                        SET 
-                                            estado_vra = ?, 
-                                            observacion_vra = ?, 
-                                            tipo_reemplazo = ?, 
-                                            fecha_aprobacion_vra = NOW(), 
-                                            aprobador_vra_id = ? 
-                                        WHERE 
-                                            cedula = ? AND anio_semestre = ? AND LOWER(novedad) = ? AND estado_vra = 'PENDIENTE'";
-
-                    $stmt_update_pair = $conn->prepare($sql_update_pair);
-
-                    // 2. Añadimos la variable $tipo_reemplazo y su tipo 's' al bind_param
-                    $stmt_update_pair->bind_param("ssssiss", $estado_db, $observacion, $tipo_reemplazo, $aprobador_id, $cedula_actual, $anio_semestre, $novedad_pareja);
-
-                    if (!$stmt_update_pair->execute()) {
-                        throw new Exception("Error al actualizar la pareja de la solicitud ID: $id.");
-                    }
-                    $stmt_update_pair->close();
-                }
-                        }
-
+     
         // --- PARTE 2: APLICAR CAMBIOS A LA TABLA 'solicitudes' (SOLO SI SE APRUEBA) ---
         if ($accion === 'aprobar') {
             // Re-leemos los datos de la fila actual para asegurarnos de que tenemos todo

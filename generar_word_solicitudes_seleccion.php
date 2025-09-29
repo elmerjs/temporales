@@ -37,43 +37,56 @@ if (empty($anio_semestre) || $id_facultad === 0) {
 // ==============================================================================
 // ===== INICIO DE LA LÓGICA MEJORADA PARA "CAMBIO DE VINCULACIÓN" ==============
 // ==============================================================================
+// ==============================================================================
+// ===== INICIO DE LA LÓGICA CORREGIDA Y AJUSTADA AL ESTADO ==============
+// ==============================================================================
 
 // El array final de IDs que se van a actualizar y a incluir en el Word
 $ids_a_procesar = $selected_ids_array;
 
-// Primero, buscamos las cédulas de los registros "Adicionar" que hemos seleccionado
+// Primero, buscamos las cédulas de los registros "Adicionar" que hemos seleccionado.
+// Esta parte de la lógica original es correcta.
 $placeholders = implode(',', array_fill(0, count($selected_ids_array), '?'));
 $types = str_repeat('i', count($selected_ids_array));
-$sql_find_cedulas = "SELECT cedula FROM solicitudes_working_copy WHERE id_solicitud IN ($placeholders) AND (novedad = 'Adicion' OR novedad = 'adicionar')";
+$sql_find_cedulas = "SELECT DISTINCT cedula FROM solicitudes_working_copy WHERE id_solicitud IN ($placeholders) AND (novedad = 'Adicion' OR novedad = 'adicionar')";
 
 $stmt_cedulas = $conn->prepare($sql_find_cedulas);
+$cedulas_de_adiciones = [];
 if ($stmt_cedulas) {
     $stmt_cedulas->bind_param($types, ...$selected_ids_array);
     $stmt_cedulas->execute();
     $result_cedulas = $stmt_cedulas->get_result();
-    $cedulas_de_adiciones = [];
     while ($row = $result_cedulas->fetch_assoc()) {
         $cedulas_de_adiciones[] = $row['cedula'];
     }
     $stmt_cedulas->close();
 }
 
-// Si encontramos cédulas, buscamos sus contrapartes "Eliminar" que ya fueron APROBADAS
+// Si encontramos cédulas, buscamos sus contrapartes "Eliminar" que AÚN ESTÉN PENDIENTES.
 if (!empty($cedulas_de_adiciones)) {
     $placeholders_cedulas = implode(',', array_fill(0, count($cedulas_de_adiciones), '?'));
     $types_cedulas = str_repeat('s', count($cedulas_de_adiciones));
 
-    $sql_find_eliminar = "SELECT id_solicitud FROM solicitudes_working_copy WHERE cedula IN ($placeholders_cedulas) AND novedad = 'Eliminar' AND anio_semestre = ? AND facultad_id = ? AND estado_facultad = 'APROBADO'";
+    // ¡AQUÍ ESTÁ LA CORRECCIÓN CLAVE!
+    // Añadimos la condición "AND estado_vra = 'PENDIENTE'" para ignorar
+    // las solicitudes de "Eliminar" que pertenecen a cambios ya aprobados.
+    $sql_find_eliminar = "SELECT id_solicitud 
+                          FROM solicitudes_working_copy 
+                          WHERE cedula IN ($placeholders_cedulas) 
+                            AND novedad = 'Eliminar' 
+                            AND anio_semestre = ? 
+                            AND facultad_id = ? 
+                            AND estado_vra = 'PENDIENTE'";
+                            
     $stmt_eliminar = $conn->prepare($sql_find_eliminar);
-    
     if ($stmt_eliminar) {
         $params_eliminar = array_merge($cedulas_de_adiciones, [$anio_semestre, $id_facultad]);
+        // Ajustamos los tipos: 's' por cada cédula, 's' por anio_semestre, 'i' por facultad_id
         $stmt_eliminar->bind_param($types_cedulas . 'si', ...$params_eliminar);
-        
         $stmt_eliminar->execute();
         $result_eliminar = $stmt_eliminar->get_result();
         while ($row = $result_eliminar->fetch_assoc()) {
-            // Añadimos el ID del registro "Eliminar" a nuestra lista de procesamiento
+            // Añadimos el ID del registro "Eliminar" PENDIENTE a nuestra lista
             $ids_a_procesar[] = $row['id_solicitud'];
         }
         $stmt_eliminar->close();
@@ -82,6 +95,10 @@ if (!empty($cedulas_de_adiciones)) {
 
 // Nos aseguramos de que no haya IDs duplicados en la lista final
 $ids_a_procesar = array_unique($ids_a_procesar);
+
+// ==============================================================================
+// ===== FIN DE LA LÓGICA CORREGIDA =============================================
+// ==============================================================================
 
 // ==============================================================================
 // ===== FIN DE LA LÓGICA MEJORADA ==============================================
@@ -581,27 +598,29 @@ foreach ($todos_los_departamentos as $departamento_nombre) {
                 }
             }
             // Fin de la lógica para ADICIONAR
+            // --- INICIO DE LA MODIFICACIÓN (PASO 1) ---
+// Texto que irá ARRIBA de la tabla (solo el nombre)
+$nombre_profesor_final = htmlspecialchars($cambio['nombre_adicionar'] ?: $cambio['nombre_eliminar']);
+$texto_profesor_arriba = "Profesor: {$nombre_profesor_final}";
+
+// Texto que irá DENTRO de la tabla (la descripción del cambio)
+$texto_cambio_dentro = "Pasa de {$tipo_docente_eliminar}";
+if (!empty($salida_part)) {
+    $texto_cambio_dentro .= " - {$salida_part}";
+}
+$texto_cambio_dentro .= " a {$tipo_docente_str}";
+if (!empty($nueva_vinculacion_dedicacion_horas)) {
+    $texto_cambio_dentro .= " {$nueva_vinculacion_dedicacion_horas}";
+}
+$texto_cambio_dentro = "($texto_cambio_dentro)";
+// --- FIN DE LA MODIFICACIÓN (PASO 1) ---
             $nombre_profesor = htmlspecialchars($cambio['nombre_adicionar'] ?: $cambio['nombre_eliminar']);
         $section->addTextBreak(0);
 
             // Construcción del texto narrativo con lógica mejorada
-            $narrative_text = /*"Con el fin de atender esta necesidad, solicitamos comedidamente  */ "El(la) profesor(a) {$nombre_profesor}";
-            
-            // Parte de la vinculación actual (que se elimina)
-            $narrative_text .= "  pasa de {$tipo_docente_eliminar}";
-            if (!empty($salida_part)) {
-                $narrative_text .= " - {$salida_part}";
-            }
-            
-            // Parte de la nueva vinculación
-            $narrative_text .= " a {$tipo_docente_str}";
-            if (!empty($nueva_vinculacion_dedicacion_horas)) {
-                $narrative_text .= " {$nueva_vinculacion_dedicacion_horas}";
-            }
-            $narrative_text .= ".";
-
-            $section->addText($narrative_text, ['size' => 11], $paragraphStyleLeft);
-            $section->addTextBreak(0); // Pequeña separación
+            // --- INICIO DE LA MODIFICACIÓN (PASO 2) ---
+$section->addText($texto_profesor_arriba, $observationTextStyle, $paragraphStyleLeft);
+// --- FIN DE LA MODIFICACIÓN (PASO 2) ---            $section->addTextBreak(0); // Pequeña separación
 
             // 3. Tabla para la "Nueva Vinculación"
            $section->addText('Nueva Vinculación:', ['bold' => true, 'size' => 9], $paragraphStyleLeft);
@@ -698,19 +717,21 @@ if ($cambio['tipo_docente'] == "Ocasional") {
             // Columna Tipo Docente
           //  $table_cambio->addCell(1000, ['borderSize' => 1, 'valign' => 'center'])->addText(htmlspecialchars($cambio['tipo_docente'] ?: ''), $cellTextStyle, $paragraphStyle);
             // --- CAMBIO: Celda de datos ahora es la observación ---
-// 1. Obtenemos ambos valores de forma segura
-$observacion = htmlspecialchars($cambio['observacion_adicionar'] ?: '');
-$oficio_depto = htmlspecialchars($cambio['oficio_depto'] ?: '');
+// --- INICIO DE LA MODIFICACIÓN (PASO 3) ---
+// Combinamos la observación existente con la descripción del cambio
+$observacion_existente = htmlspecialchars($cambio['observacion_adicionar'] ?: '');
 
-// 2. Construimos el texto final con el nuevo formato
-$texto_final = $observacion;
-if (!empty($oficio_depto)) {
-    // Si hay un número de oficio, lo añadimos con el texto descriptivo
-    $texto_final .= " (oficio depto: {$oficio_depto})";
+// Añadimos la celda de Observación con el texto combinado y con estilos
+$cell = $table_cambio->addCell(2200, ['borderSize' => 1, 'valign' => 'center']);
+$textrun = $cell->addTextRun($paragraphStyle); // Usamos paragraphStyle para centrar si es necesario
+
+// Si hay una observación original del departamento, la añadimos en texto normal
+if (!empty($observacion_existente)) {
+    $textrun->addText($observacion_existente . ' ', $cellTextStyle);
 }
-
-// 3. Añadimos el texto final y combinado a la celda de la tabla
-$table_cambio->addCell(2200, ['borderSize' => 1, 'valign' => 'center'])->addText($texto_final, $cellTextStyle, $paragraphStyle);
+// Añadimos la descripción del cambio que construimos, en itálica para diferenciarla
+$textrun->addText($texto_cambio_dentro, ['italic' => true, 'size' => 8]);
+// --- FIN DE LA MODIFICACIÓN (PASO 3) ---
             $section->addTextBreak(1); // Un salto de línea después de cada cambio de vinculación
         }
         // La línea siguiente estaba fuera del foreach, se mantiene así si es tu intención

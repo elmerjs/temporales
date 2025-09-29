@@ -489,83 +489,79 @@ $conn->close();
         <div class="card">
             <div class="header">
                 <h1><i class="fas fa-user-edit"></i> Actualizar Solicitud de Vinculación</h1>
-                <div class="header-icon">
-                    <i class="fas fa-university"></i>
-                </div>
+                <div class="header-icon"><i class="fas fa-university"></i></div>
             </div>
             
-            <div class="info-box">
+         <!--   <div class="info-box">
                 <p><i class="fas fa-info-circle"></i> Complete los campos necesarios para actualizar la información del profesor.</p>
-            </div>
+            </div>-->
             
             <form action="procesar_actualizacion_novedadb.php" method="POST">
                 <input type="hidden" name="id_solicitud" value="<?php echo htmlspecialchars($row['id_solicitud']); ?>">
                 <input type="hidden" name="facultad_id" value="<?php echo htmlspecialchars($facultad_id); ?>">
                 <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($departamento_id); ?>">
                 <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($anio_semestre); ?>">
-                <input type="hidden" name="tipo_docente" value="<?php echo $tipo_docente; ?>">
-
+                
                 <div class="section-title">
                     <i class="fas fa-id-card"></i>
                     <span>Datos del Profesor</span>
                 </div>
-                
                 <div class="form-row">
                     <div class="form-group">
                         <label for="cedula">Cédula</label>
                         <input type="text" class="form-control" name="cedula" value="<?php echo htmlspecialchars($row['cedula']); ?>" readonly required>
                     </div>
-                    
                     <div class="form-group">
                         <label for="nombre">Nombre Completo</label>
                         <input type="text" class="form-control" name="nombre" value="<?php echo htmlspecialchars($row['nombre']); ?>" readonly required>
                     </div>
                 </div>
-                
+
                 <div class="section-title">
-                    <i class="fas fa-clock"></i>
-                    <span>Dedicación y Horas</span>
+                    <i class="fas fa-briefcase"></i>
+                    <span>Tipo de Vinculación y Dedicación</span>
                 </div>
                 
-                <?php if ($tipo_docente == "Ocasional") { ?>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="tipo_dedicacion">Dedicación Popayán</label>
-                            <select class="form-control" name="tipo_dedicacion" onchange="limpiarOtroSelect('tipo_dedicacion')">
-                                <option value="" <?php if (empty($row['tipo_dedicacion'])) echo 'selected'; ?>>Seleccione...</option>
-                                <option value="TC" <?php if ($row['tipo_dedicacion'] == 'TC') echo 'selected'; ?>>Tiempo Completo (TC)</option>
-                                <option value="MT" <?php if ($row['tipo_dedicacion'] == 'MT') echo 'selected'; ?>>Medio Tiempo (MT)</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="tipo_dedicacion_r">Dedicación Regionalización</label>
-                            <select class="form-control" name="tipo_dedicacion_r" onchange="limpiarOtroSelect('tipo_dedicacion_r')">
-                                <option value="" <?php if (empty($row['tipo_dedicacion_r'])) echo 'selected'; ?>>Seleccione...</option>
-                                <option value="TC" <?php if ($row['tipo_dedicacion_r'] == 'TC') echo 'selected'; ?>>Tiempo Completo (TC)</option>
-                                <option value="MT" <?php if ($row['tipo_dedicacion_r'] == 'MT') echo 'selected'; ?>>Medio Tiempo (MT)</option>
-                            </select>
-                        </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                         <label for="tipo_docente">Tipo de Vinculación</label>
+                         <select id="tipo_docente" name="tipo_docente" class="form-control">
+                            <option value="Ocasional" <?php echo ($row['tipo_docente'] == 'Ocasional') ? 'selected' : ''; ?>>Ocasional</option>
+                            <option value="Catedra" <?php echo ($row['tipo_docente'] == 'Catedra') ? 'selected' : ''; ?>>Cátedra</option>
+                        </select>
                     </div>
-                <?php } ?>
+                </div>
 
-                <?php if ($tipo_docente == "Catedra") { ?>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="horas">Horas Popayán</label>
-                            <input type="number" class="form-control" id="horas" name="horas" min="0" max="12" step="0.1"
-                                value="<?php echo htmlspecialchars($row['horas']); ?>" onchange="validarHorasPHP()">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="horas_r">Horas Regionalización</label>
-                            <input type="number" class="form-control" id="horas_r" name="horas_r" min="0" max="12" step="0.1"
-                                value="<?php echo htmlspecialchars($row['horas_r']); ?>" onchange="validarHorasPHP()">
-                        </div>
+                <div id="campos_ocasional" class="form-row">
+                    <div class="form-group">
+                        <label for="tipo_dedicacion">Dedicación Popayán</label>
+                        <select class="form-control" name="tipo_dedicacion" onchange="limpiarOtroSelect('tipo_dedicacion')">
+                            <option value="" <?php if (empty($row['tipo_dedicacion'])) echo 'selected'; ?>>Seleccione...</option>
+                            <option value="TC" <?php if ($row['tipo_dedicacion'] == 'TC') echo 'selected'; ?>>Tiempo Completo (TC)</option>
+                            <option value="MT" <?php if ($row['tipo_dedicacion'] == 'MT') echo 'selected'; ?>>Medio Tiempo (MT)</option>
+                        </select>
                     </div>
-                <?php } ?>
+                    <div class="form-group">
+                        <label for="tipo_dedicacion_r">Dedicación Regionalización</label>
+                        <select class="form-control" name="tipo_dedicacion_r" onchange="limpiarOtroSelect('tipo_dedicacion_r')">
+                            <option value="" <?php if (empty($row['tipo_dedicacion_r'])) echo 'selected'; ?>>Seleccione...</option>
+                            <option value="TC" <?php if ($row['tipo_dedicacion_r'] == 'TC') echo 'selected'; ?>>Tiempo Completo (TC)</option>
+                            <option value="MT" <?php if ($row['tipo_dedicacion_r'] == 'MT') echo 'selected'; ?>>Medio Tiempo (MT)</option>
+                        </select>
+                    </div>
+                </div>
 
-                <div class="section-title">
+                <div id="campos_catedra" class="form-row">
+                    <div class="form-group">
+                        <label for="horas">Horas Popayán</label>
+                        <input type="number" class="form-control" id="horas" name="horas" min="0" max="12" step="0.1"  value="<?php echo htmlspecialchars($row['horas']); ?>" onchange="validarHorasPHP()">
+                    </div>
+                    <div class="form-group">
+                        <label for="horas_r">Horas Regionalización</label>
+                        <input type="number" class="form-control" id="horas_r" name="horas_r" min="0" max="12" step="0.1" value="<?php echo htmlspecialchars($row['horas_r']); ?>" onchange="validarHorasPHP()">
+                    </div>
+                </div>
+                        <div class="section-title">
                     <i class="fas fa-file-alt"></i>
                     <span>Documentación</span>
                 </div>
@@ -598,14 +594,14 @@ $conn->close();
                 </div>
                    <div class="section-title">
                     <i class="fas fa-clipboard"></i>
-                    <span>Detalles de Novedad <span class="required">*</span></span>
+                    <span>Justificación <span class="required">*</span></span>
                 </div>
 
                 <div class="form-group">
-                    <label for="observacion">Observación <span class="required">*</span></label>
+                   
                     <textarea class="form-control" name="observacion" id="observacion" rows="3"
-                              placeholder="Ej: Oficio 5.5./31 no se acepta cambio a ocasional, se mantiene como cátedra..."
-                              oninput="detectarTipoReemplazo()" required><?php echo htmlspecialchars($row['s_observacion']); ?></textarea>
+                              placeholder="Ej: Por necesidad  mayor numero de matriculas ....."
+                              oninput="detectarTipoReemplazo()" required><?php //echo htmlspecialchars($row['s_observacion']); ?></textarea>
                 </div>
 
              <div class="form-group" hidden> <label for="tipo_reemplazo">Tipo de Reemplazo/Justificación <span class="required">*</span></label>
@@ -637,14 +633,34 @@ $conn->close();
             </form>
         </div>
         
-        <div class="info-box">
-            <p><i class="fas fa-lightbulb"></i> El campo "Link Drive/Nube" es opcional, cuando se anexa o actualiza HV.</p>
         </div>
-        
-        <div class="footer-note">
-            Sistema de Vinculación Temporal &copy; <?php echo date('Y'); ?> - Universidad del Cauca
-        </div>
-    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectTipoDocente = document.getElementById('tipo_docente');
+            const camposOcasional = document.getElementById('campos_ocasional');
+            const camposCatedra = document.getElementById('campos_catedra');
+            
+            function toggleDedicacionFields() {
+                const tipoSeleccionado = selectTipoDocente.value;
+
+                if (tipoSeleccionado === 'Ocasional') {
+                    camposOcasional.style.display = 'flex'; // Usamos 'flex' porque 'form-row' parece ser un flex container
+                    camposCatedra.style.display = 'none';
+                    document.getElementById('horas').value = 0;
+                    document.getElementById('horas_r').value = 0;
+                } else if (tipoSeleccionado === 'Catedra') {
+                    camposOcasional.style.display = 'none';
+                    camposCatedra.style.display = 'flex';
+                    document.getElementById('tipo_dedicacion').value = '';
+                    document.getElementById('tipo_dedicacion_r').value = '';
+                }
+            }
+
+            selectTipoDocente.addEventListener('change', toggleDedicacionFields);
+            toggleDedicacionFields(); // Ejecutar al cargar la página
+        });
+    </script>
     
     <script>
         // Función para detectar el Tipo de Reemplazo/Justificación basada en la observación

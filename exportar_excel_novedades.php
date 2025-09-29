@@ -29,50 +29,66 @@ if ($tipo_usuario == 3 && is_null($id_departamento)) {
 }
 
 function procesarCambiosVinculacion($solicitudes) {
-    $adiciones = [];
-    $eliminaciones = [];
+    $transacciones = [];
     $otras_novedades = [];
     $resultado_final = [];
 
-    // 1. Clasificar solicitudes
+    // PASO 1: Clasificar solicitudes por 'oficio' Y LUEGO por 'cédula'.
     foreach ($solicitudes as $sol) {
-        $cedula = $sol['cedula'];
-        if (strtolower($sol['novedad']) === 'adicion' || strtolower($sol['novedad']) === 'adicionar') {
-            $adiciones[$cedula] = $sol;
-        } elseif (strtolower($sol['novedad']) === 'eliminar') {
-            $eliminaciones[$cedula] = $sol;
+        $id_transaccion = $sol['oficio_con_fecha'] ?? null;
+        $cedula = $sol['cedula'] ?? null;
+        $novedad = strtolower($sol['novedad']);
+
+        if ($id_transaccion && $cedula && ($novedad === 'adicionar' || $novedad === 'adicion' || $novedad === 'eliminar')) {
+            // Agrupamos por oficio, y dentro, por cédula.
+            $transacciones[$id_transaccion][$cedula][$novedad] = $sol;
         } else {
+            // El resto (Modificar, etc.) va a otra lista.
             $otras_novedades[] = $sol;
         }
     }
 
-    // 2. Procesar coincidencias
-    foreach ($adiciones as $cedula => $sol_adicion) {
-        if (isset($eliminaciones[$cedula])) {
-            $sol_eliminacion = $eliminaciones[$cedula];
+    // PASO 2: Procesar las transacciones doblemente agrupadas
+    foreach ($transacciones as $id_transaccion => $cedulas_en_oficio) {
+        foreach ($cedulas_en_oficio as $cedula => $partes) {
+            
+            $sol_adicion = $partes['adicion'] ?? $partes['adicionar'] ?? null;
 
-            $tipo_docente_anterior = ($sol_eliminacion['tipo_docente'] === 'Catedra') ? 'Cátedra' : $sol_eliminacion['tipo_docente'];
-            $estado_anterior = "Sale de " . $tipo_docente_anterior;
-            if ($sol_eliminacion['tipo_docente'] === 'Ocasional') {
-                if ($sol_eliminacion['tipo_dedicacion']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion'] . " Popayán";
-                elseif ($sol_eliminacion['tipo_dedicacion_r']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion_r'] . " Regionalización";
-            } elseif ($sol_eliminacion['tipo_docente'] === 'Catedra') {
-                if ($sol_eliminacion['horas'] && $sol_eliminacion['horas'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas'] . " horas Popayán";
-                elseif ($sol_eliminacion['horas_r'] && $sol_eliminacion['horas_r'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas_r'] . " horas Regionalización";
+            // Verificamos si para ESTA CÉDULA DENTRO DE ESTE OFICIO, existe el par completo
+            if ($sol_adicion && isset($partes['eliminar'])) {
+                // ¡Es un verdadero "Cambio de Vinculación"!
+                $sol_eliminacion = $partes['eliminar'];
+
+                // --- Lógica para construir la descripción (sin cambios) ---
+                $tipo_docente_anterior = ($sol_eliminacion['tipo_docente'] === 'Catedra') ? 'Cátedra' : $sol_eliminacion['tipo_docente'];
+                $estado_anterior = "Sale de " . $tipo_docente_anterior;
+                if ($sol_eliminacion['tipo_docente'] === 'Ocasional') {
+                    if ($sol_eliminacion['tipo_dedicacion']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion'] . " Popayán";
+                    elseif ($sol_eliminacion['tipo_dedicacion_r']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion_r'] . " Regionalización";
+                } elseif ($sol_eliminacion['tipo_docente'] === 'Catedra') {
+                    if ($sol_eliminacion['horas'] && $sol_eliminacion['horas'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas'] . " horas Popayán";
+                    elseif ($sol_eliminacion['horas_r'] && $sol_eliminacion['horas_r'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas_r'] . " horas Regionalización";
+                }
+                
+                // Modificamos la solicitud de "adición" para que represente el cambio completo
+                $sol_adicion['novedad'] = 'Cambio Vinculación';
+                $observacion_existente = trim($sol_adicion['s_observacion']);
+                $sol_adicion['s_observacion'] = $observacion_existente . ($observacion_existente ? ' ' : '') . '(' . $estado_anterior . ')';
+
+                $resultado_final[] = $sol_adicion;
+
+            } else {
+                // Si no hay un par, se añaden las partes individuales a la lista de "otras"
+                if ($sol_adicion) $otras_novedades[] = $sol_adicion;
+                if (isset($partes['eliminar'])) $otras_novedades[] = $partes['eliminar'];
             }
-
-            $sol_adicion['novedad'] = 'Cambio Vinculación';
-            $observacion_existente = trim($sol_adicion['s_observacion']);
-            $sol_adicion['s_observacion'] = $observacion_existente . ($observacion_existente ? ' ' : '') . '(' . $estado_anterior . ')';
-
-            $resultado_final[] = $sol_adicion;
-            unset($eliminaciones[$cedula]);
-        } else {
-            $resultado_final[] = $sol_adicion;
         }
     }
-    return array_merge($resultado_final, array_values($eliminaciones), $otras_novedades);
+
+    // Unimos los cambios procesados con el resto de novedades
+    return array_merge($resultado_final, $otras_novedades);
 }
+
 // 4. Construir la consulta SQL
 // 4. Construir la consulta SQL universal (Versión Segura)
 $sql = "SELECT s.*, f.NOMBREF_FAC as nombre_facultad, d.depto_nom_propio as nombre_departamento
@@ -145,15 +161,16 @@ $sheet->setTitle('Novedades ' . $anio_semestre);
 // Encabezados y estilo (sin cambios)
 $headers = [
     'Facultad', 'Departamento', 'Oficio Depto', 'Oficio Fac', 'Novedad', 'Cédula', 'Nombre Completo',
-    'Tipo Docente', 'Dedicación/Horas Popayán', 'Dedicación/Horas Reg.', 'Estado Facultad', 'Estado VRA', 'Observación Facultad', 'Observación VRA'
+    'Tipo Docente', 'Dedicación/Horas Popayán', 'Dedicación/Horas Reg.', 'Estado Facultad', 'Estado VRA', 'Observación Facultad', 'Observación VRA',
+    'Enviado RRHH' // <-- NUEVO ENCABEZADO
 ];
 $sheet->fromArray($headers, NULL, 'A1');
 $headerStyle = [
     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '003366']]
 ];
-$sheet->getStyle('A1:N1')->applyFromArray($headerStyle);
-
+// Cambiamos el rango para incluir la nueva columna O
+$sheet->getStyle('A1:O1')->applyFromArray($headerStyle); 
 // 7. Llenar el archivo con los datos
 $row_num = 2;
 foreach ($datos_procesados as $fila) {
@@ -168,11 +185,14 @@ foreach ($datos_procesados as $fila) {
         $dedicacion_reg = $fila['horas_r'] > 0 ? $fila['horas_r'] . 'h' : '';
     }
 
-    $datos_fila = [
-        $fila['nombre_facultad'], $fila['nombre_departamento'], $fila['oficio_con_fecha'], $fila['oficio_con_fecha_fac'],
-        $fila['novedad'], $fila['cedula'], $fila['nombre'], $fila['tipo_docente'], $dedicacion_pop, $dedicacion_reg,
-        $fila['estado_facultad'], $fila['estado_vra'], $fila['observacion_facultad'], $fila['observacion_vra']
-    ];
+    $enviado_rrhh = ($fila['archivado'] ?? 0) == 1 ? 'OK' : 'NO';
+
+$datos_fila = [
+    $fila['nombre_facultad'], $fila['nombre_departamento'], $fila['oficio_con_fecha'], $fila['oficio_con_fecha_fac'],
+    $fila['novedad'], $fila['cedula'], $fila['nombre'], $fila['tipo_docente'], $dedicacion_pop, $dedicacion_reg,
+    $fila['estado_facultad'], $fila['estado_vra'], $fila['observacion_facultad'], $fila['observacion_vra'],
+    $enviado_rrhh // <-- NUEVO DATO
+];
     $sheet->fromArray($datos_fila, NULL, 'A' . $row_num);
 
     // ==========================================================
@@ -188,7 +208,7 @@ foreach ($datos_procesados as $fila) {
             ]
         ];
         // Aplicamos el estilo a toda la fila
-        $sheet->getStyle('A' . $row_num . ':N' . $row_num)->applyFromArray($rejectedStyle);
+        $sheet->getStyle('A' . $row_num . ':O' . $row_num)->applyFromArray($rejectedStyle);
     } 
     // Si no hay rechazos, comprobamos si fue APROBADO por VRA
     elseif (strtoupper($fila['estado_vra']) === 'APROBADO') {
@@ -200,7 +220,7 @@ foreach ($datos_procesados as $fila) {
             ]
         ];
         // Aplicamos el estilo a toda la fila
-        $sheet->getStyle('A' . $row_num . ':N' . $row_num)->applyFromArray($approvedStyle);
+        $sheet->getStyle('A' . $row_num . ':O' . $row_num)->applyFromArray($approvedStyle);
     }
     // ==========================================================
     
@@ -208,7 +228,7 @@ foreach ($datos_procesados as $fila) {
 }
 
 // Auto-ajustar el ancho de las columnas
-foreach(range('A', 'N') as $columnID) {
+foreach(range('A', 'O') as $columnID) {
     $sheet->getColumnDimension($columnID)->setAutoSize(true);
 }
 // =================================================================
