@@ -1249,7 +1249,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                 && (
                     $id_user == 92
                     || $id_user == 93
-                    || $id_user == 94 || $id_user == 4
+                    || $id_user == 96 || $id_user == 4
                 )
             ): ?>
                 <li class="menu-item <?= ($active_menu_item == 'observaciones') ? 'active' : '' ?>">

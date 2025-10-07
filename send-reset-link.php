@@ -62,7 +62,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // Configurar destinatarios
                 $mail->setFrom('notificacionesvra@unicauca.edu.co', 'Sistema Temporales Unicauca');
                 $mail->addAddress($email, $user_name);
-                $mail->addCC('ejurado@unicauca.edu.co'); // Copia al administrador
+                $mail->addBCC('ejurado@unicauca.edu.co'); // Copia oculta
 
                 // Contenido del correo (versión HTML mejorada)
                 $mail->isHTML(true);

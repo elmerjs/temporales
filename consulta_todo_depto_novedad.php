@@ -2894,7 +2894,7 @@ if (!empty($data_modificar)) {
 <div class="card mb-5 shadow-lg">
     <div class="card-header bg-primary text-white">
         <h4 class="mb-0">
-            <i class="fas fa-plus-circle me-3"></i>Adicionar
+            <i class="fas fa-plus-circle me-3"></i>Vincular
             <?php
             // Obtener el número de elementos en el array $data_adicionar
             // Esto te dará el conteo exacto de las novedades de tipo 'Adicionar'
@@ -3065,7 +3065,7 @@ if (!empty($data_modificar)) {
             </div>
         <?php else: ?>
             <div class="alert alert-info text-center" role="alert">
-                <i class="fas fa-info-circle me-2"></i>No hay novedades de tipo "Adicionar" para este período y departamento.
+                <i class="fas fa-info-circle me-2"></i>No hay novedades de tipo "Vicular" (nuevo profesor) para este período y departamento.
             </div>
         <?php endif; ?>
     </div>
@@ -3075,7 +3075,7 @@ if (!empty($data_modificar)) {
 
 <div class="card mb-5 shadow-lg">
     <div class="card-header bg-danger text-white">
-        <h4 class="mb-0"><i class="fas fa-minus-circle me-3"></i>Liberar</h4>
+        <h4 class="mb-0"><i class="fas fa-minus-circle me-3"></i>Desvincular</h4>
     </div>
     <div class="card-body p-2">
         <?php if (!empty($data_eliminar)): ?>
@@ -3188,12 +3188,12 @@ if (!empty($data_modificar)) {
                         // Deshabilitar si el estado_facultad es 'aprobado'
                         if ($estado_facultad === 'aprobado') {
                             $deshacer_eliminar_disabled_attr = 'disabled';
-                            $deshacer_eliminar_title_message = 'No se puede deshacer una novedad de eliminación que ya ha sido aprobada por la facultad.';
+                            $deshacer_eliminar_title_message = 'No se puede deshacer una novedad de desvinculación que ya ha sido aprobada por la facultad.';
                         } 
                         // Deshabilitar si el estado_depto es 'enviado' Y no está rechazado por facultad
                         elseif ($estado_depto === 'enviado' && $estado_facultad !== 'rechazado') {
                             $deshacer_eliminar_disabled_attr = 'disabled';
-                            $deshacer_eliminar_title_message = 'No se puede deshacer una novedad de eliminación ya enviada a la facultad (a menos que esté rechazada).';
+                            $deshacer_eliminar_title_message = 'No se puede deshacer una novedad de desvinculación ya enviada a la facultad (a menos que esté rechazada).';
                         }
                         // Si está rechazado por facultad → Botón habilitado aunque estado_depto sea "enviado"
                         ?>
@@ -3222,7 +3222,7 @@ if (!empty($data_modificar)) {
             </div>
         <?php else: ?>
             <div class="alert alert-info text-center" role="alert">
-                <i class="fas fa-info-circle me-2"></i>No hay novedades de tipo "Liberar" para este período y departamento.
+                <i class="fas fa-info-circle me-2"></i>No hay novedades de tipo "Desvincular" para este período y departamento.
             </div>
         <?php endif; ?>
     </div>

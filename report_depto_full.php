@@ -1623,7 +1623,21 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('toggleTableBtn_<?php echo $id_facultad; ?>').addEventListener('click', function () {
         const tableContainer = document.getElementById('tableContainer_<?php echo $id_facultad; ?>');
         const iconToggle = document.getElementById('iconToggle_<?php echo $id_facultad; ?>');
-        
+
+        // 🔹 Cerrar todos los demás contenedores antes de abrir uno nuevo
+        document.querySelectorAll('[id^="tableContainer_"]').forEach(container => {
+            if (container !== tableContainer) {
+                container.style.display = 'none';
+            }
+        });
+
+        // 🔹 Restablecer todos los íconos a "chevron-down"
+        document.querySelectorAll('[id^="iconToggle_"]').forEach(icon => {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        });
+
+        // 🔹 Alternar solo el contenedor seleccionado
         if (tableContainer.style.display === 'none' || tableContainer.style.display === '') {
             tableContainer.style.display = 'block';
             iconToggle.classList.remove('fa-chevron-down');
@@ -1636,7 +1650,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     <?php } ?>
 });
-</script>              <?php
+</script>
+            <?php
                     }
                 } else {
                     echo "<p>No se encontraron resultados.</p>";
