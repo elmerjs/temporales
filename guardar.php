@@ -140,9 +140,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $nombre = $_POST['nombre'][$index];
                 $tipo_dedicacion = isset($_POST['tipo_dedicacion'][$index]) ? $_POST['tipo_dedicacion'][$index] : null;
                 $tipo_dedicacion_r = isset($_POST['tipo_dedicacion_r'][$index]) ? $_POST['tipo_dedicacion_r'][$index] : null;
-                $horas_r = isset($_POST['horas_r'][$index]) ? (int)$_POST['horas_r'][$index] : 0; // Conversión a entero
-                $horas = isset($_POST['horas'][$index]) ? (int)$_POST['horas'][$index] : 0;       // Conversión a entero
-
+                //$horas_r = isset($_POST['horas_r'][$index]) ? (int)$_POST['horas_r'][$index] : 0; // Conversión a entero
+                //$horas = isset($_POST['horas'][$index]) ? (int)$_POST['horas'][$index] : 0;       // Conversión a entero
+                $horas_r = isset($_POST['horas_r'][$index]) ? (float)$_POST['horas_r'][$index] : 0; // Conversión a float
+                $horas = isset($_POST['horas'][$index]) ? (float)$_POST['horas'][$index] : 0;       // Conversión a float
+              
                 // Validación: suma de horas no puede ser mayor a 12
                 if (($horas + $horas_r) > 12) {
                     echo "<script>

@@ -1673,6 +1673,19 @@ $conn->close();
         width: 30%; /* Dale un 30% del ancho total de la tabla. ¡Puedes ajustar este valor! */
         min-width: 250px; /* Opcional: un ancho mínimo para que no se encoja demasiado */
     }
+        
+        /* Si hay pendientes, el botón "vibra" o resalta para llamar la atención */
+    .btn-highlight {
+        border: 2px solid #dc3545 !important;
+        box-shadow: 0 0 15px rgba(220, 53, 69, 0.5);
+        animation: pulse-red 2s infinite;
+    }
+
+    @keyframes pulse-red {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
 </style>
 </head>
 <body>
@@ -1766,18 +1779,22 @@ function procesarCambiosParaVista($solicitudes) {
         $cedula = $sol['cedula'];
         $novedad = strtolower(trim($sol['novedad'] ?? ''));
 
+        // --- CAMBIO CLAVE: Si es NN (222), usamos el ID de la solicitud para que no se pisen ---
+        $key = ($cedula === '222') ? 'NN_' . $sol['id_solicitud'] : $cedula;
+
         if ($novedad === 'adicionar' || $novedad === 'adicion') {
-            $adiciones[$cedula] = $sol;
+            $adiciones[$key] = $sol;
         } elseif ($novedad === 'eliminar') {
-            $eliminaciones[$cedula] = $sol;
+            $eliminaciones[$key] = $sol;
         } else {
             $otras_novedades[] = $sol;
         }
     }
 
-    foreach ($adiciones as $cedula => $sol_adicion) {
-        if (isset($eliminaciones[$cedula])) {
-            $sol_eliminacion = $eliminaciones[$cedula];
+    foreach ($adiciones as $key => $sol_adicion) {
+        // Ahora solo intentará unir si la llave coincide (docentes reales con misma cédula)
+        if (isset($eliminaciones[$key])) {
+            $sol_eliminacion = $eliminaciones[$key];
 
             $info_anterior = "Sale de " . $sol_eliminacion['tipo_docente'];
             if ($sol_eliminacion['tipo_docente'] === 'Ocasional') {
@@ -1791,12 +1808,13 @@ function procesarCambiosParaVista($solicitudes) {
             $sol_adicion['s_observacion'] = $obs_existente . ($obs_existente ? ' ' : '') . '(' . $info_anterior . ')';
 
             $resultado_final[] = $sol_adicion;
-            unset($eliminaciones[$cedula]);
+            unset($eliminaciones[$key]);
         } else {
             $resultado_final[] = $sol_adicion;
         }
     }
     
+    // Devolvemos todo: las adiciones procesadas, las eliminaciones restantes (incluyendo los NN) y otras novedades
     return array_merge($resultado_final, array_values($eliminaciones), $otras_novedades);
 }
 // =================================================================
@@ -2021,7 +2039,8 @@ $result = $conn->query($sql);
     // Add onclick and an icon with a unique ID for rotation
 echo "<h4 style='color: #000066; cursor: pointer;' onclick=\"toggleSection('" . htmlspecialchars($section_id) . "')\" title=\"Ocultar/Mostrar Detalles\">
             <i id=\"icon_" . htmlspecialchars($section_id) . "\" class=\"fas fa-caret-down\"></i>
-            Vinculación: " . htmlspecialchars($tipo_docente) . " ("; // Applied style here
+            Vinculación: " . htmlspecialchars($tipo_docente == 'Catedra' ? 'Cátedra' : $tipo_docente)
+ . " ("; // Applied style here
 if ($tipo_docente == 'Catedra') {
     $estadoDepto = obtenerCierreDeptoCatedra($departamento_id, $aniose);
     echo "<strong>" . ucfirst(strtolower($estadoDepto)) . "</strong>";
@@ -2041,7 +2060,7 @@ echo ")</h4>";
 
                 <div class='d-flex gap-2'>
                     <button type='submit' class='btn btn-primary'>
-                        <i class='fas fa-plus'></i> solicitar nuevo profesor
+                        <i class='fas fa-plus'></i> solicitar  profesor (nueva vinculación)
                     </button>
 
                 
@@ -2097,8 +2116,8 @@ echo ")</h4>";
             <th title='Anexa Hoja de Vida para nuevos aspirantes'>Anexa</th>
             <th title='Actualiza Hoja de Vida para aspirantes antiguos'>Actualz</th>";
 */
-            echo "<th>Liberar</th>
-                  <th>Editar</th><th>for45</th>";
+            echo "<th>Desvincular</th>
+                  <th>Modificar</th><th>for45</th>";
           
         
 
@@ -2252,10 +2271,10 @@ echo "</td>";
             </div>
             <form id="deleteNovedadForm" action="eliminar_novedadb.php" method="POST">
                 <div class="modal-body">
-                    <p class="mb-3">¿Estás seguro de que deseas solicitar la novedad de eliminación docente <strong id="docenteNombre"></strong>?</p>
+                    <p class="mb-3">¿Está seguro de que desea solicitar la desvinculación del profesor <strong id="docenteNombre"></strong>?</p>
                     <div class="mb-3">
-                        <label for="motivoEliminacion" class="form-label">Motivo de la solicitud de eliminación:</label>
-                        <textarea class="form-control" id="motivoEliminacion" name="motivo_eliminacion" rows="3" required placeholder="Describe brevemente la razón de la eliminación."></textarea>
+                        <label for="motivoEliminacion" class="form-label">Motivo de la solicitud de desvinculación:</label>
+                        <textarea class="form-control" id="motivoEliminacion" name="motivo_eliminacion" rows="3" required placeholder="Describe brevemente la razón de la desvinculación(eliminación)."></textarea>
                     </div>
                     <input type="hidden" name="id_solicitud" id="modal_id_solicitud_del">
                     <input type="hidden" name="facultad_id" id="modal_facultad_id_del">
@@ -2713,7 +2732,8 @@ $resultb = $conn->query($sqlb);
 $count_pendientes = 0; // Inicializar en 0
 
 // Consulta para contar las solicitudes en estado 'PENDIENTE'
-$sql_count_pendientes = "SELECT COUNT(*) AS total_pendientes FROM solicitudes_working_copy
+$sql_count_pendientes = "SELECT COUNT(DISTINCT cedula) AS total_pendientes 
+                         FROM solicitudes_working_copy
                          WHERE departamento_id = ?
                          AND anio_semestre = ?
                          AND estado_depto = 'PENDIENTE'";
@@ -2735,11 +2755,11 @@ if ($stmt_count) {
     
     
 <div class="container-fluid mt-1">
-<h2 class="section-subtitleb">Novedades propuestas</h2>
+<h2 class="section-subtitleb">Novedades propuestas en el oficio</h2>
   
 <div class="card mb-5 shadow-lg">
-    <div class="card-header bg-secondary text-white">
-        <h4 class="mb-0"><i class="fas fa-pencil-alt me-3"></i>Modificación</h4>
+    <div class="card-header text-white" style="background-color: #FFA726;">
+        <h4 class="mb-0"><i class="fas fa-pencil-alt me-3"></i>Modificar</h4>
     </div>
   <?php
 // 1. UNIFICAR LOS DATOS EN UN SOLO ARRAY
@@ -3067,7 +3087,9 @@ if (!empty($data_modificar)) {
             <div class="alert alert-info text-center" role="alert">
                 <i class="fas fa-info-circle me-2"></i>No hay novedades de tipo "Vicular" (nuevo profesor) para este período y departamento.
             </div>
-        <?php endif; ?>
+        <?php endif; 
+        
+        ?>
     </div>
 </div>
 
@@ -3236,16 +3258,40 @@ if (!empty($data_modificar)) {
 
     <div class="col-md-12 text-center mb-3 d-grid">
   
+<?php if ($tipo_usuario == 3 && $count_pendientes > 0): ?>
+    <div class="alert alert-info shadow-sm border-0 mb-4" role="alert" style="background-color: #f0f7ff; border-left: 4px solid #0d6efd !important;">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-layer-group me-3" style="font-size: 1.5rem; color: #0d6efd;"></i>
+            <div class="text-start">
+                <h6 class="fw-bold mb-1" style="color: #084298;">Borrador de novedades en curso</h6>
+                <p class="mb-0 text-muted" style="font-size: 0.95rem;">
+                    Tienes <strong><?php echo $count_pendientes; ?></strong> docente(s) con novedades pendientes. 
+                    Puedes seguir realizando adiciones, cambios o eliminaciones para <strong>consolidar tu grupo de solicitudes</strong> antes del envío final.
+                </p>
+                <div class="mt-2 py-1 px-2 d-inline-block" style="background-color: rgba(13, 110, 253, 0.08); border-radius: 4px;">
+                    <p class="mb-0" style="font-size: 0.85rem; color: #084298;">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        Cuando el lote esté completo, usa el botón <span class="badge bg-primary">Enviar a Facultad</span> para tramitarlos todos en un mismo oficio.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
-   <button class="btn btn-unicauca-primary btn-lg" id="btnEnviarFacultad" style="border-radius: 30px;">
-    <i class="fas fa-file-download me-2"></i> Enviar a Facultad (Descargar Oficio)
-</button>
-  <div class="col-md-12 text-center mb-3 d-grid">
-  <a href="consulta_facultad_novedad12.php?departamento_id=<?= $departamento_id ?>&anio_semestre=<?= $anio_semestre ?>" 
-     class="mt-2 d-block small text-muted">
-    Ver listado completo de novedades
-  </a>
-</div>
+        <button class="btn btn-unicauca-primary btn-lg <?= ($count_pendientes > 0) ? 'btn-highlight' : '' ?>" 
+                id="btnEnviarFacultad" 
+                style="border-radius: 30px; font-weight: bold;">
+            <i class="fas fa-file-download me-2"></i> 
+            ENVIAR A FACULTAD (Descargar Oficio)
+        </button>
+
+        <div class="col-md-12 text-center mb-3 d-grid">
+            <a href="consulta_facultad_novedad12.php?departamento_id=<?= $departamento_id ?>&anio_semestre=<?= $anio_semestre ?>" 
+               class="mt-2 d-block small text-muted">
+                Ver listado completo de novedades
+            </a>
+        </div>
 
 <div id="myModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">

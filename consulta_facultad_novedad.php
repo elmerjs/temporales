@@ -826,52 +826,66 @@ function toggleLoading(show, message = 'Procesando...') {
 function llenarModalVRA(oficio_fac) {
     modalTitle.textContent = 'Solicitudes del Oficio de facultad # ' + oficio_fac;
     modalTableBody.innerHTML = '';
-    selectAllCheckbox.checked = false;
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+
+    // Filtramos las solicitudes por el oficio seleccionado
     const solicitudesFiltradas = todasLasSolicitudes.filter(sol => sol.oficio_con_fecha_fac === oficio_fac);
 
     // ===================================================================
-    // ===== INICIA EL BLOQUE MODIFICADO: LÓGICA DE ORDENAMIENTO =====
+    // ===== BLOQUE 1: LÓGICA DE ORDENAMIENTO (Prioridad de visualización)
     // ===================================================================
-    // 1. Define el orden exacto y personalizado que deseas para las novedades.
     const ordenNovedades = ['modificacion', 'cambio de vinculacion', 'adicionar', 'eliminar'];
 
-    // 2. Ordena el array 'solicitudesFiltradas' según el orden definido.
     solicitudesFiltradas.sort((a, b) => {
         const novedadA = (a.novedad || '').toLowerCase();
         const novedadB = (b.novedad || '').toLowerCase();
 
-        // Encuentra la posición de cada novedad en tu lista de orden.
-        // Si una novedad no está en la lista, se le da un valor alto (999) para enviarla al final.
         const indexA = ordenNovedades.indexOf(novedadA) !== -1 ? ordenNovedades.indexOf(novedadA) : 999;
         const indexB = ordenNovedades.indexOf(novedadB) !== -1 ? ordenNovedades.indexOf(novedadB) : 999;
 
-        // Compara las posiciones para determinar el orden.
         return indexA - indexB;
     });
-    // ===================================================================
-    // ===== FIN DEL BLOQUE MODIFICADO =====
-    // ===================================================================
 
     if (solicitudesFiltradas.length > 0) {
         solicitudesFiltradas.forEach(sol => {
+            
+            // ===================================================================
+            // ===== BLOQUE 2: LÓGICA DE DATOS POPAYÁN VS REGIONALIZACIÓN
+            // ===================================================================
             let popayanData = '<span class="text-gray-400">N/A</span>';
             let regionalizacionData = '<span class="text-gray-400">N/A</span>';
-            if (sol.tipo_docente === 'Ocasional') { /* ... (código sin cambios) ... */ } 
-            else if (sol.tipo_docente === 'Catedra') { /* ... (código sin cambios) ... */ }
+
+            if (sol.tipo_docente === 'Ocasional') {
+                if (sol.tipo_dedicacion) {
+                    popayanData = `<span class="bg-gray-200 px-2 py-1 rounded text-xs font-semibold text-gray-700">${sol.tipo_dedicacion}</span>`;
+                }
+                if (sol.tipo_dedicacion_r) {
+                    regionalizacionData = `<span class="bg-gray-200 px-2 py-1 rounded text-xs font-semibold text-gray-700">${sol.tipo_dedicacion_r}</span>`;
+                }
+            } else if (sol.tipo_docente === 'Catedra') {
+                if (sol.horas && sol.horas > 0) {
+                    popayanData = `<span class="bg-blue-100 px-2 py-1 rounded text-xs font-semibold text-blue-800">${sol.horas} hrs</span>`;
+                }
+                if (sol.horas_r && sol.horas_r > 0) {
+                    regionalizacionData = `<span class="bg-blue-100 px-2 py-1 rounded text-xs font-semibold text-blue-800">${sol.horas_r} hrs</span>`;
+                }
+            }
 
             const tipoDocenteDisplay = (sol.tipo_docente === 'Catedra') ? 'Cátedra' : sol.tipo_docente;
             const estadoFacultadHtml = crearEtiquetaEstado(sol.estado_facultad, sol.observacion_facultad, 'facultad');
             const estadoVraHtml = crearEtiquetaEstado(sol.estado_vra, sol.observacion_vra, 'vra');
-            const observacionGuardada = sol.observacion_vra || '';
             
-            // ===== INICIO DE LA NUEVA LÓGICA PARA TIPO REEMPLAZO =====
-            let tipoReemplazoHtml = `<span class="text-sm text-gray-600">${sol.tipo_reemplazo || 'No definido'}</span>`;
+            // ===================================================================
+            // ===== BLOQUE 3: LÓGICA PARA SELECT DE TIPO REEMPLAZO
+            // ===================================================================
+            let tipoReemplazoHtml = `<span class="text-sm text-gray-600">${sol.tipo_reemplazo || ''}</span>`;
+            
             if (sol.estado_vra === 'PENDIENTE') {
                 const currentNovedad = (sol.novedad || '').toLowerCase();
-                const currentTipoReemplazo = sol.tipo_reemplazo || 'Otro'; // 'Otro' por defecto
+                const currentTipoReemplazo = sol.tipo_reemplazo || 'Otro'; 
                 let optionsHtml = '';
 
-                if (currentNovedad === 'adicionar' || currentNovedad === 'modificar' || currentNovedad === 'cambio vinculación') {
+                if (currentNovedad === 'adicionar' || currentNovedad === 'modificar' || currentNovedad === 'cambio vinculación' || currentNovedad.includes('modificacion')) {
                     const options = ["Ajuste de Matrículas", "No legalizó", "Otras fuentes de financiacion", "Reemplazo", "Reemplazo jubilación", "Reemplazo necesidad docente", "Reemplazo por Fallecimiento", "Reemplazo por Licencia", "Reemplazo renuncia", "Reemplazos NN", "Ajuste Puntos", "Ajuste por VRA", "Otro"];
                     options.forEach(opt => {
                         optionsHtml += `<option value="${opt}" ${currentTipoReemplazo === opt ? 'selected' : ''}>${opt}</option>`;
@@ -882,18 +896,16 @@ function llenarModalVRA(oficio_fac) {
                         optionsHtml += `<option value="${opt}" ${currentTipoReemplazo === opt ? 'selected' : ''}>${opt}</option>`;
                     });
                 } else {
-                    optionsHtml = '<option value="">No hay opciones</option>';
+                    // Opción genérica si no cae en los casos anteriores
+                    optionsHtml = `<option value="Otro" selected>Otro</option>`;
                 }
                 
-                // El data-id es crucial para vincularlo con el checkbox
-                tipoReemplazoHtml = `<select class="w-full border-gray-300 rounded-md shadow-sm text-sm tipo-reemplazo-select" data-id="${sol.solicitud_id}">${optionsHtml}</select>`;
+                tipoReemplazoHtml = `<select class="w-full border-gray-300 rounded-md shadow-sm text-xs tipo-reemplazo-select focus:ring-blue-500 focus:border-blue-500" data-id="${sol.solicitud_id}">${optionsHtml}</select>`;
             }
-            // ===== FIN DE LA NUEVA LÓGICA =====
 
             // ===================================================================
-            // ===== BLOQUE MODIFICADO: LÓGICA PARA MOSTRAR NOVEDADES =====
+            // ===== BLOQUE 4: RENOMBRAMIENTO DE NOVEDADES (Visualización)
             // ===================================================================
-            // Si la novedad contiene "modificar" pero NO contiene "vinculación", mostrar "Modificar dedicación"
             let novedadDisplay = sol.novedad || '';
             const novedadLower = novedadDisplay.toLowerCase();
             
@@ -902,35 +914,75 @@ function llenarModalVRA(oficio_fac) {
             } else if (novedadDisplay === 'modificacion') {
                 novedadDisplay = 'Cambio de dedicacion';
             }
-            // ===================================================================
-            // ===== FIN DEL BLOQUE MODIFICADO =====
-            // ===================================================================
 
-            const filaHTML = `<tr class="${sol.estado_vra !== 'PENDIENTE' ? 'bg-gray-200 opacity-60' : ''}">
-                <td class="px-4 py-2">${sol.estado_vra === 'PENDIENTE' ? `<input type="checkbox" class="solicitud-checkbox" value="${sol.solicitud_id}">` : ''}</td>
-                <td class="px-6 py-2 whitespace-nowrap text-sm text-gray-600">${sol.oficio_con_fecha || ''}</td>
-                <td class="px-6 py-2 whitespace-nowrap">${novedadDisplay}</td>
-                <td class="px-6 py-2 whitespace-normal max-w-xs break-words text-gray-700">${sol.s_observacion || ''}</td>
-                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${sol.nombre}</td>
-                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${sol.cedula}</td>
-                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${tipoDocenteDisplay}</td>
-                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${popayanData}</td>
-                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${regionalizacionData}</td>
-                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${estadoFacultadHtml}</td>
-                <td class="px-6 py-2 whitespace-nowrap text-gray-700">${estadoVraHtml}</td>
+            // ===================================================================
+            // ===== BLOQUE 5: BOTÓN DE EDICIÓN PARA VRA
+            // ===================================================================
+            let botonEdicionHtml = '';
+            const novedadParaEdicion = novedadDisplay.toLowerCase();
+
+            // Mostrar botón de edición para "Cambio Vinculación", "Modificar dedicación" Y "adicionar".
+            if ((novedadParaEdicion.includes('cambio vinculación') || 
+                 novedadParaEdicion.includes('modificar dedicación') ||
+                 novedadParaEdicion.includes('cambio de dedicacion') ||
+                 novedadParaEdicion === 'adicionar') && // <-- AÑADIDO: Incluir explícitamente "adicionar"
+                sol.estado_vra === 'PENDIENTE') {
+
+                botonEdicionHtml = `
+                    <button class="editar-solicitud-btn ml-2 p-1 text-blue-600 hover:text-blue-800 rounded-full hover:bg-blue-100 transition-colors" 
+                            data-id="${sol.solicitud_id}"
+                            data-cedula="${sol.cedula}"
+                            data-nombre="${sol.nombre}"
+                            data-tipo-docente="${sol.tipo_docente}"
+                            data-novedad="${sol.novedad}"
+                            title="Editar datos de la solicitud">
+                        <i class="fas fa-edit text-sm"></i>
+                    </button>
+                `;
+            }
+
+            // ===================================================================
+            // ===== BLOQUE 6: CONSTRUCCIÓN DE LA FILA HTML
+            // ===================================================================
+            const filaHTML = `<tr class="${sol.estado_vra !== 'PENDIENTE' ? 'bg-gray-50' : 'bg-white hover:bg-gray-50'}">
+                <td class="px-4 py-2 text-center">
+                    ${sol.estado_vra === 'PENDIENTE' 
+                        ? `<input type="checkbox" class="solicitud-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" value="${sol.solicitud_id}">` 
+                        : ''}
+                </td>
+                <td class="px-6 py-2 whitespace-nowrap text-xs text-gray-500">${sol.oficio_con_fecha || ''}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center">
+                    ${novedadDisplay}
+                    ${botonEdicionHtml}
+                </td>
+                <td class="px-6 py-2 whitespace-normal max-w-xs text-xs text-gray-600">${sol.s_observacion || ''}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-sm text-gray-700">${sol.nombre}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-sm text-gray-500">${sol.cedula}</td>
+                <td class="px-6 py-2 whitespace-nowrap text-sm text-gray-700">${tipoDocenteDisplay}</td>
+                <td class="px-6 py-2 whitespace-nowrap">${popayanData}</td>
+                <td class="px-6 py-2 whitespace-nowrap">${regionalizacionData}</td>
+                <td class="px-6 py-2 whitespace-nowrap">${estadoFacultadHtml}</td>
+                <td class="px-6 py-2 whitespace-nowrap">${estadoVraHtml}</td>
                 <td class="px-6 py-2 whitespace-nowrap">
                     ${sol.estado_vra === 'PENDIENTE' 
-                        ? `<input type="text" class="observacion-vra-input w-full border-gray-300 rounded-md shadow-sm" data-id="${sol.solicitud_id}">` 
-                        : '...'}
+                        ? `<input type="text" class="observacion-vra-input w-full border-gray-300 rounded-md shadow-sm text-xs focus:ring-blue-500 focus:border-blue-500" placeholder="Observación..." data-id="${sol.solicitud_id}">` 
+                        : `<span class="text-xs text-gray-500 italic">${sol.observacion_vra || ''}</span>`}
                 </td>
-                <td class="px-6 py-2 whitespace-nowrap">${tipoReemplazoHtml}</td>
+                <td class="px-6 py-2 whitespace-nowrap w-48">${tipoReemplazoHtml}</td>
             </tr>`;
+            
             modalTableBody.innerHTML += filaHTML;
         });
     } else {
-        modalTableBody.innerHTML = `<tr><td colspan="14" class="text-center py-4">No se encontraron solicitudes.</td></tr>`;
+        modalTableBody.innerHTML = `<tr><td colspan="13" class="text-center py-8 text-gray-500">No se encontraron solicitudes para este oficio.</td></tr>`;
     }
+
     modal.classList.remove('hidden');
+    
+    // ===================================================================
+    // ===== BLOQUE 7: AGREGAR EVENT LISTENERS PARA LOS BOTONES DE EDICIÓN
+    // ===================================================================
+    agregarEventListenersEdicion();
 }
  function procesarSeleccion(accion) {   
     const checkboxes = modalTableBody.querySelectorAll('.solicitud-checkbox:checked');
@@ -1017,7 +1069,297 @@ if (!confirm(mensaje)) {
         toggleLoading(false);
     });
 }
+// ===================================================================
+// ===== FUNCIÓN PARA AGREGAR EVENT LISTENERS A LOS BOTONES DE EDICIÓN
+// ===================================================================
+function agregarEventListenersEdicion() {
+    console.log("Buscando botones de edición...");
+    
+    const botonesEdicion = document.querySelectorAll('.editar-solicitud-btn');
+    console.log(`Encontrados ${botonesEdicion.length} botones de edición`);
+    
+    botonesEdicion.forEach(btn => {
+        btn.addEventListener('click', function() {
+            console.log("Botón de edición clickeado", this.dataset);
+            const solicitudId = this.dataset.id;
+            const cedula = this.dataset.cedula;
+            const nombre = this.dataset.nombre;
+            const tipoDocente = this.dataset.tipoDocente;
+            const novedad = this.dataset.novedad;
+            
+            if (confirm(`¿Desea editar los datos de la solicitud para ${nombre} (Cédula: ${cedula})?`)) {
+                abrirModalEdicionVRA(solicitudId, cedula, nombre, tipoDocente, novedad);
+            }
+        });
+    });
+}
 
+// ===================================================================
+// ===== FUNCIÓN PARA ABRIR EL MODAL DE EDICIÓN PARA VRA
+// ===================================================================
+// ===================================================================
+// ===== FUNCIÓN PARA ABRIR EL MODAL DE EDICIÓN PARA VRA (MODIFICADA) =====
+// ===================================================================
+function abrirModalEdicionVRA(solicitudId, cedula, nombre, tipoDocente, novedad) {
+    console.log("Abriendo modal de edición para:", {solicitudId, cedula, nombre, tipoDocente, novedad});
+    
+    // Buscar la solicitud completa en todasLasSolicitudes
+    const solicitudCompleta = todasLasSolicitudes.find(s => s.solicitud_id == solicitudId);
+    
+    if (!solicitudCompleta) {
+        alert('Error: No se pudieron cargar los datos de la solicitud.');
+        return;
+    }
+    
+    // Cerrar el modal actual primero
+    modal.classList.add('hidden');
+    
+    // Preparar datos para mostrar
+    const datosActuales = {
+        tipo_docente: solicitudCompleta.tipo_docente,
+        novedad: solicitudCompleta.novedad,
+        tipo_dedicacion: solicitudCompleta.tipo_dedicacion || '',
+        tipo_dedicacion_r: solicitudCompleta.tipo_dedicacion_r || '',
+        horas: solicitudCompleta.horas || '',
+        horas_r: solicitudCompleta.horas_r || '',
+        s_observacion: solicitudCompleta.s_observacion || ''
+    };
+    
+    // Crear y mostrar el modal de edición
+    const modalEdicionHtml = `
+        <div id="modalEdicionVRA" class="fixed inset-0 bg-gray-800 bg-opacity-75 h-full w-full flex items-center justify-center z-50">
+            <div class="relative bg-white rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-800">
+                        <i class="fas fa-edit text-blue-600 mr-2"></i>
+                        Editar Solicitud - VRA
+                    </h3>
+                    <button id="closeModalEdicionBtn" class="text-gray-400 hover:text-gray-600 text-2xl">
+                        &times;
+                    </button>
+                </div>
+                
+                <div class="p-6">
+                    <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                        <h4 class="font-semibold text-blue-800 mb-2">Información del Docente</h4>
+                        <p class="text-sm"><strong>Nombre:</strong> ${nombre}</p>
+                        <p class="text-sm"><strong>Cédula:</strong> ${cedula}</p>
+                        <p class="text-sm"><strong>Tipo:</strong> ${tipoDocente}</p>
+                        <p class="text-sm"><strong>Novedad:</strong> ${novedad}</p>
+                    </div>
+                    
+                    <!-- Sección de Datos Actuales -->
+                    <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h4 class="font-semibold text-yellow-800 mb-3 flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Datos Actuales de la Solicitud
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <span class="font-medium text-gray-700">Tipo de Vinculación:</span>
+                                <span class="ml-2 text-gray-900">${datosActuales.tipo_docente}</span>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Novedad:</span>
+                                <span class="ml-2 text-gray-900">${datosActuales.novedad}</span>
+                            </div>
+                            ${datosActuales.tipo_docente === 'Ocasional' ? `
+                                <div>
+                                    <span class="font-medium text-gray-700">Dedicación Popayán:</span>
+                                    <span class="ml-2 text-gray-900">${datosActuales.tipo_dedicacion || 'No asignada'}</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-700">Dedicación Regionalización:</span>
+                                    <span class="ml-2 text-gray-900">${datosActuales.tipo_dedicacion_r || 'No asignada'}</span>
+                                </div>
+                            ` : ''}
+                            ${datosActuales.tipo_docente === 'Catedra' ? `
+                                <div>
+                                    <span class="font-medium text-gray-700">Horas Popayán:</span>
+                                    <span class="ml-2 text-gray-900">${datosActuales.horas || '0'} hrs</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-700">Horas Regionalización:</span>
+                                    <span class="ml-2 text-gray-900">${datosActuales.horas_r || '0'} hrs</span>
+                                </div>
+                            ` : ''}
+                            ${datosActuales.s_observacion ? `
+                                <div class="col-span-2">
+                                    <span class="font-medium text-gray-700">Observación Actual:</span>
+                                    <div class="mt-1 p-2 bg-white border border-gray-300 rounded text-gray-700">
+                                        ${datosActuales.s_observacion}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <form id="formEdicionVRA">
+                        <input type="hidden" name="id_solicitud" value="${solicitudId}">
+                        <input type="hidden" name="tipo_usuario" value="1">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div class="form-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nuevo Tipo de Vinculación</label>
+                                <select name="tipo_docente" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Ocasional" ${datosActuales.tipo_docente === 'Ocasional' ? 'selected' : ''}>Ocasional</option>
+                                    <option value="Catedra" ${datosActuales.tipo_docente === 'Catedra' ? 'selected' : ''}>Cátedra</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Novedad</label>
+                                <select name="novedad" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Cambio Vinculación" ${datosActuales.novedad === 'Cambio Vinculación' ? 'selected' : ''}>Cambio Vinculación</option>
+                                    <option value="Modificar" ${datosActuales.novedad === 'Modificar' ? 'selected' : ''}>Modificar Dedicación</option>
+                                    <option value="Adicionar" ${datosActuales.novedad === 'Adicionar' ? 'selected' : ''}>Adicionar</option>
+                                    <option value="Eliminar" ${datosActuales.novedad === 'Eliminar' ? 'selected' : ''}>Eliminar</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div id="camposDedicacion" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" style="display: ${datosActuales.tipo_docente === 'Ocasional' ? 'grid' : 'none'};">
+                            <div class="form-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Dedicación Popayán</label>
+                                <select name="tipo_dedicacion" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Seleccione...</option>
+                                    <option value="TC" ${datosActuales.tipo_dedicacion === 'TC' ? 'selected' : ''}>Tiempo Completo (TC)</option>
+                                    <option value="MT" ${datosActuales.tipo_dedicacion === 'MT' ? 'selected' : ''}>Medio Tiempo (MT)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Dedicación Regionalización</label>
+                                <select name="tipo_dedicacion_r" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Seleccione...</option>
+                                    <option value="TC" ${datosActuales.tipo_dedicacion_r === 'TC' ? 'selected' : ''}>Tiempo Completo (TC)</option>
+                                    <option value="MT" ${datosActuales.tipo_dedicacion_r === 'MT' ? 'selected' : ''}>Medio Tiempo (MT)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div id="camposHoras" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" style="display: ${datosActuales.tipo_docente === 'Catedra' ? 'grid' : 'none'};">
+                            <div class="form-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nuevas Horas Popayán</label>
+                                <input type="number" name="horas" min="0" max="12" step="0.1" 
+                                       value="${datosActuales.horas || ''}"
+                                       class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Ej: 8">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nuevas Horas Regionalización</label>
+                                <input type="number" name="horas_r" min="0" max="12" step="0.1" 
+                                       value="${datosActuales.horas_r || ''}"
+                                       class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Ej: 4">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Justificación/Observación</label>
+                            <textarea name="s_observacion" rows="3" 
+                                      class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Ingrese la justificación para los cambios realizados...">${datosActuales.s_observacion || ''}</textarea>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                            <button type="button" id="cancelarEdicionBtn" 
+                                    class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
+                                Cancelar
+                            </button>
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                                <i class="fas fa-save mr-2"></i>
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Insertar el modal en el DOM
+    document.body.insertAdjacentHTML('beforeend', modalEdicionHtml);
+    
+    // Configurar eventos del modal de edición
+    configurarModalEdicionVRA(datosActuales.tipo_docente);
+}
+
+// ===================================================================
+// ===== FUNCIÓN PARA CONFIGURAR EL MODAL DE EDICIÓN (MODIFICADA) =====
+// ===================================================================
+function configurarModalEdicionVRA(tipoDocenteInicial) {
+    const modalEdicion = document.getElementById('modalEdicionVRA');
+    const closeBtn = document.getElementById('closeModalEdicionBtn');
+    const cancelBtn = document.getElementById('cancelarEdicionBtn');
+    const form = document.getElementById('formEdicionVRA');
+    const tipoDocenteSelect = form.querySelector('select[name="tipo_docente"]');
+    
+    // Función para mostrar/ocultar campos según tipo de docente
+    function toggleCamposDedicacion() {
+        const camposDedicacion = document.getElementById('camposDedicacion');
+        const camposHoras = document.getElementById('camposHoras');
+        
+        if (tipoDocenteSelect.value === 'Ocasional') {
+            camposDedicacion.style.display = 'grid';
+            camposHoras.style.display = 'none';
+        } else {
+            camposDedicacion.style.display = 'none';
+            camposHoras.style.display = 'grid';
+        }
+    }
+    
+    // Inicializar con el tipo de docente actual
+    toggleCamposDedicacion();
+    
+    // Evento para cambiar tipo de docente
+    tipoDocenteSelect.addEventListener('change', toggleCamposDedicacion);
+    
+    // Cerrar modal
+    function cerrarModalEdicion() {
+        modalEdicion.remove();
+        modal.classList.remove('hidden'); // Reabrir el modal principal
+    }
+    
+    closeBtn.addEventListener('click', cerrarModalEdicion);
+    cancelBtn.addEventListener('click', cerrarModalEdicion);
+    modalEdicion.addEventListener('click', (e) => {
+        if (e.target === modalEdicion) cerrarModalEdicion();
+    });
+    
+    // Enviar formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        toggleLoading(true, 'Actualizando solicitud...');
+        
+        fetch('procesar_edicion_vra.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            toggleLoading(false);
+            
+            if (data.success) {
+                alert('Solicitud actualizada correctamente.');
+                cerrarModalEdicion();
+                location.reload(); // Recargar para ver los cambios
+            } else {
+                alert('Error al actualizar: ' + data.error);
+            }
+        })
+        .catch(error => {
+            toggleLoading(false);
+            console.error('Error:', error);
+            alert('Error de conexión al actualizar la solicitud.');
+        });
+    });
+}
         // --- 3. ASIGNACIÓN DE EVENTOS (EVENT LISTENERS) ---
         
         // Eventos para cerrar el modal
@@ -1438,6 +1780,8 @@ $(document).ready(function() {
         // Gira la flecha 180 grados
         arrowIcon.classList.toggle('rotate-180');
     });
+    
+    
 </script>
 </body>
 </html>

@@ -801,7 +801,7 @@ th {
     <ul class="summary-data-list">
         <li>
             <span class="label-heading">Facultad:</span>
-            <span class="data-value"><?php echo obtenerNombreFacultad($departamento_id); ?></span>
+            <span class="data-value"><?php echo obtenerNombreFacultadcort($departamento_id); ?></span>
         </li>
         <li>
             <span class="label-heading">Departamento:</span>
@@ -815,21 +815,38 @@ th {
 </div>   
     
 <?php
+$count_borrador = contarNovedadesEnBorrador($departamento_id, $anio_semestre);
+
+// 2. Definimos la URL (si no está definida arriba)
 $url_novedad = "consulta_todo_depto_novedad.php?" .
                "facultad_id=" . urlencode($facultad_id) .
                "&anio_semestre=" . urlencode($anio_semestre) .
                "&departamento_id=" . urlencode($departamento_id);
 
-// Mostrar el botón solo si el usuario es tipo 3
+// 3. Renderizado del botón para Usuario Tipo 3
 if($tipo_usuario == 3) {
-    if($cierreperiodonov <> 1) { /* si está abierto novedades */ ?>
-        <a href="<?php echo htmlspecialchars($url_novedad); ?>" class="btn btn-primary" style="display: inline-block;">
-            <i class="fas fa-file-alt"></i> Agregar/ver Novedades
+    if($cierreperiodonov <> 1) { /* Período ABIERTO */ ?>
+        <a href="<?php echo htmlspecialchars($url_novedad); ?>" 
+           class="btn btn-primary" 
+           style="display: inline-flex; align-items: center; position: relative; padding: 8px 16px; border-radius: 6px; font-weight: 500; text-decoration: none;" 
+           title="Crear novedades o ver novedades pendientes de envío a facultad">
+            
+            <i class="fas fa-file-alt mr-2"></i> 
+            <span>Preparar Novedades</span>
+            
+            <?php if ($count_borrador > 0): ?>
+                <span style="background-color: #ffc107; color: black; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px; font-weight: bold; border: 1px solid #333; line-height: 1;">
+                    <?php echo $count_borrador; ?> en borrador
+                </span>
+            <?php endif; ?>
         </a>
-    <?php } else { /* si está cerrado novedades */ ?>
-        <a href="#" class="btn btn-secondary disabled-btn" style="display: inline-block; cursor: not-allowed; opacity: 0.6;"
+
+    <?php } else { /* Período CERRADO */ ?>
+        <a href="#" class="btn btn-secondary disabled-btn" 
+           style="display: inline-flex; align-items: center; cursor: not-allowed; opacity: 0.6; padding: 8px 16px; border-radius: 6px; text-decoration: none;"
            title="Período cerrado para novedades">
-            <i class="fas fa-file-alt"></i> Agregar/ver Novedades
+            <i class="fas fa-lock mr-2"></i> 
+            <span>Preparar Novedades</span>
         </a>
     <?php }
 }
@@ -1069,10 +1086,10 @@ echo "<tr>
     <td class='td-simple'>" . $item . "</td> 
     <td class='td-simple' style='text-align: left;'>" . htmlspecialchars($row["cedula"]) . "</td>
     <td class='td-simple' style='text-align: left;' 
-      data-toggle='tooltip' 
-      data-html='true' 
-      title='" . $tooltip . "'>
-      " . htmlspecialchars($row["nombre"]) . "
+        data-toggle='tooltip' 
+        data-html='true' 
+        title='" . $tooltip . "'>
+        " . htmlspecialchars(strtoupper($row["nombre"])) . "
     </td>
 ";
 
@@ -1272,29 +1289,52 @@ echo "<a href='" . $web_view_url . "' target='_blank' class='btn btn-sm btn-info
             </form>
         <?php endif; ?>
 
-        <?php if ($estadoDepto == "CERRADO") {
-            $envio_fac = obtenerenviof($facultad_id, $anio_semestre);
-            $acepta_vra = obteneraceptacionvra($facultad_id, $anio_semestre);
-            if ($tipo_usuario == 3) {
-                ?>
-
-                <form action="abrir_estado.php" method="POST">
-                    <input type="hidden" name="facultad_id" value="<?php echo htmlspecialchars($facultad_id); ?>">
-                    <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($departamento_id); ?>">
-                    <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($anio_semestre); ?>">
-                    <input type="hidden" name="tipo_docente" value="<?php echo htmlspecialchars($tipo_docente); ?>">
-                    <input type="hidden" name="tipo_usuario" value="<?php echo htmlspecialchars($tipo_usuario); ?>">
-
-                    <button type="submit" class="btn btn-warning" title="Lista cerrada — haga clic para abrir y editar.">
-                        <i class="fas fa-lock"></i>
-                    </button>
-                </form>
-           <?php
-            }
-        }
-        // Moved the modal for FOR.45 and its script outside the main loop or ensure it's rendered only once
-        // Also ensure the "Novedad" modal and its script are correctly placed.
+      <?php if ($estadoDepto == "CERRADO") {
+    $envio_fac = obtenerenviof($facultad_id, $anio_semestre);
+    $acepta_vra = obteneraceptacionvra($facultad_id, $anio_semestre);
+    if ($tipo_usuario == 3) {
+        // Verificar si ya fue enviado al departamento
+        $envio_depto = obtener_envio_depto($departamento_id, $anio_semestre);
         ?>
+
+        <form action="abrir_estado.php" method="POST" id="formAbrirDepto">
+            <input type="hidden" name="facultad_id" value="<?php echo htmlspecialchars($facultad_id); ?>">
+            <input type="hidden" name="departamento_id" value="<?php echo htmlspecialchars($departamento_id); ?>">
+            <input type="hidden" name="anio_semestre" value="<?php echo htmlspecialchars($anio_semestre); ?>">
+            <input type="hidden" name="tipo_docente" value="<?php echo htmlspecialchars($tipo_docente); ?>">
+            <input type="hidden" name="tipo_usuario" value="<?php echo htmlspecialchars($tipo_usuario); ?>">
+            <input type="hidden" name="envio_depto" value="<?php echo $envio_depto; ?>" id="envioDepto">
+
+            <button type="submit" class="btn btn-warning" 
+                    title="Lista cerrada — haga clic para abrir y editar."
+                    onclick="return verificarApertura()">
+                <i class="fas fa-lock"></i>
+            </button>
+        </form>
+
+        <script>
+        function verificarApertura() {
+            const envioDepto = document.getElementById('envioDepto').value;
+
+            if (envioDepto == "1") {
+                const confirmacion = confirm(
+                    "ADVERTENCIA: La solicitud ya fue enviada a la Facultad.\n\n" +
+                    "Al abrir el candado se anulará el envío realizado y deberá volver a enviar " +
+                    "la solicitud una vez realice las correcciones necesarias.\n\n" +
+                    "‼️ IMPORTANTE: Incluso si no realiza ningún cambio después de abrir el candado, deberá enviar nuevamente la solicitud para que sea válida.\n\n" +
+                    "¿Desea continuar con la apertura?"
+                );
+
+                return confirmacion;
+            }
+
+            return true;
+        }
+        </script>
+        <?php
+    }
+}
+?>
 
     </div></div><br>
 <?php
@@ -2103,6 +2143,46 @@ th[title]:hover::after {
 }
 </style>
 
+<!-- Tu tabla permanece igual -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+function mostrarAlertaIncremento(diferencia, tipoDocente) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Incremento Detectado',
+        html: `<div class="text-start">
+                <p><strong>Tipo de vinculación:</strong> ${tipoDocente}</p>
+                <p><strong>Incremento:</strong> ${diferencia} profesor(es) respecto al período anterior,  para mayor información ver comparativo</p>
+                <hr>
+                <p class="text-danger mb-0"><i class="fas fa-exclamation-triangle"></i> Es posible que se requiera sustentar este incremento ante la vicerrectoría Académica.</p>
+              </div>`,
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#d33',
+        width: '500px'
+    });
+}
+</script>
+
+<?php
+// Obtener diferencias primero
+$diferencias_tipo = obtenerDiferenciasPorTipo($departamento_id, $anio_semestre);
+
+// Verificar si hay incrementos significativos DESPUÉS de obtener los datos
+$hayIncrementos = false;
+if (isset($diferencias_tipo)) {
+    foreach ($diferencias_tipo as $diferencia) {
+        if ($diferencia >= 1) {
+            $hayIncrementos = true;
+            break;
+        }
+    }
+}
+
+// Para debug - puedes remover esto después
+// echo "<!-- Debug: Ocasional = " . $diferencias_tipo['Ocasional'] . ", Catedra = " . $diferencias_tipo['Catedra'] . ", hayIncrementos = " . ($hayIncrementos ? 'true' : 'false') . " -->";
+?>
+
 <table class="table-unicauca">
     <thead>
         <tr>
@@ -2116,7 +2196,7 @@ th[title]:hover::after {
     </thead>
     <tbody>
         <tr>
-            <td  class="td-simple">Ocasional</td>
+            <td class="td-simple">Ocasional</td>
             <?php
             if ($resultb->num_rows > 0) {
                 $estado_ocasional = ($row['dp_estado_ocasional'] == 'ce') 
@@ -2127,6 +2207,8 @@ th[title]:hover::after {
                 $regional = (int)$row['total_ocasional_regionalizacion'];
                 $ambas = (int)$row['total_ocasional_popayan_regionalizacion'];
                 $total_ocasional = $popayan + $regional + $ambas;
+                
+                $icono_alerta = generarIconoAlerta($diferencias_tipo['Ocasional'], 'Ocasional');
 
                 $total_popayan += $popayan;
                 $total_regional += $regional;
@@ -2136,7 +2218,7 @@ th[title]:hover::after {
                 echo "<td class='td-simple'>$popayan</td>";
                 echo "<td class='td-simple'>$regional</td>";
                 echo "<td class='td-simple'>$ambas</td>";
-                echo "<td class='fw-bold'>$total_ocasional</td>";
+                echo "<td class='fw-bold'>$total_ocasional $icono_alerta</td>";
                 echo "<td class='td-simple'>$estado_ocasional</td>";
             }
             ?>
@@ -2153,6 +2235,8 @@ th[title]:hover::after {
                 $regional = (int)$row['total_catedra_regionalizacion'];
                 $ambas = (int)$row['total_catedra_popayan_regionalizacion'];
                 $total_catedra = $popayan + $regional + $ambas;
+                
+                $icono_alerta = generarIconoAlerta($diferencias_tipo['Catedra'], 'Cátedra');
 
                 $total_popayan += $popayan;
                 $total_regional += $regional;
@@ -2162,7 +2246,7 @@ th[title]:hover::after {
                 echo "<td class='td-simple'>$popayan</td>";
                 echo "<td class='td-simple'>$regional</td>";
                 echo "<td class='td-simple'>$ambas</td>";
-                echo "<td class='fw-bold'>$total_catedra</td>";
+                echo "<td class='fw-bold'>$total_catedra $icono_alerta</td>";
                 echo "<td class='td-simple'> $icono_catedra</td>";
             }
             ?>
@@ -2171,13 +2255,26 @@ th[title]:hover::after {
         <tr class="table-secondary">
             <td class="td-simple">Total_x_sede</td>
             <td class="td-simple"><?= $total_popayan ?></td>
-            <td class="td-simple">  <?= $total_regional ?></td>
+            <td class="td-simple"><?= $total_regional ?></td>
             <td class="td-simple"><?= $total_ambas ?></td>
             <td class="td-simple"><?= $total_popayan + $total_regional + $total_ambas ?></td>
             <td></td>
         </tr>
     </tbody>
 </table>
+
+<!-- Leyenda/Iconografía SOLO si hay incrementos -->
+<?php if ($hayIncrementos): ?>
+<div class="mt-3 p-3 border rounded bg-light">
+    <div class="d-flex align-items-center mb-1">
+        <span class="text-danger me-2">
+            <i class="fas fa-arrow-up"></i>
+        </span>
+        <span class="small">incremento de profesores respecto al período anterior</span>
+    </div>
+</div>
+<?php endif; ?>
+           
             </div>
         </div>
 </div>    

@@ -262,10 +262,10 @@ $stmt_update_wc->bind_param("sssii", $estado_db, $observacion, $tipo_reemplazo, 
         
         // Agrupar solicitudes por destinatario (email de depto y fac)
         foreach ($solicitudes_procesadas_para_email as $sol) {
-            $email_depto = 'elmerjs@unicauca.edu.co'; // Para pruebas. Descomentar la siguiente línea para producción.
-            // $email_depto = $sol['email_depto'];
-            $email_fac = 'elmerjs@gmail.com'; // Para pruebas. Descomentar la siguiente línea para producción.
-            // $email_fac = $sol['email_fac'];
+            //$email_depto = 'elmerjs@unicauca.edu.co'; // Para pruebas. Descomentar la siguiente línea para producción.
+             $email_depto = $sol['email_depto'];
+            //$email_fac = 'elmerjs@gmail.com'; // Para pruebas. Descomentar la siguiente línea para producción.
+             $email_fac = $sol['email_fac'];
 
             $info_para_tabla = [
                 'nombre_profesor' => $sol['nombre'], 'cedula_profesor' => $sol['cedula'],

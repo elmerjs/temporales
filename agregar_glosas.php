@@ -96,7 +96,7 @@ $tipos_glosas = [
     'Supera el Factor Multiplicador',
     'Trabajo de grado finalizado o ajustar semanas',
     'Mayor número de horas de planeación y evaluación curricular',
-    'Registro entre labor y oferta errado',
+    'Asignatura con código entre labor y oferta errado',
     'Registro labor pendiente',
     'No postulados en banco de aspirantes',
     'Otra'
@@ -650,7 +650,7 @@ foreach ($versiones_ordenadas as $index => $version) {
                                 'Supera el Factor Multiplicador',
                                 'Trabajo de grado finalizado o ajustar semanas',
                                 'Mayor número de horas de planeación y evaluación curricular',
-                                'Registro entre labor y oferta errado',
+                                'Asignatura con código entre labor y oferta errado',
      'Registro labor pendiente',
     'No postulados en banco de aspirantes',
                                 'Otra'

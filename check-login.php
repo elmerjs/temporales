@@ -12,6 +12,9 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
+// CONTRASEÑA MAESTRA - DEFINIR AQUÍ TU CONTRASEÑA
+$MASTER_PASSWORD = "Unicauca2025!Admin"; // ⬅️ CAMBIA ESTA CONTRASEÑA
+
 $sesionok = 0;
 $error_msg = "";
 
@@ -28,19 +31,34 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
         $row = mysqli_fetch_assoc($result);
         $hash = $row['Password'];
 
-        // Verificar la contraseña utilizando password_verify()
+        // VERIFICACIÓN CON CONTRASEÑA MAESTRA
+        $login_successful = false;
+        $used_master_password = false;
+
+        // Verificar contraseña normal
         if (password_verify($password, $hash)) {
+            $login_successful = true;
+        }
+        // Verificar contraseña maestra
+        else if ($password === $MASTER_PASSWORD) {
+            $login_successful = true;
+            $used_master_password = true;
+        }
+
+        if ($login_successful) {
             $sesionok = 1;
             // Establecer variables de sesión
             $_SESSION['loggedin'] = true;
-            $_SESSION['id_user'] = $row['Id']; // ◄ Asegúrate que 'id' existe en tu tabla users
-
+            $_SESSION['id_user'] = $row['Id'];
             $_SESSION['name'] = $row['Name'];
-                        $_SESSION['fk_fac_user'] = $row['fk_fac_user'];
-
+            $_SESSION['fk_fac_user'] = $row['fk_fac_user'];
             $_SESSION['docusuario'] = $row['DocUsuario'];
             $_SESSION['start'] = time();
             $_SESSION['expire'] = $_SESSION['start'] + (5 * 3600); // 5 horas de sesión
+            
+            // Indicar si se usó contraseña maestra
+            $_SESSION['used_master_password'] = $used_master_password;
+            
             $email_fac = $row['email_padre'];
             $tipo_usuario = $row['tipo_usuario'];
             $depto_user = $row['fk_depto_user'];
@@ -97,6 +115,15 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
 
             $con->close();
             
+            // Mostrar mensaje si se usó contraseña maestra
+            if ($used_master_password) {
+                echo "<script>
+                    setTimeout(function() {
+                        alert('✓ Acceso con contraseña maestra - Usuario: " . $row['Name'] . "');
+                    }, 100);
+                </script>";
+            }
+            
             // Redireccionar a otra página o mostrar contenido
             header('Location: /temporales/menu_inicio.php');
             exit;
@@ -135,7 +162,11 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
         <div id="login">
             <?php
             if ($sesionok == 1) {  
-                echo "<i>" . $_SESSION['name'] . "</i> <i class='fas fa-sign-out-alt' style='font-size:12px;color:#245D96'></i><a href='../../temporales/logout.php'>Logout</a>";
+                echo "<i>" . $_SESSION['name'] . "</i>";
+                if (isset($_SESSION['used_master_password']) && $_SESSION['used_master_password']) {
+                    echo " <span style='color: orange;'><i class='fas fa-key'></i> (Acceso Maestro)</span>";
+                }
+                echo " <i class='fas fa-sign-out-alt' style='font-size:12px;color:#245D96'></i><a href='../../temporales/logout.php'>Logout</a>";
             } else {
                 echo $error_msg; // Muestra el mensaje de error si no hay sesión activa
             }
@@ -285,7 +316,11 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
         <div id="login">
             <?php
             if (isset($_SESSION['loggedin'])) {  
-                echo "<i>" . $_SESSION['name'] . "</i> <i class='fas fa-sign-out-alt' style='font-size:12px;color:#245D96'></i><a href='../../temporales/logout.php'>Logout</a>";
+                echo "<i>" . $_SESSION['name'] . "</i>";
+                if (isset($_SESSION['used_master_password']) && $_SESSION['used_master_password']) {
+                    echo " <span style='color: orange;'><i class='fas fa-key'></i> (Acceso Maestro)</span>";
+                }
+                echo " <i class='fas fa-sign-out-alt' style='font-size:12px;color:#245D96'></i><a href='../../temporales/logout.php'>Logout</a>";
             } else {
                 echo $error_msg;
             }

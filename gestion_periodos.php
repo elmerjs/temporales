@@ -161,7 +161,6 @@ $stmt_check_vigencia->close();
 }
 
 // Mostrar la lista de periodos existentes
-// Mostrar la lista de periodos existentes
 $sql_existing_periods = "SELECT 
     p.nombre_periodo AS periodo, 
     p.plazo_jefe,
@@ -175,15 +174,34 @@ $sql_existing_periods = "SELECT
     p.fin_sem AS fecha_fin_catedra,
     p.inicio_sem_oc AS fecha_inicio_ocasional,
     p.fin_sem_oc AS fecha_fin_ocasional,
-    p.valor_punto
+    p.valor_punto,
+    
+    CASE 
+        WHEN COUNT(s_check.departamento_id) > 0 THEN 'si' 
+        ELSE 'no' 
+    END AS trabajado
+    
 FROM 
     depto_periodo dp
-JOIN  
+JOIN 
     periodo p ON p.nombre_periodo = dp.periodo
 JOIN 
     deparmanentos d ON d.PK_DEPTO = dp.fk_depto_dp
-JOIN  
+JOIN 
     fac_periodo fp ON fp.fp_fk_fac = d.FK_FAC AND fp.fp_periodo = dp.periodo
+
+-- Nuevo JOIN a una subconsulta de solicitudes
+-- Usamos LEFT JOIN para no perder periodos que no tengan solicitudes
+LEFT JOIN (
+    -- Obtenemos solo las combinaciones únicas para evitar duplicados
+    SELECT DISTINCT 
+        anio_semestre, 
+        departamento_id 
+    FROM 
+        solicitudes
+) AS s_check ON s_check.anio_semestre = dp.periodo 
+             AND s_check.departamento_id = dp.fk_depto_dp
+             
 GROUP BY 
     p.nombre_periodo, 
     p.plazo_jefe,
@@ -195,7 +213,7 @@ GROUP BY
     p.fin_sem,
     p.inicio_sem_oc,
     p.fin_sem_oc,
-    p.valor_punto";
+    p.valor_punto;";
 $result_existing_periods = $conn->query($sql_existing_periods);
 ?>
 
@@ -621,24 +639,45 @@ $result_existing_periods = $conn->query($sql_existing_periods);
                 
         <td class="text-center">
     <!-- Botón Eliminar (condicional) -->
-    <form method="POST" action="" style="display:inline-block; margin-right:5px;">
-        <input type="hidden" name="periodo" value="<?php echo $row['periodo']; ?>">
-        <button type="submit" name="accion" value="eliminar" 
-                class="btn btn-sm <?php echo $row['processed_deptos'] == 0 ? 'btn-danger' : 'btn-secondary'; ?>"
-                <?php echo $row['processed_deptos'] != 0 ? 'disabled' : ''; ?>>
-            <i class="fas fa-trash-alt"></i> Eliminar
-        </button>
-    </form>
-    
-    <!-- Botón Abrir/Cerrar -->
-    <form method="POST" action="" style="display:inline-block;">
+            <form method="POST" action="" style="display:inline-block; margin-right:5px;">
                 <input type="hidden" name="periodo" value="<?php echo $row['periodo']; ?>">
-                <button type="submit" name="accion" value="<?php echo $row['estado_periodo'] == 1 ? 'abrir' : 'cerrar'; ?>" 
-                        class="btn btn-sm estado-toggle <?php echo $row['estado_periodo'] == 1 ? 'btn-abrir' : 'btn-cerrar'; ?>">
-                    <i class="fas <?php echo $row['estado_periodo'] == 1 ? 'fa-lock-open' : 'fa-lock'; ?>"></i>
-                    <?php echo $row['estado_periodo'] == 1 ? 'Abrir' : 'Cerrar'; ?>
+
+                <button type="submit" name="accion" value="eliminar" 
+
+                        class="btn btn-sm <?php echo $row['trabajado'] == 'si' ? 'btn-secondary' : 'btn-danger'; ?>"
+
+                        <?php echo $row['trabajado'] == 'si' ? 'disabled' : ''; ?>>
+
+                    <i class="fas fa-trash-alt"></i> Eliminar
                 </button>
             </form>
+    
+    <!-- Botón Abrir/Cerrar -->
+<form method="POST" action="" style="display:inline-block;">
+    <input type="hidden" name="periodo" value="<?php echo $row['periodo']; ?>">
+    
+    <?php 
+        // Lógica INVERTIDA: 
+        // Si el estado es 1, ahora lo mostraremos como "Cerrado"
+        if ($row['estado_periodo'] == 1) {
+            $textoEstado = "Cerrado";
+            $claseCss    = "btn-cerrar";
+            $icono       = "fa-lock";
+            $siguienteAccion = "abrir"; // Al estar cerrado, la acción es abrir
+        } else {
+            $textoEstado = "Abierto";
+            $claseCss    = "btn-abrir";
+            $icono       = "fa-lock-open";
+            $siguienteAccion = "cerrar"; // Al estar abierto, la acción es cerrar
+        }
+    ?>
+
+    <button type="submit" name="accion" value="<?php echo $siguienteAccion; ?>" 
+            class="btn btn-sm estado-toggle <?php echo $claseCss; ?>">
+        <i class="fas <?php echo $icono; ?>"></i>
+        <?php echo $textoEstado; ?>
+    </button>
+</form>
         </td>
 
        <td style="text-align:center;">
@@ -647,7 +686,7 @@ $result_existing_periods = $conn->query($sql_existing_periods);
                     <button type="submit" name="accion" value="<?php echo $row['estado_novedad'] == 1 ? 'abrirnov' : 'cerrarnov'; ?>" 
                             class="btn btn-sm estado-novedad <?php echo $row['estado_novedad'] == 1 ? 'btn-abrir-nov' : 'btn-cerrar-nov'; ?>">
                         <i class="fas <?php echo $row['estado_novedad'] == 1 ? 'fa-envelope-open-text' : 'fa-envelope'; ?>"></i>
-                        <?php echo $row['estado_novedad'] == 1 ? 'Abrir Nov' : 'Cerrar Nov'; ?>
+                        <?php echo $row['estado_novedad'] == 1 ? 'Cerrado' : 'Abierto'; ?>
                     </button>
                 </form>
             </td>

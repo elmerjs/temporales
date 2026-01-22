@@ -82,11 +82,11 @@ $facultadStyle = [
 ];
 
 // Configurar hoja
-$sheet->setTitle("Glosas $periodo");
+$sheet->setTitle("Observaciones $periodo");
 $sheet->getDefaultColumnDimension()->setWidth(15);
 
 // Encabezado principal
-$sheet->setCellValue('A1', 'UNIVERSIDAD DEL CAUCA - REPORTE DE GLOSAS');
+$sheet->setCellValue('A1', 'UNIVERSIDAD DEL CAUCA - REPORTE DE OBSERVACIONES');
 $sheet->mergeCells('A1:D1');
 $sheet->getStyle('A1')->applyFromArray($headerStyle);
 
@@ -97,7 +97,7 @@ $sheet->getStyle('A2')->getFont()->setBold(true);
 // Encabezados de columnas
 $sheet->setCellValue('A4', 'Facultad')->getStyle('A4:D4')->applyFromArray($headerStyle);
 $sheet->setCellValue('B4', 'Departamento');
-$sheet->setCellValue('C4', 'Tipo de Glosa');
+$sheet->setCellValue('C4', 'Tipo Observación');
 $sheet->setCellValue('D4', 'Cantidad');
 
 // Llenar datos
@@ -209,7 +209,7 @@ foreach(range('A','D') as $col) {
 
 // Configurar respuesta
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-header('Content-Disposition: attachment;filename="reporte_glosas_'.$periodo.'.xlsx"');
+header('Content-Disposition: attachment;filename="reporte_observaciones_'.$periodo.'.xlsx"');
 header('Cache-Control: max-age=0');
 
 $writer = new Xlsx($spreadsheet);

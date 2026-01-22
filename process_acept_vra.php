@@ -79,7 +79,7 @@ try {
         
         $mail->Body = "
     <p>Estimado/a,</p>
-    <p>Se ha rechazado su solicitud de vinculación de profesores temporales desde la {$fac_nombre}: para el periodo: {$fp_periodo}.</p>
+    <p>Se ha devuelto su solicitud de vinculación de profesores temporales desde  {$fac_nombre}: para el periodo: {$fp_periodo}.</p>
     <p><strong>Observación:</strong> {$observation}</p>
     <p>Por favor, revise la plataforma de solicitudes de vinculación en la siguiente dirección: 
     <a href='http://192.168.42.175/temporales/'>http://192.168.42.175/temporales/</a>. 

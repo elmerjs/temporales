@@ -304,7 +304,8 @@ while ($rowtipo = $resultadotipo->fetch_assoc()) {
                   FROM solicitudes 
                   JOIN deparmanentos ON deparmanentos.PK_DEPTO = solicitudes.departamento_id
                   JOIN facultad ON facultad.PK_FAC = solicitudes.facultad_id
-                  WHERE departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_d' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
+                  WHERE departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_d' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)
+                  ORDER BY solicitudes.nombre ASC";
 
     $resultadot = $con->query($consultat);
 
@@ -450,7 +451,7 @@ while ($rowanexo = $resultadoanexo->fetch_assoc()) {
     }
 
     if ($rowanexo['actualiza_hv_antiguo'] == 'si') {
-        $section->addText('Actualización Hoja de Vida de ' . $nombre . ' con su respectiva lista de chequeo', $fontStyle, ['spaceAfter' => 0]);
+        $section->addText('Actualización Hoja de Vida de ' . $nombre . '', $fontStyle, ['spaceAfter' => 0]);
     }
 }
 $section->addText('Formato PM-FO-4-FOR-59. Acta de Selección: '.$acta, $fontStyle, array('spaceAfter' => 0));

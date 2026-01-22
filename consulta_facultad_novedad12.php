@@ -79,62 +79,55 @@ function procesarCambiosVinculacion($solicitudes) {
     $otras_novedades = [];
     $resultado_final = [];
 
-    // PASO 1: Clasificar solicitudes por 'oficio' Y LUEGO por 'cédula'.
     foreach ($solicitudes as $sol) {
         $id_transaccion = $sol['oficio_con_fecha'] ?? null;
         $cedula = $sol['cedula'] ?? null;
         $novedad = strtolower($sol['novedad']);
 
+        // --- CAMBIO CLAVE: Si es NN (222), usamos el ID para que no se agrupen ---
+        // Esto permite que cada NN se trate como una persona distinta
+        $identificador_unico = ($cedula === '222') ? 'NN_' . $sol['id_solicitud'] : $cedula;
+
         if ($id_transaccion && $cedula && ($novedad === 'adicionar' || $novedad === 'adicion' || $novedad === 'eliminar')) {
-            // Agrupamos por oficio, y dentro, por cédula.
-            $transacciones[$id_transaccion][$cedula][$novedad] = $sol;
+            // Usamos el identificador_unico en lugar de solo la cédula
+            $transacciones[$id_transaccion][$identificador_unico][$novedad] = $sol;
         } else {
-            // El resto (Modificar, etc.) va a otra lista.
             $otras_novedades[] = $sol;
         }
     }
 
-    // PASO 2: Procesar las transacciones doblemente agrupadas
-    foreach ($transacciones as $id_transaccion => $cedulas_en_oficio) {
-        foreach ($cedulas_en_oficio as $cedula => $partes) {
+    foreach ($transacciones as $id_transaccion => $grupos_en_oficio) {
+        foreach ($grupos_en_oficio as $id_key => $partes) {
             
             $sol_adicion = $partes['adicion'] ?? $partes['adicionar'] ?? null;
 
-            // Verificamos si para ESTA CÉDULA DENTRO DE ESTE OFICIO, existe el par completo
             if ($sol_adicion && isset($partes['eliminar'])) {
-                // ¡Es un verdadero "Cambio de Vinculación"!
+                // Caso Cambio de Vinculación (Solo ocurrirá si NO es '222' o si alguien enviara un par con el mismo ID)
                 $sol_eliminacion = $partes['eliminar'];
-
-                // --- Lógica para construir la descripción (sin cambios) ---
                 $tipo_docente_anterior = ($sol_eliminacion['tipo_docente'] === 'Catedra') ? 'Cátedra' : $sol_eliminacion['tipo_docente'];
                 $estado_anterior = "Sale de " . $tipo_docente_anterior;
+                
                 if ($sol_eliminacion['tipo_docente'] === 'Ocasional') {
-                    if ($sol_eliminacion['tipo_dedicacion']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion'] . " Popayán";
-                    elseif ($sol_eliminacion['tipo_dedicacion_r']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion_r'] . " Regionalización";
+                    if ($sol_eliminacion['tipo_dedicacion']) $estado_anterior .= " " . $sol_eliminacion['tipo_dedicacion'];
                 } elseif ($sol_eliminacion['tipo_docente'] === 'Catedra') {
-                    if ($sol_eliminacion['horas'] && $sol_eliminacion['horas'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas'] . " horas Popayán";
-                    elseif ($sol_eliminacion['horas_r'] && $sol_eliminacion['horas_r'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas_r'] . " horas Regionalización";
+                    if ($sol_eliminacion['horas'] > 0) $estado_anterior .= " " . $sol_eliminacion['horas'] . " hrs";
                 }
                 
-                // Modificamos la solicitud de "adición" para que represente el cambio completo
-                $sol_adicion['novedad'] = 'Modificar Vinculación'; // O 'Cambio Vinculación' según prefieras
-                $observacion_existente = trim($sol_adicion['s_observacion']);
-                $sol_adicion['s_observacion'] = $observacion_existente . ($observacion_existente ? ' ' : '') . '(' . $estado_anterior . ')';
+                $sol_adicion['novedad'] = 'Modificar Vinculación';
+                $obs = trim($sol_adicion['s_observacion']);
+                $sol_adicion['s_observacion'] = $obs . ($obs ? ' ' : '') . '(' . $estado_anterior . ')';
 
                 $resultado_final[] = $sol_adicion;
-
             } else {
-                // Si no hay un par, se añaden las partes individuales a la lista de "otras"
+                // Aquí entrarán todos tus NN porque ahora tienen IDs diferentes y no forman "pares"
                 if ($sol_adicion) $otras_novedades[] = $sol_adicion;
                 if (isset($partes['eliminar'])) $otras_novedades[] = $partes['eliminar'];
             }
         }
     }
 
-    // Unimos los cambios procesados con el resto de novedades
     return array_merge($resultado_final, $otras_novedades);
 }
-
 
 // --- LÓGICA PRINCIPAL (ROUTING POR TIPO DE USUARIO) ---
 
@@ -365,6 +358,27 @@ $solicitudes_json = json_encode($solicitudes_procesadas_final);
 // ===================================================================
     $statuses_json = json_encode($oficio_statuses_facultad);
 }
+$count_pendientes = 0;
+if ($tipo_usuario == 3 && isset($con) && !$con->connect_error) {
+    $sql_count_pendientes = "SELECT COUNT(DISTINCT cedula) AS total_pendientes 
+                             FROM solicitudes_working_copy
+                             WHERE departamento_id = ?
+                             AND anio_semestre = ?
+                             AND estado_depto = 'PENDIENTE'";
+                             
+    if ($stmt_cnt = $conn->prepare($sql_count_pendientes)) {
+        $stmt_cnt->bind_param("is", $id_departamento, $anio_semestre);
+        $stmt_cnt->execute();
+        $res_cnt = $stmt_cnt->get_result();
+        $data_cnt = $res_cnt->fetch_assoc();
+        $count_pendientes = $data_cnt['total_pendientes'] ?? 0;
+        $stmt_cnt->close();
+    }
+}
+
+// PASO 2: Ahora sí puedes cerrar la conexión si lo deseas, 
+// aunque lo recomendable es hacerlo al final del archivo.
+// $con->close();
 
 $conn->close();
 ?>
@@ -449,29 +463,46 @@ $conn->close();
         <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
             
             <h1 class="text-3xl font-bold text-gray-800">
-                Novedades por Oficio 
+                Novedades Solicitadas (clasificadas por Oficio)
                 <span class="text-2xl font-normal text-gray-500">(<?= htmlspecialchars($anio_semestre) ?>)</span>
             </h1>
 
             <?php
             // --- LÓGICA INTEGRADA DEL BOTÓN DE NOVEDADES (SOLO PARA USUARIO TIPO 3) ---
-            if ($tipo_usuario == 3) {
+           if ($tipo_usuario == 3) {
                 $cierreperiodonov = obtenerperiodonov($anio_semestre);
                 $url_novedad = "consulta_todo_depto_novedad.php?" .
                                "&anio_semestre=" . urlencode($anio_semestre) .
                                "&departamento_id=" . urlencode($id_departamento);
 
-                // Si el período de novedades está ABIERTO
                 if ($cierreperiodonov <> 1) { ?>
-                    <a href="<?= htmlspecialchars($url_novedad); ?>" class="w-full md:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-[#003366] hover:bg-[#002244] shadow-sm transition-colors">
-                        <i class="fas fa-plus mr-2"></i>
-                        Crear Novedades
-                    </a>
-                <?php } else { // Si el período de novedades está CERRADO ?>
-                    <button disabled class="w-full md:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gray-400 cursor-not-allowed" title="El período para gestionar novedades se encuentra cerrado.">
-                        <i class="fas fa-lock mr-2"></i>
-                        Crear Novedades
-                    </button>
+                    <div class="flex flex-col items-center md:items-start gap-2">
+                        <a href="<?= htmlspecialchars($url_novedad); ?>" 
+                           class="w-full md:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-[#003366] hover:bg-[#002244] shadow-sm transition-colors group">
+                            
+                            <i class="fas fa-edit mr-2"></i>
+                            <span>Preparar Novedades</span>
+
+                            <?php if ($count_pendientes > 0): ?>
+                                <span class="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-400 text-black shadow-sm">
+                                    <?= $count_pendientes ?> en borrador
+                                </span>
+                            <?php endif; ?>
+                        </a>
+                        
+                        <p class="text-xs text-gray-500 italic mt-1 max-w-xs text-center md:text-left">
+                            <i class="fas fa-info-circle text-blue-500"></i> 
+                            Aquí puedes <strong>crear novedades</strong> o revisar las que tienes <strong>pendientes de envío</strong> a Facultad.
+                        </p>
+                    </div>
+                <?php } else { ?>
+                    <div class="flex flex-col items-center md:items-start gap-2">
+                        <button disabled class="w-full md:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gray-400 cursor-not-allowed">
+                            <i class="fas fa-lock mr-2"></i>
+                            Preparar Novedades
+                        </button>
+                        <p class="text-xs text-red-400 italic mt-1">Período de novedades cerrado.</p>
+                    </div>
                 <?php }
             }
             // --- FIN DE LA LÓGICA DEL BOTÓN ---
@@ -639,9 +670,25 @@ if ($status_fac === 'En Proceso') {
                                 <?= $codigo_negrita ?> <?= $fecha_normal ?>
                             </p>
                                 </div>
-                                <button data-oficio="<?= htmlspecialchars($oficio_fecha) ?>" class="ver-detalles-btn w-full mt-4 bg-[#003366] hover:bg-[#002244] text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
-                                    Ver Solicitudes
-                                </button>
+                                <div class="flex space-x-2 mt-4">
+                            <button data-oficio="<?= htmlspecialchars($oficio_fecha) ?>" 
+                                    class="ver-detalles-btn w-3/4 bg-[#003366] hover:bg-[#002244] text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
+                                Ver/Gestionar Solicitudes
+                            </button>
+<?php 
+    // Separamos el código de la fecha para enviarlos limpios
+    // $oficio_fecha trae algo como "8.2.1-15/001 2026-01-16"
+    $partes_oficio = explode(" ", $oficio_fecha);
+    $solo_num_oficio = $partes_oficio[0];
+    $solo_fecha_oficio = $partes_oficio[1] ?? date('Y-m-d');
+?>
+
+<a href="reimprimir_oficio_depto_novedad.php?num_oficio=<?= urlencode($solo_num_oficio) ?>&departamento_id=<?= urlencode($id_departamento) ?>&anio_semestre=<?= urlencode($anio_semestre) ?>&nombre_fac=<?= urlencode($nombre_facultad_user ?? 'Facultad') ?>&fecha_oficio=<?= urlencode($solo_fecha_oficio) ?>" 
+   title="Reimprimir Oficio Word"
+   class="w-1/4 bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center rounded-md border border-gray-300 transition-colors">
+    <i class="fas fa-print"></i>
+</a>
+                        </div>
                             </div>
                         <?php endforeach; ?>
                     <?php else: ?>
@@ -1200,7 +1247,7 @@ const cardHtml = `
             <strong>${codigo}</strong> <span class="font-normal">${fechaFormateada}</span>
         </p>
     </div>
-    <button data-oficio="${oficio}" class="ver-detalles-btn w-full mt-4 bg-[#003366] hover:bg-[#002244] text-white font-bold py-2 px-4 rounded-md">Ver Solicitudes</button>
+    <button data-oficio="${oficio}" class="ver-detalles-btn w-full mt-4 bg-[#003366] hover:bg-[#002244] text-white font-bold py-2 px-4 rounded-md">Ver/ Gestionar Solicitudes</button>
 </div>`;
             cardsContainer.innerHTML += cardHtml;
         }

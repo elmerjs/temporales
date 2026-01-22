@@ -95,7 +95,7 @@ $conn->commit();
         error_log("Proceso finalizado correctamente para id_depto_periodo: $id_depto_periodo\n", 3, $log_file);
         
         
-        $estadob = ($estado === 'aceptar') ? "aceptado" : "rechazado";
+        $estadob = ($estado === 'aceptar') ? "aceptado" : "devuelto";
 
         
         // Configuración de PHPMailer para el envío de correo

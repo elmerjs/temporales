@@ -10,8 +10,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $nombre = $_POST['nombre'];
     $tipo_dedicacion = isset($_POST['tipo_dedicacion']) ? $_POST['tipo_dedicacion'] : null;
     $tipo_dedicacion_r = isset($_POST['tipo_dedicacion_r']) ? $_POST['tipo_dedicacion_r'] : null;
-    $horas = isset($_POST['horas']) ? $_POST['horas'] : null;
-    $horas_r = isset($_POST['horas_r']) ? $_POST['horas_r'] : null;
+    //$horas = isset($_POST['horas']) ? $_POST['horas'] : null;
+    $horas = isset($_POST['horas']) && $_POST['horas'] !== '' ? (float)$_POST['horas'] : 0.0;
+   // $horas_r = isset($_POST['horas_r']) ? $_POST['horas_r'] : null;
+    $horas_r = isset($_POST['horas_r']) && $_POST['horas_r'] !== '' ? (float)$_POST['horas_r'] : 0.0;
 
     $tipo_docente = $_POST['tipo_docente'];
 
@@ -19,14 +21,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($tipo_docente == "Ocasional") {
         $sede = empty($tipo_dedicacion) ? "Regionalización" : "Popayán";
     } elseif ($tipo_docente == "Catedra") {
-        if (!empty($horas) && !empty($horas_r)) {
-            $sede = "Popayán-Regionalización";
-        } elseif (!empty($horas)) {
-            $sede = "Popayán";
-        } else {
-            $sede = "Regionalización";
+            if ($horas > 0 && $horas_r > 0) {
+                $sede = "Popayán-Regionalización";
+            } elseif ($horas > 0) {
+                $sede = "Popayán";
+            } elseif ($horas_r > 0) {
+                $sede = "Regionalización";
+            } else {
+                $sede = "Popayán"; // o el valor por defecto que prefieras
+            }
         }
-    } else {
+    else {
         $sede = null;
     }
 

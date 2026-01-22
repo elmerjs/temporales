@@ -46,7 +46,6 @@ $experiencia_docente = $_GET['experiencia_docente'] ?? '';
 $experiencia_profesional = $_GET['experiencia_profesional'] ?? '';
 $otra_experiencia = $_GET['otra_experiencia'] ?? '';
 
-
 // Realizar la consulta a la base de datos para obtener todos los datos
 if (isset($anio_semestre) && isset($departamento_id) && isset($id_solicitud)) {
     $sql = "SELECT
@@ -122,11 +121,144 @@ if (isset($anio_semestre) && isset($departamento_id) && isset($id_solicitud)) {
             $experiencia_docente = $fila['experiencia_docente'];
             $experiencia_profesional = $fila['experiencia_profesional'];
             $otra_experiencia = $fila['otra_experiencia'];
+
+            // ✅ NUEVO: Si los campos de estudio están vacíos, buscar en la tabla aspirante
+            if (empty($pregrado) && empty($especializacion) && empty($maestria) && empty($doctorado) && empty($otro_estudio)) {
+                $titulosAspirante = obtenerTitulosAspirante($cedula_solicitante, $anio_semestre, $con);
+                if ($titulosAspirante) {
+                    $pregrado = $titulosAspirante['pregrado'] ?? $pregrado;
+                    $especializacion = $titulosAspirante['especializacion'] ?? $especializacion;
+                    $maestria = $titulosAspirante['maestria'] ?? $maestria;
+                    $doctorado = $titulosAspirante['doctorado'] ?? $doctorado;
+                    // Nota: 'otro_estudio' no se está parseando en la función JavaScript, se mantiene igual aquí
+                }
+            }
         }
         $stmt->close();
     }
 }
 $con->close(); // Cerrar la conexión después de todas las consultas
+
+// ✅ NUEVA FUNCIÓN: Obtener y parsear títulos desde la tabla aspirante
+function obtenerTitulosAspirante($cedula, $periodo, $conexion) {
+    $sql_aspirante = "SELECT asp_titulos FROM aspirante 
+                      WHERE fk_asp_doc_tercero = ? AND fk_asp_periodo = ?";
+    
+    $stmt_asp = $conexion->prepare($sql_aspirante);
+    if ($stmt_asp) {
+        $stmt_asp->bind_param("ss", $cedula, $periodo);
+        $stmt_asp->execute();
+        $resultado_asp = $stmt_asp->get_result();
+        
+        if ($resultado_asp->num_rows > 0) {
+            $fila_asp = $resultado_asp->fetch_assoc();
+            $titulosStr = $fila_asp['asp_titulos'];
+            
+            if (!empty($titulosStr)) {
+                return parsearTitulos($titulosStr);
+            }
+        }
+        $stmt_asp->close();
+    }
+    return null;
+}
+
+// ✅ NUEVA FUNCIÓN: Parsear títulos (similar a la función JavaScript)
+function parsearTitulos($titulosStr) {
+    $parsed = [
+        'pregrado' => '',
+        'especializacion' => '',
+        'maestria' => '',
+        'doctorado' => ''
+    ];
+
+    // Definir palabras clave para cada tipo de estudio (igual que en JavaScript)
+    $keywords = [
+        'doctorado' => ['DOCTORADO EN', 'DOCTOR', 'DOCTORA', 'PH.D.', 'PHD'],
+        'maestria' => [
+            'MAESTRIA EN', 'MAESTRÍA EN', 'MAGISTER EN', 'MASTER EN',
+            'MAGISTER', 'MAESTRO', 'MASTER', 'MAGÍSTER', 'MAESTRÍA', 'MAESTRA', 'MÁSTER' 
+        ],
+        'especializacion' => ['ESPECIALIZACION EN', 'ESPECIALIZACIÓN EN', 'ESP.', 'ESPECIALISTA'],
+        'pregrado' => [
+            'LICENCIADO EN', 'LICENCIADA EN', 'LICENCIATURA EN', 
+            'PROFESIONAL EN', 'INGENIERO EN', 'INGENIERA EN',
+            'ABOGADO', 'ABOGADA', 'ADMINISTRADOR DE', 'ADMINISTRADORA DE', 
+            'BIOLOGO', 'BIOLOGA', 'QUIMICO', 'QUÍMICO', 'CIRUJANO', 'ANTROPOLOGO', 
+            'ENFERMERO', 'ENFERMERA', 'TECNICO EN', 'TÉCNICO EN', 'TECNOLOGO EN', 'TECNÓLOGO EN',
+            'MEDICO', 'MÉDICO', 'MATEMATICO', 'MATEMÁTICO', 'CONTADOR', 'ECONOMISTA', 
+            'BACHILLER', 'NORMALISTA', 'ARQUITECTO', 'ARQUITECTA', 'FILOSOFO', 'FILOSOFA', 
+            'PSICOLOGO', 'PSICOLOGA', 'CITOHISTOTECNOLOGO', 'BACTERIOLOGO', 'BACTERIOLOGA',
+            'LABORATORISTA', 'GEOTECNOLOGO', 'GEOTECNOLOGA', 'GEOGRAFO', 'GEOGRAFA', 
+            'ODONTOLOGO', 'ODONTOLOGA', 'NUTRICIONISTA', 'FISIOTERAPEUTA',
+            'COMUNICADOR', 'PERIODISTA', 'DISEÑADOR', 'SOCIOLOGO', 'HISTORIADOR',
+            'POLITOLOGO', 'QUÍMICO FARMACÉUTICO', 'ZOOTECNISTA', 'AGRONOMO',
+            'INGENIERO', 'INGENIERA',
+            'LICENCIADO', 'LICENCIADA', 'LICENCIATURA',
+            'TECNICO', 'TÉCNICO', 'TECNOLOGO', 'TECNÓLOGO',
+            'ADMINISTRADOR', 'ADMINISTRADORA',
+            'BACHILLER', 'NORMALISTA',
+            'MÚSICA', 'ARTE',
+            'GUIA'
+        ]
+    ];
+
+    // Dividir el string por saltos de línea
+    $titlesArray = preg_split('/[\r\n]+/', $titulosStr);
+
+    foreach ($titlesArray as $title) {
+        $trimmedTitle = trim($title);
+        if (empty($trimmedTitle)) continue;
+
+        $upperTrimmedTitle = strtoupper($trimmedTitle);
+
+        // 1. Intentar detectar Doctorado (máxima prioridad)
+        if (empty($parsed['doctorado'])) { 
+            foreach ($keywords['doctorado'] as $keyword) {
+                if (strpos($upperTrimmedTitle, $keyword) === 0) {
+                    $parsed['doctorado'] = $trimmedTitle;
+                    break; 
+                }
+            }
+            if (!empty($parsed['doctorado'])) continue;
+        }
+
+        // 2. Intentar detectar Maestría
+        if (empty($parsed['maestria'])) { 
+            foreach ($keywords['maestria'] as $keyword) {
+                if (strpos($upperTrimmedTitle, $keyword) === 0) {
+                    $parsed['maestria'] = $trimmedTitle;
+                    break; 
+                }
+            }
+            if (!empty($parsed['maestria'])) continue;
+        }
+
+        // 3. Intentar detectar Especialización
+        if (empty($parsed['especializacion'])) { 
+            foreach ($keywords['especializacion'] as $keyword) {
+                if (strpos($upperTrimmedTitle, $keyword) === 0) {
+                    $parsed['especializacion'] = $trimmedTitle;
+                    break; 
+                }
+            }
+            if (!empty($parsed['especializacion'])) continue;
+        }
+
+        // 4. Intentar detectar Pregrado (última prioridad)
+        if (empty($parsed['pregrado'])) { 
+            foreach ($keywords['pregrado'] as $keyword) {
+                if (strpos($upperTrimmedTitle, $keyword) === 0) {
+                    $parsed['pregrado'] = $trimmedTitle;
+                    break; 
+                }
+            }
+        }
+    }
+    return $parsed;
+}
+
+// ... el resto del código FPDF permanece igual ...
 
 // --- Clase FPDF extendida para Header y Footer ---
 class PDF extends FPDF

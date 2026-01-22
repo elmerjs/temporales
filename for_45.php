@@ -24,28 +24,44 @@ $numero_acta = $_GET['numero_acta'];
   $fecha_acta = isset($_GET['fecha_actab']) ? $_GET['fecha_actab'] : null; // Asegúrate de usar el mismo 'name'
 list($year, $month, $day) = explode('-', $fecha_acta);
 
-  $numero_acta_bd = obtener_numero_acta($anio_semestre, $departamento_id);
+ // NOTA: La variable $numero_acta_bd ya no es necesaria, eliminando la llamada a la función.
+// Se asume que $numero_acta, $fecha_acta, $departamento_id y $anio_semestre ya tienen sus valores de $_GET.
 
-$sql_update = ''; 
-
-if ($numero_acta_bd === 0)  { // SI NO HAY DATOS DE ACTA EN DEPTOPERIODO
+// 1. Aseguramos que los datos del acta estén presentes antes de intentar actualizar.
+if (!empty($numero_acta) && !empty($fecha_acta) && isset($con)) {
+    
+    // 2. Sentencia preparada para actualizar siempre (permitiendo sobrescritura)
     $sql_update = "UPDATE depto_periodo 
-                       SET dp_acta_periodo  = '$numero_acta', dp_fecha_acta ='$fecha_acta'
-                      WHERE fk_depto_dp = '$departamento_id' AND periodo = '$anio_semestre'";
-$dato_acta = "ok";
-} else {$dato_acta = "falla";}
+                   SET dp_acta_periodo = ?, dp_fecha_acta = ?
+                   WHERE fk_depto_dp = ? AND periodo = ?";
 
-// Verificamos que $sql_update_fac no esté vacío antes de ejecutar la consulta
-if (!empty($sql_update)) {
-    if ($con->query($sql_update) === TRUE) {
-        // La consulta se ejecutó correctamente
-        // echo "Registro actualizado correctamente";
+    $stmt_acta = $con->prepare($sql_update);
+    
+    // Asumimos que fk_depto_dp es INT (i) y los otros son String (s)
+    if ($stmt_acta) {
+        $stmt_acta->bind_param("ssis", 
+            $numero_acta, 
+            $fecha_acta, 
+            $departamento_id, 
+            $anio_semestre
+        );
+        
+        if ($stmt_acta->execute()) {
+             $dato_acta = "ok";
+             // echo "Registro de acta actualizado correctamente";
+        } else {
+             // error_log("Error al ejecutar UPDATE de acta: " . $stmt_acta->error);
+             $dato_acta = "falla - Error al ejecutar consulta";
+        }
+        
+        $stmt_acta->close();
     } else {
-        // En caso de error en la ejecución
-     //   echo "Error al ejecutar la consulta: " . $con->error;
+        // error_log("Error al preparar la consulta de acta: " . $con->error);
+        $dato_acta = "falla - Error en prepared statement";
     }
 } else {
-   // echo "No se definió la consulta SQL.";
+    // Si los datos del acta no vienen completos, no se intenta la actualización del acta.
+    $dato_acta = "falla - Acta o Fecha vacía";
 }
 
 

@@ -25,6 +25,39 @@ if (!in_array($field, $campos_permitidos)) {
     exit;
 }
 
+// Función para calcular semanas entre dos fechas
+function calcularSemanas($conn, $periodo) {
+    $query = $conn->prepare("SELECT inicio_sem, fin_sem FROM periodo WHERE nombre_periodo = ?");
+    $query->bind_param("s", $periodo);
+    $query->execute();
+    $result = $query->get_result();
+    
+    if ($row = $result->fetch_assoc()) {
+        $inicio_sem = $row['inicio_sem'];
+        $fin_sem = $row['fin_sem'];
+        
+        // Si alguna fecha es NULL, no se puede calcular
+        if (empty($inicio_sem) || empty($fin_sem)) {
+            return false;
+        }
+        
+        // Convertir a objetos DateTime
+        $fecha_inicio = new DateTime($inicio_sem);
+        $fecha_fin = new DateTime($fin_sem);
+        
+        // Calcular diferencia en días
+        $diferencia = $fecha_inicio->diff($fecha_fin);
+        $dias = $diferencia->days;
+        
+        // Calcular semanas (redondeando hacia arriba)
+        $semanas = ceil($dias / 7);
+        
+        return $semanas;
+    }
+    
+    return false;
+}
+
 try {
     // Construir el SQL para mostrar en consola
     $sql_consola = "UPDATE periodo SET $field = ";
@@ -63,7 +96,42 @@ try {
 
     if ($stmt->execute()) {
         if ($stmt->affected_rows > 0) {
-            echo json_encode(['success' => true, 'message' => 'Actualización exitosa', 'sql' => $sql_consola]);
+            
+            // CALCULAR Y ACTUALIZAR SEMANAS_C SI SE MODIFICÓ inicio_sem O fin_sem
+            if (in_array($field, ['inicio_sem', 'fin_sem'])) {
+                $semanas_c = calcularSemanas($conn, $periodo);
+                
+                if ($semanas_c !== false) {
+                    $update_semanas = $conn->prepare("UPDATE periodo SET semanas_c = ? WHERE nombre_periodo = ?");
+                    $update_semanas->bind_param("is", $semanas_c, $periodo);
+                    
+                    if ($update_semanas->execute()) {
+                        $sql_consola .= "; UPDATE periodo SET semanas_c = $semanas_c WHERE nombre_periodo = '$periodo'";
+                        echo json_encode([
+                            'success' => true, 
+                            'message' => 'Actualización exitosa y semanas calculadas', 
+                            'sql' => $sql_consola,
+                            'semanas_calculadas' => $semanas_c
+                        ]);
+                    } else {
+                        echo json_encode([
+                            'success' => true, 
+                            'message' => 'Actualización exitosa pero error al calcular semanas', 
+                            'sql' => $sql_consola,
+                            'error_semanas' => $update_semanas->error
+                        ]);
+                    }
+                    $update_semanas->close();
+                } else {
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => 'Actualización exitosa pero no se pudieron calcular semanas (faltan fechas)',
+                        'sql' => $sql_consola
+                    ]);
+                }
+            } else {
+                echo json_encode(['success' => true, 'message' => 'Actualización exitosa', 'sql' => $sql_consola]);
+            }
         } else {
             echo json_encode(['success' => false, 'message' => 'No se realizaron cambios', 'sql' => $sql_consola]);
         }

@@ -623,7 +623,7 @@ $section->addText($texto_profesor_arriba, $observationTextStyle, $paragraphStyle
 // --- FIN DE LA MODIFICACIÓN (PASO 2) ---            $section->addTextBreak(0); // Pequeña separación
 
             // 3. Tabla para la "Nueva Vinculación"
-           $section->addText('Nueva Vinculación:', ['bold' => true, 'size' => 9], $paragraphStyleLeft);
+           //$section->addText('Nueva Vinculación:', ['bold' => true, 'size' => 9], $paragraphStyleLeft);
             $table_cambio = $section->addTable('ColspanRowspan');
             $table_cambio->setWidth(100 * 50, TblWidth::PERCENT);
 

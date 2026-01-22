@@ -2051,10 +2051,31 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="report-section mt-4">
     <h5 class="text-center text-unicauca-primary fw-bold mb-3">Reportes</h5>
     <div class="d-grid gap-2">
-        <a href="excel_temporales.php?tipo_usuario=<?= htmlspecialchars($tipo_usuario) ?>&facultad_id=<?= htmlspecialchars($facultad_id) ?>&anio_semestre=<?= htmlspecialchars($anio_semestre) ?>" 
-            class="btn btn-unicauca-success">
+         <?php if ($tipo_usuario == 1): ?>
+
+        <button type="button" class="btn btn-unicauca-success" data-bs-toggle="modal" data-bs-target="#modalFiltroReporte">
+            <i class="fas fa-file-excel me-2"></i> Reporte General
+        </button>
+
+    <?php else: ?>
+
+        <?php
+        // Construimos la URL para el enlace directo
+        $url_excel = "excel_temporales.php?tipo_usuario=" . htmlspecialchars($tipo_usuario) .
+                     "&facultad_id=" . htmlspecialchars($facultad_id) .
+                     "&anio_semestre=" . htmlspecialchars($anio_semestre);
+        
+        // IMPORTANTE: Si es tipo 3, también debe pasar su ID de departamento
+        // (Asegúrate de que $departamento_id esté disponible en esta página para el tipo 3)
+        if ($tipo_usuario == 3 && isset($departamento_id)) {
+            $url_excel .= "&departamento_id=" . htmlspecialchars($departamento_id);
+        }
+        ?>
+        <a href="<?= $url_excel ?>" class="btn btn-unicauca-success">
             <i class="fas fa-file-excel me-2"></i> Reporte General
         </a>
+
+    <?php endif; ?>
       <!--
         <a href="excel_temporales_fac.php?tipo_usuario=<?//= htmlspecialchars($tipo_usuario) ?>&facultad_id=<?//= htmlspecialchars($facultad_id) ?>&anio_semestre=<?//= htmlspecialchars($anio_semestre) ?>" 
             class="btn btn-unicauca-success">
@@ -2496,7 +2517,55 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 </script>
-    </div></body>
+    
+    <div class="modal fade" id="modalFiltroReporte" tabindex="-1" aria-labelledby="modalFiltroReporteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalFiltroReporteLabel">Filtrar Reporte General</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form action="excel_temporales.php" method="GET">
+                <div class="modal-body">
+                    
+                    <p>Seleccione una facultad específica o genere el reporte para todas.</p>
+
+                    <input type="hidden" name="tipo_usuario" value="<?= htmlspecialchars($tipo_usuario) ?>">
+                    <input type="hidden" name="anio_semestre" value="<?= htmlspecialchars($anio_semestre) ?>">
+                    
+                    <div class="mb-3">
+                        <label for="filtroFacultad" class="form-label">Facultad</label>
+                        <select class="form-select" id="filtroFacultad" name="facultad_id">
+                            
+                            <option value="0">-- Todas las Facultades --</option>
+                            
+                            <?php
+                            if (isset($facultades) && is_array($facultades)) {
+                                foreach ($facultades as $facultad) {
+                                    // Asumo que el nombre está en 'nombre_fac_minb' y el ID en 'PK_FAC'
+                                    // ¡Ajusta 'nombre_fac_minb' si la clave del nombre es otra!
+                                    $id = htmlspecialchars($facultad['PK_FAC']);
+                                    $nombre = htmlspecialchars($facultad['nombre_fac_minb']);
+                                    echo "<option value='{$id}'>{$nombre}</option>";
+                                }
+                            }
+                            ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-unicauca-success">
+                        <i class="fas fa-file-excel me-2"></i> Generar Reporte
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+    </body>
 </html>
 
 <?php

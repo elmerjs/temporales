@@ -964,74 +964,131 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                 <a href="../../temporales/menu_inicio.php">Inicio</a>
             </li>
 
-            <?php if ($tipo_usuario == 3): ?>
-                <li class="menu-item <?= ($active_menu_item == 'gestion_depto') ? 'active' : '' ?>">
-                    <a href="#" title="Administrar solicitud inicial para el próximo periodo; dar visto bueno y enviarlas a la facultad para su revisión">
-                        Gestión Depto
+    <?php if ($tipo_usuario == 3): ?>
+    <li class="menu-item <?= ($active_menu_item == 'gestion_depto') ? 'active' : '' ?>">
+        <a href="#" title="Administrar solicitud inicial para el próximo periodo; dar visto bueno y enviarlas a la facultad para su revisión">
+            Gestión Depto
+        </a>
+        <ul class="submenu">
+            <?php foreach ($departamentos as $departamento): ?>
+                
+                <?php if ($tipo_usuario == 1): // Usuario tipo 1: Mostrar todos los periodos ?>
+                    <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                        <a href="#" class="periodo-link"
+                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                            data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+                            data-anio-semestre="<?php echo $previousPeriod; ?>"><?php echo $previousPeriod; ?></a>
+                    </li>
+                    <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                        <a href="#" class="periodo-link"
+                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                            data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+                            data-anio-semestre="<?php echo $periodo_work; ?>"><?php echo $periodo_work; ?></a>
+                    </li>
+                
+                <?php elseif ($tipo_usuario == 3): // Usuario tipo 3: Gestión de periodos ?>
+                    
+                    <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                        <a href="#" class="periodo-link"
+                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                            data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+                            data-anio-semestre="<?php echo $periodo_work; ?>"><?php echo $periodo_work; ?></a>
+                    </li>
+
+                    <?php 
+                    /* ==========================================================
+                       COMENTAR DESDE AQUÍ PARA OCULTAR EL PERIODO SIGUIENTE
+                       ========================================================== 
+                    */
+                    /* ?>
+                    <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                        <a href="#" class="periodo-link"
+                            data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
+                            data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+                            data-anio-semestre="<?php echo $nextPeriod; ?>"><?php echo $nextPeriod; ?></a>
+                    </li>
+                    <?php 
+                    */
+                    // ================= FIN COMENTARIO =========================
+                    ?>
+
+                <?php endif; ?>
+
+            <?php endforeach; ?>
+        </ul>
+    </li>
+<?php endif; 
+            // Ejemplo: Si previousPeriod es 2025-2, previousPeriod2 será 2025-1 y previousPeriod3 será 2024-2
+function restarPeriodo($periodo) {
+    $p = explode('-', $periodo);
+    if ($p[1] == '2') return $p[0] . '-1';
+    return ($p[0] - 1) . '-2';
+}
+
+$previousPeriod2 = restarPeriodo($previousPeriod);
+$previousPeriod3 = restarPeriodo($previousPeriod2);
+            ?>
+
+  <?php if ($tipo_usuario == 1 || $tipo_usuario == 2): ?>
+    <li class="menu-item <?= ($active_menu_item == 'gestion_facultad') ? 'active' : '' ?>">
+        <a href="#" title="Gestionar solicitud inicial de vinculación de temporales para el periodo siguiente">
+            Gestión Facultad
+        </a>
+        <ul class="submenu">
+            
+            <?php if ($tipo_usuario == 1): ?>
+                <li class="<?= ($selected_period == $previousPeriod3) ? 'active' : '' ?>">
+                    <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod3; ?>">
+                        <?php echo $previousPeriod3; ?>
                     </a>
-                    <ul class="submenu">
-                        <?php foreach ($departamentos as $departamento): ?>
-                            <?php if ($tipo_usuario == 1): // Usuario tipo 1: Mostrar todos los periodos ?>
-                                <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
-                                    <a href="#" class="periodo-link"
-                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                        data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
-                                        data-anio-semestre="<?php echo $previousPeriod; ?>"><?php echo $previousPeriod; ?></a>
-                                </li>
-                                <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $periodo_work) ? 'active' : '' ?>">
-                                    <a href="#" class="periodo-link"
-                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                        data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
-                                        data-anio-semestre="<?php echo $periodo_work; ?>"><?php echo $periodo_work; ?></a>
-                                </li>
-                            <?php elseif ($tipo_usuario == 3): // Usuario tipo 3: Mostrar periodo actual y siguiente ?>
-                                <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $periodo_work) ? 'active' : '' ?>">
-                                    <a href="#" class="periodo-link"
-                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                        data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
-                                        data-anio-semestre="<?php echo $periodo_work; ?>"><?php echo $periodo_work; ?></a>
-                                </li>
-                            <?php endif; ?>
-                            <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
-                                <a href="#" class="periodo-link"
-                                    data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                    data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
-                                    data-anio-semestre="<?php echo $nextPeriod; ?>"><?php echo $nextPeriod; ?></a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
+                </li>
+
+                <li class="<?= ($selected_period == $previousPeriod2) ? 'active' : '' ?>">
+                    <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod2; ?>">
+                        <?php echo $previousPeriod2; ?>
+                    </a>
+                </li>
+
+                <li class="<?= ($selected_period == $previousPeriod) ? 'active' : '' ?>">
+                    <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>">
+                        <?php echo $previousPeriod; ?>
+                    </a>
                 </li>
             <?php endif; ?>
 
-            <?php if ($tipo_usuario == 1 || $tipo_usuario == 2): ?>
-                <li class="menu-item <?= ($active_menu_item == 'gestion_facultad') ? 'active' : '' ?>">
-                    <a href="#" title="Gestionar solicitud inicial de vinculación de temporales para el periodo siguiente">
-                        Gestión Facultad
+            <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): ?>
+                
+                <li class="<?= ($selected_period == $periodo_work) ? 'active' : '' ?>">
+                    <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>">
+                        <?php echo $periodo_work; ?>
                     </a>
-                    <ul class="submenu">
-                        <?php if ($tipo_usuario == 1): // Mostrar todos los periodos para tipo 1 ?>
-                            <li class="<?= ($active_menu_item == 'gestion_facultad' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
-                                <a href="#" class="report-link" data-facultad-id="<?php //echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>">
-                                    <?php echo $previousPeriod; ?>
-                                </a>
-                            </li>
-                        <?php endif; ?>
-                        <?php if ($tipo_usuario == 1 || $tipo_usuario == 2 || $tipo_usuario == 3): // Mostrar solo el próximo periodo para tipos 1, 2 y 3 ?>
-                        <li class="<?= ($active_menu_item == 'gestion_facultad' && $selected_period == $periodo_work) ? 'active' : '' ?>">
-                                <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>">
-                                    <?php echo $periodo_work; ?>
-                                </a>
-                            </li>
-                       
-                            <li class="<?= ($active_menu_item == 'gestion_facultad' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
-                                <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
-                                    <?php echo $nextPeriod; ?>
-                                </a>
-                            </li>
-                        <?php endif; ?>
-                    </ul>
                 </li>
+
+                <?php 
+                /* =====================================================================
+                   CONTROL DE PERIODO SIGUIENTE
+                   =====================================================================
+                */
+                if ($tipo_usuario == 1): // El Admin siempre ve el siguiente ?>
+                    <li class="<?= ($selected_period == $nextPeriod) ? 'active' : '' ?>">
+                        <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
+                            <?php echo $nextPeriod; ?>
+                        </a>
+                    </li>
+                <?php else: // Para Tipo 2 y 3: Comentado para uso futuro ?>
+                    <?php /* ?>
+                    <li class="<?= ($selected_period == $nextPeriod) ? 'active' : '' ?>">
+                        <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
+                            <?php echo $nextPeriod; ?>
+                        </a>
+                    </li>
+                    <?php */ ?>
+                <?php endif; ?>
+
             <?php endif; ?>
+        </ul>
+    </li>
+<?php endif; ?>
             
             
             
@@ -1044,101 +1101,83 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                 </a>
                                                 
 
-                 <ul class="submenu novedades-submenu">
-                    <?php
-                    $periodosMostrados = [];
-                    if ($tipo_usuario == 1 && $id_user != 96 && $id_user != 93 && $id_user != 10):
-                        foreach ($departamentos as $departamento):
-                            if (!in_array($previousPeriod, $periodosMostrados)):
-                                $periodosMostrados[] = $previousPeriod; ?>
-                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
-                                    <a href="#" class="novedades-periodo"
-                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                           data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
- 
-                                       data-anio-semestre="<?php echo $previousPeriod; ?>"
-                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
-                                        data-email-user="<?php echo $email_user; ?>">
-                                        <?php echo $previousPeriod; ?>
-                                    </a>
-                                </li>
-                            <?php endif;
-                            if (!in_array($periodo_work, $periodosMostrados)):
-                                $periodosMostrados[] = $periodo_work; ?>
-                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $periodo_work) ? 'active' : '' ?>">
-                                    <a href="#" class="novedades-periodo"
-                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                           data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
-
-                                       data-anio-semestre="<?php echo $periodo_work; ?>"
-                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
-                                        data-email-user="<?php echo $email_user; ?>">
-                                        <?php echo $periodo_work; ?>
-                                    </a>
-                                </li>
-                            <?php endif;
-                            if (!in_array($nextPeriod, $periodosMostrados)):
-                                $periodosMostrados[] = $nextPeriod; ?>
-                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
-                                    <a href="#" class="novedades-periodo"
-                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                         data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
-
-                                       data-anio-semestre="<?php echo $nextPeriod; ?>"
-                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
-                                        data-email-user="<?php echo $email_user; ?>">
-                                        <?php echo $nextPeriod; ?>
-                                    </a>
-                                </li>
-                            <?php endif;
-                        endforeach;
-                    elseif ($tipo_usuario == 2 || $tipo_usuario == 3): // Caso para tipo usuario 2 o 3 - Solo ver $periodo_work (adaptado temporalmente)
-                        foreach ($departamentos as $departamento):
-                            if (!in_array($previousPeriod, $periodosMostrados)):
-                                $periodosMostrados[] = $previousPeriod; ?>
-                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
-                                    <a href="#" class="novedades-periodo"
-                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                      data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
-
-                                       data-anio-semestre="<?php echo $previousPeriod; ?>"
-                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
-                                        data-email-user="<?php echo $email_user; ?>">
-                                        <?php echo $previousPeriod; ?>
-                                    </a>
-                                </li>
-                            <?php endif;
-                            if (!in_array($periodo_work, $periodosMostrados)):
-                                $periodosMostrados[] = $periodo_work; ?>
-                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $periodo_work) ? 'active' : '' ?>">
-                                    <a href="#" class="novedades-periodo"
-    data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
-
-                                       data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                        data-anio-semestre="<?php echo $periodo_work; ?>"
-                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
-                                        data-email-user="<?php echo $email_user; ?>">
-                                        <?php echo $periodo_work; ?>
-                                    </a>
-                                </li>
-                            <?php endif;
-                            if (!in_array($nextPeriod, $periodosMostrados)):
-                                $periodosMostrados[] = $nextPeriod; ?>
-                                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
-                                    <a href="#" class="novedades-periodo"
-                                        data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
-                                            data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>"
+<ul class="submenu novedades-submenu">
+    <?php
+    $periodosMostrados = [];
     
-                                       data-anio-semestre="<?php echo $nextPeriod; ?>"
-                                        data-tipo-usuario="<?php echo $tipo_usuario; ?>"
-                                        data-email-user="<?php echo $email_user; ?>">
-                                        <?php echo $nextPeriod; ?>
-                                    </a>
-                                </li>
-                            <?php endif;
-                        endforeach;
-                    endif; ?>
-                </ul>
+    // --- BLOQUE PARA TIPO 1 (ADMIN): VE TODO ---
+    if ($tipo_usuario == 1 && $id_user != 96 && $id_user != 93 && $id_user != 10):
+        foreach ($departamentos as $departamento):
+            // Periodo Anterior
+            if (!in_array($previousPeriod, $periodosMostrados)):
+                $periodosMostrados[] = $previousPeriod; ?>
+                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                    <a href="#" class="novedades-periodo" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>" data-tipo-usuario="<?php echo $tipo_usuario; ?>" data-email-user="<?php echo $email_user; ?>">
+                        <?php echo $previousPeriod; ?>
+                    </a>
+                </li>
+            <?php endif;
+            
+            // Periodo de Trabajo
+            if (!in_array($periodo_work, $periodosMostrados)):
+                $periodosMostrados[] = $periodo_work; ?>
+                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                    <a href="#" class="novedades-periodo" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>" data-tipo-usuario="<?php echo $tipo_usuario; ?>" data-email-user="<?php echo $email_user; ?>">
+                        <?php echo $periodo_work; ?>
+                    </a>
+                </li>
+            <?php endif;
+
+            // Periodo Siguiente
+            if (!in_array($nextPeriod, $periodosMostrados)):
+                $periodosMostrados[] = $nextPeriod; ?>
+                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                    <a href="#" class="novedades-periodo" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>" data-tipo-usuario="<?php echo $tipo_usuario; ?>" data-email-user="<?php echo $email_user; ?>">
+                        <?php echo $nextPeriod; ?>
+                    </a>
+                </li>
+            <?php endif;
+        endforeach;
+
+    // --- BLOQUE PARA TIPO 2 Y 3: SOLO TRABAJO (Anterior y Siguiente comentados) ---
+    elseif ($tipo_usuario == 2 || $tipo_usuario == 3): 
+        foreach ($departamentos as $departamento):
+            
+            /* DESCOMENTAR PARA MOSTRAR ANTERIOR A TIPO 2 Y 3
+            if (!in_array($previousPeriod, $periodosMostrados)):
+                $periodosMostrados[] = $previousPeriod; ?>
+                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $previousPeriod) ? 'active' : '' ?>">
+                    <a href="#" class="novedades-periodo" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>" data-anio-semestre="<?php echo $previousPeriod; ?>" data-tipo-usuario="<?php echo $tipo_usuario; ?>" data-email-user="<?php echo $email_user; ?>">
+                        <?php echo $previousPeriod; ?>
+                    </a>
+                </li>
+            <?php endif; 
+            */
+
+            // PERIODO DE TRABAJO (Visible)
+            if (!in_array($periodo_work, $periodosMostrados)):
+                $periodosMostrados[] = $periodo_work; ?>
+                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $periodo_work) ? 'active' : '' ?>">
+                    <a href="#" class="novedades-periodo" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>" data-anio-semestre="<?php echo $periodo_work; ?>" data-tipo-usuario="<?php echo $tipo_usuario; ?>" data-email-user="<?php echo $email_user; ?>">
+                        <?php echo $periodo_work; ?>
+                    </a>
+                </li>
+            <?php endif;
+
+            /* DESCOMENTAR PARA MOSTRAR SIGUIENTE A TIPO 2 Y 3
+            if (!in_array($nextPeriod, $periodosMostrados)):
+                $periodosMostrados[] = $nextPeriod; ?>
+                <li class="<?= ($active_menu_item == 'novedades' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
+                    <a href="#" class="novedades-periodo" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-departamento-id="<?php echo $departamento['PK_DEPTO']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>" data-tipo-usuario="<?php echo $tipo_usuario; ?>" data-email-user="<?php echo $email_user; ?>">
+                        <?php echo $nextPeriod; ?>
+                    </a>
+                </li>
+            <?php endif;
+            */
+
+        endforeach;
+    endif; ?>
+</ul>
             </li>
 
             

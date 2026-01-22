@@ -260,7 +260,8 @@ while ($rowtipo = $resultadotipo->fetch_assoc()) {
                   FROM solicitudes 
                   JOIN deparmanentos ON deparmanentos.PK_DEPTO = solicitudes.departamento_id
                   JOIN facultad ON facultad.PK_FAC = solicitudes.facultad_id
-                  WHERE departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_d' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)";
+                  WHERE departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND tipo_docente = '$tipo_d' AND (solicitudes.estado <> 'an' OR solicitudes.estado IS NULL)
+                  ORDER BY solicitudes.nombre ASC";
 
     $resultadot = $con->query($consultat);
 

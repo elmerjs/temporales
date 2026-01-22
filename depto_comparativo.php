@@ -1,3 +1,26 @@
+<style>
+.delete-btn:disabled,
+.update-btn:disabled,
+.btn-agregar-profesor:disabled {
+    cursor: not-allowed;
+}
+
+/*
+ * Estilo para los iconos (tacho/lápiz) deshabilitados
+ */
+.delete-btn:disabled i,
+.update-btn:disabled i {
+    opacity: 0.4;
+}
+
+/*
+ * Estilo para el botón "Agregar" (icono Y texto) deshabilitado
+ * (Aquí apagamos ambos elementos)
+ */
+.btn-agregar-profesor:disabled i,
+.btn-agregar-profesor:disabled span {
+    opacity: 0.4; /* El efecto "grisáceo" */
+</style>
 <?php
 echo "<div id='seccionTablas'></div>";
 
@@ -124,7 +147,6 @@ $semanas_ocasant = ceil($dias_ocasant / 7);
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 <!-- Cargar solo Bootstrap 5 JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <style>
       
@@ -1005,7 +1027,8 @@ if (isset($_POST['envia'])) {
         // --- LOOP THROUGH EACH DOCENTE TYPE ---
         while ($rowtipo = $resultadotipo->fetch_assoc()) {
             $tipo_docente = $rowtipo['tipo_d'];
-            
+            $total_proyect = 0; // <-- ESTA LÍNEA ES CLAVE
+      
             echo '<div class="grid-row">'; // Inicio de fila de grid para este tipo
             
             // ================= COLUMNA PERIODO ACTUAL =================
@@ -1109,14 +1132,23 @@ echo "</h5>";
 if ($tipo_usuario == 1) {
     echo "
     <div class='btn-container'>"; // Envuelve el botón en un div para mejor control flexbox
-    echo "
+    // 1. Determina si el usuario es admin (reutiliza la variable)
+        $esAdminAutorizado = ($_SESSION['name'] == 'admin' || $_SESSION['name'] == 'elmer jurado' || $_SESSION['name'] == 'jhon Sebastian Alegría Ausecha');
+
+        // 2. Define el estado y el título para el botón "Agregar"
+        $estadoBotonAgregar = $esAdminAutorizado ? '' : 'disabled';
+        $tituloBotonAgregar = $esAdminAutorizado ? 'Agregar Profesor' : 'No tiene permisos para agregar';
+
+        // 3. Imprime el formulario
+        echo "
         <form action='nuevo_registro_admin.php' method='GET' class='mb-0'>
             <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
             <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
             <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
             <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
             <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
-            <button type='submit' class='btn-agregar-profesor' title='Agregar Profesor'>
+
+            <button type='submit' class='btn-agregar-profesor' title='" . $tituloBotonAgregar . "' " . $estadoBotonAgregar . ">
                 <i class='fas fa-user-plus'></i> <span>Agregar</span>
             </button>
         </form>";
@@ -1272,6 +1304,13 @@ if ($tipo_docente == 'Ocasional') {
                         }
                         if ($tipo_usuario == 1) {
                             echo "<td>";
+                            
+                             $esAdminAutorizado = ($_SESSION['name'] == 'admin' || $_SESSION['name'] == 'elmer jurado' || $_SESSION['name'] == 'jhon Sebastian Alegría Ausecha');
+
+                            $estadoBoton = $esAdminAutorizado ? '' : 'disabled';
+                            $tituloBoton = $esAdminAutorizado ? 'Eliminar registro' : 'No tiene permisos para eliminar';
+
+                            // 2. Ahora imprime el formulario
                             echo "
                             <form action='eliminar_admin.php' method='POST' class='delete-form' style='display:inline;'>
                                 <input type='hidden' name='id_solicitud' value='".htmlspecialchars($row["id_solicitud"])."'>
@@ -1281,21 +1320,32 @@ if ($tipo_docente == 'Ocasional') {
                                 <input type='hidden' name='anio_semestre_anterior' value='".htmlspecialchars($periodo_anterior)."'>
                                 <input type='hidden' name='tipo_docente' value='".htmlspecialchars($tipo_docente)."'>
                                 <input type='hidden' name='motivo_eliminacion' class='motivo-input' value=''>
-                                <button type='submit' class='delete-btn' title='Eliminar registro'>
+
+                                <button type='submit' class='delete-btn' title='" . $tituloBoton . "' " . $estadoBoton . ">
                                     <i class='fas fa-trash fa-sm'></i>
                                 </button>
-                            </form>";
+</form>";
                             echo "</td><td>";
-                            echo "
-                                <form action='actualizar_admin.php' method='GET' style='display:inline;'>
-                                    <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row["id_solicitud"]) . "'>
-                                    <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
-                                    <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
-                                    <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
-                                    <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
-                                    <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
-                                    <button type='submit' class='update-btn'><i class='fas fa-edit'></i></button>
-                                </form></td>";
+                         
+
+                        // 2. Define el estado y el título específicos para ESTE botón
+                        $estadoBotonActualizar = $esAdminAutorizado ? '' : 'disabled';
+                        $tituloBotonActualizar = $esAdminAutorizado ? 'Actualizar registro' : 'No tiene permisos para actualizar';
+
+                        // 3. Imprime el formulario con las nuevas variables
+                        echo "
+                        <form action='actualizar_admin.php' method='GET' style='display:inline;'>
+                            <input type='hidden' name='id_solicitud' value='" . htmlspecialchars($row["id_solicitud"]) . "'>
+                            <input type='hidden' name='facultad_id' value='" . htmlspecialchars($facultad_id) . "'>
+                            <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
+                            <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
+                            <input type='hidden' name='anio_semestre_anterior' value='" . htmlspecialchars($periodo_anterior) . "'>
+                            <input type='hidden' name='tipo_docente' value='" . htmlspecialchars($tipo_docente) . "'>
+
+                            <button type='submit' class='update-btn' title='" . $tituloBotonActualizar . "' " . $estadoBotonActualizar . ">
+                                <i class='fas fa-edit'></i>
+                            </button>
+                        </form></td>";
                         }   
                             // --- Lógica para mostrar Puntos con indicadores de actualización ---
         $valorPuntos = 0; // Inicializar para evitar posibles advertencias
@@ -1511,7 +1561,8 @@ if ($tipo_docente == 'Ocasional') {
 
             // ================= COLUMNA PERIODO ANTERIOR =================
             echo '<div class="grid-col">';
-            
+          $total_proyectant = 0; // <-- IMPORTANTE
+   
             // --- MAIN QUERY TO GET PROFESSORS FOR THE PREVIOUS PERIOD ---
           $sql = "SELECT solicitudes.*, 
                facultad.nombre_fac_minb AS nombre_facultad, 
@@ -2486,75 +2537,67 @@ echo "<div>
             <canvas id="valoresProyectadosChart"></canvas>
         </div>
     </div>
-            <?php
-            // MOSTRAR SECCIÓN DE INTERPRETACIONES
-            // Asegúrate de que $interpretaciones esté definida y rellena ANTES de este punto en el código PHP.
-            // (Asumo que tus cálculos de interpretaciones están ejecutándose antes de la salida HTML)
-         
-            ?>
-              
-        
-        <?php
-    // ... cálculos previos ...
+<?php
+// CÁLCULOS PRINCIPALES (Asumimos que diffTotalProfesores y diffTotalProyectado ya están definidos)
 
-    $porcentajeTotalProfesores = ($totalProfesoresTotalAnterior != 0) 
-        ? ($diffTotalProfesores / $totalProfesoresTotalAnterior) * 100 
-        : 0;
-    $porcentajeTotalProyectado = ($totalProyectadoTotalAnterior != 0) 
-        ? ($diffTotalProyectado / $totalProyectadoTotalAnterior) * 100 
-        : 0;
+$porcentajeTotalProfesores = ($totalProfesoresTotalAnterior != 0)
+    ? ($diffTotalProfesores / $totalProfesoresTotalAnterior) * 100
+    : 0;
+$porcentajeTotalProyectado = ($totalProyectadoTotalAnterior != 0)
+    ? ($diffTotalProyectado / $totalProyectadoTotalAnterior) * 100
+    : 0;
 
-    // CÁLCULOS ADICIONALES PARA INTERPRETACIONES
-    $diferenciaSemanasCat = $semanas_cat - $semanas_catant;
-    $diferenciaSemanasOc = $semanas_ocas - $semanas_ocasant;
-
-    $porcentajeCambioSemanasCat = ($semanas_catant != 0) 
-        ? round(($diferenciaSemanasCat / $semanas_catant) * 100, 1) 
-        : 0;
-
-    $porcentajeCambioSemanasOc = ($semanas_ocasant != 0) 
-        ? round(($diferenciaSemanasOc / $semanas_ocasant) * 100, 1) 
-        : 0;
-
-    $cambioSemanasSignificativo = (abs($porcentajeCambioSemanasCat) > 5 || abs($porcentajeCambioSemanasOc) > 5);
-
-    // DETERMINAR SI ES VIGENCIA DIFERENTE (año diferente)
-    $anio_actual = explode('-', $anio_semestre)[0];
-    $anio_anterior = explode('-', $periodo_anterior)[0];
-    $vigencia_diferente = ($anio_actual != $anio_anterior);
-    $ipc_estimado = 0.08; // 8% de inflación estimada
-
-// CÁLCULOS ADICIONALES PARA INTERPRETACIONES
+// CÁLCULOS ADICIONALES PARA INTERPRETACIONES DE SEMANAS
 $diferenciaSemanasCat = $semanas_cat - $semanas_catant;
 $diferenciaSemanasOc = $semanas_ocas - $semanas_ocasant;
 
-$porcentajeCambioSemanasCat = ($semanas_catant != 0) 
-    ? round(($diferenciaSemanasCat / $semanas_catant) * 100, 1) 
+$porcentajeCambioSemanasCat = ($semanas_catant != 0)
+    ? round(($diferenciaSemanasCat / $semanas_catant) * 100, 1)
     : 0;
 
-$porcentajeCambioSemanasOc = ($semanas_ocasant != 0) 
-    ? round(($diferenciaSemanasOc / $semanas_ocasant) * 100, 1) 
+$porcentajeCambioSemanasOc = ($semanas_ocasant != 0)
+    ? round(($diferenciaSemanasOc / $semanas_ocasant) * 100, 1)
     : 0;
 
 $cambioSemanasSignificativo = (abs($porcentajeCambioSemanasCat) > 5 || abs($porcentajeCambioSemanasOc) > 5);
 
+// DETERMINAR SI ES VIGENCIA DIFERENTE (año diferente)
+$anio_actual = explode('-', $anio_semestre)[0];
+$anio_anterior = explode('-', $periodo_anterior)[0];
+$vigencia_diferente = ($anio_actual != $anio_anterior);
+$ipc_estimado = 0.08; // 8% de inflación estimada
+
+// CÁLCULO DEL INCREMENTO EN VALOR DEL PUNTO (AJUSTE SALARIAL)
+$incremento_valor_punto = 0;
+$porcentaje_incremento_punto = 0;
+
+if (isset($valor_puntoant) && $valor_puntoant > 0) {
+    $incremento_valor_punto = $valor_punto - $valor_puntoant;
+    $porcentaje_incremento_punto = ($incremento_valor_punto / $valor_puntoant) * 100;
+}
+
+$ajuste_salarial_significativo = (abs($porcentaje_incremento_punto) > 1); // Considerar significativo si es mayor al 1%
+
 // GENERACIÓN DE INTERPRETACIONES
 $interpretaciones = [];
 
-                     // Escenario 0: Periodo nuevo (datos vacíos/ceros)
-if ($totalProyectadoTotal=== 0 ) {
+// Escenario 0: Periodo nuevo (datos vacíos/ceros)
+if ($totalProyectadoTotal === 0) {
+    $interpretacion = 'Este es un periodo nuevo sin datos históricos. La información se mostrará aquí conforme se registren las vinculaciones.';
+    
     $interpretaciones[] = [
         'icono' => 'fas fa-hourglass-start', // Icono de reloj de arena
         'titulo' => 'Periodo en configuración',
-        'texto' => 'Este es un periodo nuevo sin datos históricos. La información se mostrará aquí conforme se registren las vinculaciones.',
+        'texto' => $interpretacion,
         'tipo' => 'info' // Estilo azul informativo
     ];
 }
-                     // Escenario 1: Profesores bajan pero presupuesto sube
+
+// Escenario 1: Profesores bajan pero presupuesto sube
 elseif ($diffTotalProfesores < 0 && $diffTotalProyectado > 0) {
     $interpretacion = "A pesar de la disminución de <strong>" . abs($diffTotalProfesores) . " profesores</strong> ";
     $interpretacion .= "(un <strong>" . number_format(abs($porcentajeTotalProfesores), 1) . "%</strong> menos), el presupuesto proyectado aumentó ";
-    $interpretacion .= "en <strong>$" . number_format($diffTotalProyectado, 0, ',', '.') . "</strong>. "; // Formateo para millones si es grande, o el valor exacto
+    $interpretacion .= "en <strong>$" . number_format($diffTotalProyectado, 0, ',', '.') . "</strong>. ";
 
     $causas = [];
 
@@ -2573,12 +2616,16 @@ elseif ($diffTotalProfesores < 0 && $diffTotalProyectado > 0) {
     }
 
     // Causa 2: Cambio de vinculación de profesores
-    if ($huboCambioVinculacion) { // <-- USANDO LA BANDERA AQUÍ
+    if (isset($huboCambioVinculacion) && $huboCambioVinculacion) {
         $causas[] = "profesores que cambiaron su tipo de vinculación (ej. de Cátedra a Ocasional), lo que puede implicar un ajuste en el valor";
     }
+
+    // Causa 3: Ajuste salarial por incremento en valor del punto
+    if ($ajuste_salarial_significativo && $incremento_valor_punto > 0) {
+        $causas[] = "el incremento del " . number_format($porcentaje_incremento_punto, 1) . "% en el valor del punto (ajuste salarial)";
+    }
     
-    // Causa 3: Aumento general en puntos/horas (si no hay otras causas específicas o como complemento)
-    // Solo agrega esta causa si las anteriores no son la única explicación, o como una general
+    // Causa 4: Aumento general en puntos/horas
     if (empty($causas) || (count($causas) == 1 && strpos($causas[0], 'semanas de vinculación') === false)) {
         $causas[] = "un aumento en los puntos/horas asignados a los profesores activos.";
     }
@@ -2597,7 +2644,8 @@ elseif ($diffTotalProfesores < 0 && $diffTotalProyectado > 0) {
         'tipo' => 'advertencia' // O 'info' si quieres un tono más neutral
     ];
 }
-              // Escenario 8: Profesores suben pero presupuesto baja
+
+// Escenario 8: Profesores suben pero presupuesto baja
 elseif ($diffTotalProfesores > 0 && $diffTotalProyectado < 0) {
     $interpretacion = "A pesar del incremento de <strong>" . $diffTotalProfesores . " profesores</strong> ";
     $interpretacion .= "(un <strong>" . number_format($porcentajeTotalProfesores, 1) . "%</strong> más), ";
@@ -2607,7 +2655,7 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado < 0) {
     $causas = [];
 
     // Causa 1: Cambios hacia modalidades más económicas
-    if ($huboCambioVinculacion) {
+    if (isset($huboCambioVinculacion) && $huboCambioVinculacion) {
         $causas[] = "migración hacia tipos de vinculación con menor valor por hora (ej: de Ocasional a Cátedra)";
     }
 
@@ -2623,13 +2671,13 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado < 0) {
         $causas[] = "reducción en semanas: " . implode(' y ', $detalle_semanas);
     }
 
-    // Causa 3: Profesores con menor dedicación o puntos/hora
-    $causas[] = "los nuevos profesores podrían tener menor dedicación o valor asignado en puntos/hora";
-
-    // Causa 4: Reducción general si no hay otra causa clara
-    if (empty($huboCambioVinculacion) && empty($cambioSemanasSignificativo)) {
-        $causas[] = "una reducción general en los puntos/hora asignados";
+    // Causa 3: Ajuste salarial (si hay reducción en valor del punto)
+    if ($ajuste_salarial_significativo && $incremento_valor_punto < 0) {
+        $causas[] = "reducción del " . number_format(abs($porcentaje_incremento_punto), 1) . "% en el valor del punto";
     }
+
+    // Causa 4: Profesores con menor dedicación o puntos/hora
+    $causas[] = "los nuevos profesores podrían tener menor dedicación o valor asignado en puntos/hora";
 
     $interpretacion .= "Esto podría indicar:<br>- " . implode("<br>- ", $causas);
 
@@ -2659,13 +2707,15 @@ elseif (abs($diffTotalProfesores) <= 2 && $diffTotalProyectado > 0) {
         }
         $causas[] = "Incremento en las semanas de vinculación para " . implode(" y ", $detalles) . ".";
     } else {
-        // Causa 1b: Ajustes en puntos/horas si no hay cambio significativo en semanas
-        // Esta se incluye como una causa general si las semanas no son el factor principal
         $causas[] = "Ajustes en los puntos y/o horas asignados a vinculaciones.";
     }
 
-  
-    if ($huboCambioVinculacion) {
+    // Causa 2: Ajuste salarial
+    if ($ajuste_salarial_significativo && $incremento_valor_punto > 0) {
+        $causas[] = "Ajuste salarial del " . number_format($porcentaje_incremento_punto, 1) . "% en el valor del punto.";
+    }
+
+    if (isset($huboCambioVinculacion) && $huboCambioVinculacion) {
         $causas[] = "Se identificaron cambios en el tipo de vinculación de algunos profesores, lo que afecta su valor.";
     }
 
@@ -2678,13 +2728,14 @@ elseif (abs($diffTotalProfesores) <= 2 && $diffTotalProyectado > 0) {
         $interpretacion .= "</ul>";
     }
 
-    $interpretacion .= "Este aumento global representa un " . abs($porcentaje) . "% adicional en el costo por profesor.";
+    // Corregido: asumimos que $porcentaje debería ser $porcentajeTotalProyectado para este escenario
+    $interpretacion .= "Este aumento global representa un " . number_format(abs($porcentajeTotalProyectado), 1) . "% adicional en el costo proyectado.";
 
     $interpretaciones[] = [
-        'icono' => 'fas fa-arrow-up', // Icono de flecha hacia arriba (rojo si el tipo es negativo)
-        'titulo' => 'Incremento de Costos', // Título cambiado
+        'icono' => 'fas fa-arrow-up',
+        'titulo' => 'Incremento de Costos',
         'texto' => $interpretacion,
-        'tipo' => 'negativo' // Interpretación cambiada a negativa
+        'tipo' => 'negativo'
     ];
 }
 // Escenario 6: Presupuesto baja con profesores estables
@@ -2707,16 +2758,19 @@ elseif (abs($diffTotalProfesores) < 2 && $porcentajeTotalProyectado < 0) {
         $interpretacion .= implode(" y ", $semanas_detalles) . ".</li>";
     }
     
-    // Causa 2 (NUEVA): Cambios de vinculación de profesores
-    if ($huboCambioVinculacion) {
+    // Causa 2: Cambios de vinculación de profesores
+    if (isset($huboCambioVinculacion) && $huboCambioVinculacion) {
         $interpretacion .= "<li>Cambios en el tipo de vinculación de algunos profesores, lo que pudo resultar en contratos con menor valor.</li>";
     }
 
-    // Causa 3: Ajustes en puntos/horas asignados
+    // Causa 3: Ajuste salarial (si hay reducción en valor del punto)
+    if ($ajuste_salarial_significativo && $incremento_valor_punto < 0) {
+        $interpretacion .= "<li>Reducción del " . number_format(abs($porcentaje_incremento_punto), 1) . "% en el valor del punto (ajuste salarial).</li>";
+    }
+
+    // Causa 4: Ajustes en puntos/horas asignados
     $interpretacion .= "<li>Ajustes a la baja en los puntos/horas asignados por profesor.</li>";
     
-    // Causa 4: Cambios en el valor del punto
-   // $interpretacion .= "<li>Posibles cambios en el valor base del punto o de la hora.</li>";
     $interpretacion .= "</ul>";
     
     $interpretaciones[] = [
@@ -2726,7 +2780,7 @@ elseif (abs($diffTotalProfesores) < 2 && $porcentajeTotalProyectado < 0) {
         'tipo' => 'neutro' // O 'info'
     ];
 }
-              
+    
 // Escenario 7: Ambos indicadores bajan (profesores y presupuesto)
 elseif ($diffTotalProfesores < 0 && $diffTotalProyectado < 0) {
     $interpretacion = "Reducción </strong> en la planta docente temporal ";
@@ -2750,16 +2804,19 @@ elseif ($diffTotalProfesores < 0 && $diffTotalProyectado < 0) {
         $interpretacion .= "</li>";
     }
     
+    // Incluir ajuste salarial si aplica (reducción)
+    if ($ajuste_salarial_significativo && $incremento_valor_punto < 0) {
+        $interpretacion .= "<li>Reducción del " . number_format(abs($porcentaje_incremento_punto), 1) . "% en el valor del punto (ajuste salarial)</li>";
+    }
+
     $interpretacion .= "<li>Posible <strong>optimización de recursos</strong> o disminución de necesidades académicas</li>";
     $interpretacion .= "<li>Relación costo-eficiencia: ";
-    $costoPorProfesorAnterior = $totalProyectadoTotalAnterior / $totalProfesoresTotalAnterior;
-$costoPorProfesorActual = $totalProfesoresTotal > 0 
-    ? $totalProyectadoTotal / $totalProfesoresTotal 
-    : 0;
-    $variacionCosto = (($costoPorProfesorActual - $costoPorProfesorAnterior) / $costoPorProfesorAnterior) * 100;
+    $costoPorProfesorAnterior = $totalProfesoresTotalAnterior > 0 ? $totalProyectadoTotalAnterior / $totalProfesoresTotalAnterior : 0;
+    $costoPorProfesorActual = $totalProfesoresTotal > 0 ? $totalProyectadoTotal / $totalProfesoresTotal : 0;
+    $variacionCosto = ($costoPorProfesorAnterior != 0) ? (($costoPorProfesorActual - $costoPorProfesorAnterior) / $costoPorProfesorAnterior) * 100 : 0;
     
-    $interpretacion .= number_format($costoPorProfesorActual, 0, ',', '.') . " vs " . 
-                      number_format($costoPorProfesorAnterior, 0, ',', '.') . " por profesor ";
+    $interpretacion .= number_format($costoPorProfesorActual, 0, ',', '.') . " vs " .
+                        number_format($costoPorProfesorAnterior, 0, ',', '.') . " por profesor ";
     $interpretacion .= "(" . ($variacionCosto > 0 ? "+" : "") . number_format($variacionCosto, 1) . "%)</li>";
     $interpretacion .= "</ul>";
     
@@ -2771,7 +2828,7 @@ $costoPorProfesorActual = $totalProfesoresTotal > 0
     ];
 }
 // Escenario 3: Profesores bajan, presupuesto se mantiene
-elseif ($diffTotalProfesores < 0 && abs($porcentaje) < 5) {
+elseif ($diffTotalProfesores < 0 && abs($porcentajeTotalProyectado) < 5) {
     $ahorroEstimado = $totalProyectadoTotalAnterior * (abs($diffTotalProfesores) / $totalProfesoresTotalAnterior);
     
     $interpretacion = "A pesar de la reducción de " . abs($diffTotalProfesores) . " profesores, ";
@@ -2782,6 +2839,11 @@ elseif ($diffTotalProfesores < 0 && abs($porcentaje) < 5) {
     
     if ($cambioSemanasSignificativo) {
         $interpretacion .= "<li>Aumento compensatorio en semanas de vinculación</li>";
+    }
+
+    // Incluir ajuste salarial si aplica (aumento)
+    if ($ajuste_salarial_significativo && $incremento_valor_punto > 0) {
+        $interpretacion .= "<li>Aumento del " . number_format(abs($porcentaje_incremento_punto), 1) . "% en el valor del punto (ajuste salarial), compensando la reducción de planta.</li>";
     }
     
     $interpretacion .= "<li>Potencial ahorro estimado: $" . number_format($ahorroEstimado / 1000000, 2) . " millones</li>";
@@ -2796,7 +2858,7 @@ elseif ($diffTotalProfesores < 0 && abs($porcentaje) < 5) {
 }
 
 // Escenario 4: Profesores suben, presupuesto estable
-elseif ($diffTotalProfesores > 0 && abs($porcentaje) < 5) {
+elseif ($diffTotalProfesores > 0 && abs($porcentajeTotalProyectado) < 5) {
     $interpretacion = "A pesar del incremento de " . $diffTotalProfesores . " profesores, ";
     $interpretacion .= "el presupuesto se mantuvo estable. Esto sugiere:";
     
@@ -2806,8 +2868,13 @@ elseif ($diffTotalProfesores > 0 && abs($porcentaje) < 5) {
     if ($cambioSemanasSignificativo) {
         $interpretacion .= "<li>Reducción compensatoria en semanas de vinculación</li>";
     }
+
+    // Incluir ajuste salarial si aplica (reducción)
+    if ($ajuste_salarial_significativo && $incremento_valor_punto < 0) {
+        $interpretacion .= "<li>Reducción del " . number_format(abs($porcentaje_incremento_punto), 1) . "% en el valor del punto (ajuste salarial), ayudando a mantener la estabilidad.</li>";
+    }
     
-    $costoPromedio = $totalProyectadoTotal / $totalProfesoresTotal;
+    $costoPromedio = $totalProfesoresTotal > 0 ? $totalProyectadoTotal / $totalProfesoresTotal : 0;
     $interpretacion .= "<li>Costo promedio por profesor: $" . number_format($costoPromedio / 1000000, 2) . " millones</li>";
     $interpretacion .= "</ul>";
     
@@ -2827,14 +2894,22 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
     $interpretacion .= "y el aumento presupuestal (" . number_format($porcentajeTotalProyectado, 1) . "%) son proporcionales, ";
     $interpretacion .= "indicando una expansión equilibrada.";
 
+    $interpretacion .= "<ul class='interpretacion-lista'>";
+
     if ($cambioSemanasSignificativo) {
-        $interpretacion .= " El cambio en semanas de vinculación contribuyó al ajuste presupuestal.";
+        $interpretacion .= "<li>El cambio en semanas de vinculación contribuyó al ajuste presupuestal.</li>";
     }
 
     // Nueva condición: Cambios de vinculación afectando el valor proyectado
-    if ($huboCambioVinculacion) {
-        $interpretacion .= " De todas maneras, se evidencia un cambio en el tipo de vinculación de algunos profesores, lo que puede afectar el valor proyectado.";
+    if (isset($huboCambioVinculacion) && $huboCambioVinculacion) {
+        $interpretacion .= "<li>Se evidencia un cambio en el tipo de vinculación de algunos profesores, lo que puede afectar el valor proyectado.</li>";
     }
+    
+    // Incluir ajuste salarial si aplica (aumento)
+    if ($ajuste_salarial_significativo && $incremento_valor_punto > 0) {
+        $interpretacion .= "<li>El incremento del " . number_format(abs($porcentaje_incremento_punto), 1) . "% en el valor del punto (ajuste salarial) contribuyó a este aumento proporcional.</li>";
+    }
+    $interpretacion .= "</ul>";
 
     $interpretaciones[] = [
         'icono' => 'fas fa-expand',
@@ -2845,8 +2920,10 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
 }
 
 
-              // Escenario 9: Semanas cambian significativamente sin variación en otros indicadores
-elseif (abs($diffTotalProfesores) < 2 && abs($porcentajeTotalProyectado) < 1 && $cambioSemanasSignificativo) {
+// Escenario 9: Semanas cambian significativamente sin variación en otros indicadores
+elseif (abs($diffTotalProfesores) < 2 &&
+        abs($porcentajeTotalProyectado) < 1 &&
+        $cambioSemanasSignificativo) {
     $interpretacion = "Aunque la planta docente y el presupuesto se mantuvieron estables, ";
     $interpretacion .= "se observan cambios significativos en las semanas de vinculación: ";
     
@@ -2871,9 +2948,10 @@ elseif (abs($diffTotalProfesores) < 2 && abs($porcentajeTotalProyectado) < 1 && 
         'tipo' => 'info'
     ];
 }
-              // Escenario 10: Estabilidad general (cambios mínimos en todos los indicadores)
-elseif (abs($diffTotalProfesores) < 2 && 
-        abs($porcentajeTotalProyectado) < 1 && 
+
+// Escenario 10: Estabilidad general (cambios mínimos en todos los indicadores)
+elseif (abs($diffTotalProfesores) < 2 &&
+        abs($porcentajeTotalProyectado) < 1 &&
         !$cambioSemanasSignificativo) {
     
     $interpretacion = "La planta docente, presupuesto proyectado y distribución de semanas ";
@@ -2887,8 +2965,9 @@ elseif (abs($diffTotalProfesores) < 2 &&
         'tipo' => 'neutro'
     ];
 }
-              // Escenario 11: Ambos indicadores suben significativamente (profesores y presupuesto)
-elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 && 
+
+// Escenario 11: Ambos indicadores suben significativamente (profesores y presupuesto)
+elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
         (abs($porcentajeTotalProfesores) >= 10 || abs($porcentajeTotalProyectado) >= 10)) {
     
     $interpretacion = "Se observa un <strong>incremento significativo</strong> tanto en la planta docente ";
@@ -2903,9 +2982,9 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
     $interpretacion .= "<li><strong>Expansión académica</strong>: Mayor demanda de clases o nuevos programas</li>";
     
     // Causa 2: Cambios en la composición de la planta
-    $causas = [];
-    if ($huboCambioVinculacion) {
-        $causas[] = "cambios en los tipos de vinculación hacia modalidades con mayor valor";
+    $causas_comp = [];
+    if (isset($huboCambioVinculacion) && $huboCambioVinculacion) {
+        $causas_comp[] = "cambios en los tipos de vinculación hacia modalidades con mayor valor";
     }
     if ($cambioSemanasSignificativo) {
         $semanas_info = [];
@@ -2916,24 +2995,23 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
             $semanas_info[] = "Ocasional (+" . $diferenciaSemanasOc . " semanas)";
         }
         if (!empty($semanas_info)) {
-            $causas[] = "aumento en semanas de vinculación: " . implode(" y ", $semanas_info);
+            $causas_comp[] = "aumento en semanas de vinculación: " . implode(" y ", $semanas_info);
         }
     }
     
-    if (!empty($causas)) {
-        $interpretacion .= "<li><strong>Cambios en la composición</strong>: " . implode("; ", $causas) . "</li>";
+    // Causa 3: Ajuste salarial
+    if ($ajuste_salarial_significativo && $incremento_valor_punto > 0) {
+        $causas_comp[] = "ajuste salarial del " . number_format($porcentaje_incremento_punto, 1) . "% en el valor del punto";
     }
     
-    // Causa 3: Aumento en puntos/horas
-   // $interpretacion .= "<li><strong>Incremento en puntos/horas</strong>: Asignación de mayor carga académica por profesor</li>";
-    
-    // Causa 4: Ajustes salariales
-//    $interpretacion .= "<li><strong>Posibles ajustes</strong> en el valor del punto o salarios base</li>";
+    if (!empty($causas_comp)) {
+        $interpretacion .= "<li><strong>Cambios en la composición</strong>: " . implode("; ", $causas_comp) . "</li>";
+    }
     
     $interpretacion .= "</ul>";
     
     // Calcular costo adicional por profesor nuevo
-    $costoPorProfesorNuevo = $diffTotalProyectado / $diffTotalProfesores;
+    $costoPorProfesorNuevo = $diffTotalProfesores != 0 ? $diffTotalProyectado / $diffTotalProfesores : 0;
     $interpretacion .= "<div class='nota-destacada'>Cada nuevo profesor representa un costo adicional promedio de <strong>$" . number_format($costoPorProfesorNuevo, 0, ',', '.') . "</strong>.</div>";
     
     $interpretaciones[] = [
@@ -2943,41 +3021,51 @@ elseif ($diffTotalProfesores > 0 && $diffTotalProyectado > 0 &&
         'tipo' => 'negativo' // O 'advertencia' si el crecimiento es muy alto
     ];
 }
-    // MOSTRAR SECCIÓN DE INTERPRETACIONES
-    // ESTE ES EL ÚNICO BLOQUE PHP QUE DEBE MOSTRAR LAS INTERPRETACIONES
-    // Asegúrate de que $interpretaciones esté definida y rellena ANTES de este punto en el código PHP.
-    // (Tus cálculos para llenar $interpretaciones deben estar antes de esta sección HTML)
-    if (!empty($interpretaciones)) {
-        echo '<div class="interpretaciones-panel">'; // Este div reemplaza el antiguo <div class="card"> para interpretaciones
-        echo '<h3 class="interpretaciones-titulo-seccion"><i class="fas fa-brain"></i> Interpretación de Resultados</h3>';
 
-        // Mostrar nota de cambio de vigencia si aplica
-        if ($vigencia_diferente) {
-            echo '<div class="vigencia-nota">';
-            echo '<i class="fas fa-info-circle"></i> ';
-            echo "Periodo actual ($anio_semestre) y anterior ($periodo_anterior) son de vigencias diferentes ($anio_anterior → $anio_actual). ";
-            echo "IPC estimado: " . number_format($ipc_estimado * 100, 2) . '%.';
-            echo '</div>';
-        }
 
-        foreach ($interpretaciones as $interpretacion_item) { // Renombrado a $interpretacion_item para evitar conflicto con el array principal
-            $claseTipo = "interpretacion-{$interpretacion_item['tipo']}";
+// MOSTRAR SECCIÓN DE INTERPRETACIONES
+if (!empty($interpretaciones)) {
+    echo '<div class="interpretaciones-panel">'; // Este div reemplaza el antiguo <div class="card"> para interpretaciones
+    echo '<h3 class="interpretaciones-titulo-seccion"><i class="fas fa-brain"></i> Interpretación de Resultados</h3>';
 
-            echo <<<HTML
-            <div class="interpretacion-card {$claseTipo}">
-                <div class="interpretacion-header">
-                    <i class="{$interpretacion_item['icono']}"></i>
-                    <h4>{$interpretacion_item['titulo']}</h4>
-                </div>
-                <div class="interpretacion-body">
-                    <p>{$interpretacion_item['texto']}</p>
-                </div>
-            </div>
-            HTML;
-        }echo '</div>'; // Cierre de interpretaciones-panel
+    // Mostrar nota de cambio de vigencia si aplica
+    if ($vigencia_diferente) {
+        echo '<div class="vigencia-nota">';
+        echo '<i class="fas fa-info-circle"></i> ';
+        echo "Periodo actual ($anio_semestre) y anterior ($periodo_anterior) vigencias diferentes. ";
+        
+        echo '</div>';
     }
-?>
 
+    // Mostrar nota de ajuste salarial si aplica (Panel destacado)
+    if ($ajuste_salarial_significativo) {
+        echo '<div class="ajuste-salarial-nota">';
+        echo '<i class="fas fa-money-bill-wave"></i> ';
+        echo "<strong>Ajuste salarial identificado:</strong> El valor del punto ha ";
+        echo ($incremento_valor_punto > 0 ? "incrementado" : "sido reducido");
+        echo " en <strong>" . number_format(abs($porcentaje_incremento_punto), 1) . "%</strong> ";
+        echo "(de " . number_format($valor_puntoant, 0, ',', '.') . " a " . number_format($valor_punto, 0, ',', '.') . "). Este es un factor clave en la variación presupuestal.";
+        echo '</div>';
+    }
+
+    foreach ($interpretaciones as $interpretacion_item) { // Renombrado a $interpretacion_item para evitar conflicto con el array principal
+        $claseTipo = "interpretacion-{$interpretacion_item['tipo']}";
+
+        echo <<<HTML
+        <div class="interpretacion-card {$claseTipo}">
+            <div class="interpretacion-header">
+                <i class="{$interpretacion_item['icono']}"></i>
+                <h4>{$interpretacion_item['titulo']}</h4>
+            </div>
+            <div class="interpretacion-body">
+                <p>{$interpretacion_item['texto']}</p>
+            </div>
+        </div>
+        HTML;
+    }
+    echo '</div>'; // Cierre de interpretaciones-panel
+}
+?>
 <!-- CSS adicional para la nota de vigencia -->
 <style>
 .vigencia-nota {

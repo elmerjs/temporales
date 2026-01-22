@@ -685,9 +685,9 @@ $row->addCell(2200, array('vMerge' => 'continue')); // Celda 'continue' para Obs
         // Asumiendo que 'facultad_id' y 'email_facultad' son necesarios para otras partes del oficio.
         // Si no, se pueden eliminar.
         $facultad_id = $row['facultad_id'];
-        //$facultad_email = $row['email_facultad']; // Usar el de la BD si existe, sino el fallback
+        $facultad_email = $row['email_facultad']; // Usar el de la BD si existe, sino el fallback
         
-        $facultad_email = 'elmerjs@unicauca.edu.co';
+        //$facultad_email = 'elmerjs@unicauca.edu.co';
         $table->addRow();
         
         // Columna Nº
@@ -926,7 +926,7 @@ $mail->addCC('ejurado@unicauca.edu.co'); // Enviar copia
     $mail->Body    = "
         <p>Cordial saludo, </p>
         <p>Se ha generado una solicitud Novedad de vinculación de profesores temporales desde el departamento <strong>{$nombre_depto} para el periodo {$anio_semestre}</strong>.</p>
-        <p>Por favor, revise la plataforma solicitudes de vinculación, http://192.168.42.175/temporalesc/ para más detalles.<em>(acceso restringido a dispositivos dentro de la red interna de la Universidad del Cauca)</em></p>
+        <p>Por favor, revise la plataforma solicitudes de vinculación, http://192.168.42.175/temporales/ para más detalles.<em>(acceso restringido a dispositivos dentro de la red interna de la Universidad del Cauca)</em></p>
         <p>Universitariamente,</p>
         <p><strong>Vicerrectoría Académica</strong></p>
     ";

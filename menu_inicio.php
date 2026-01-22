@@ -700,7 +700,9 @@ if ($result_destiempo->num_rows > 0) {
             margin-bottom: 1rem;
         }
     }
-
+.bg-custom-teal {
+    background-color: #04B2B5; /* Este es el R:4, G:178, B:181 */
+}
 /* Sobreescritura de clases de Bootstrap para usar la paleta Unicauca */
 /* Mantendremos las que ya tenías y ajustaremos sus colores a las nuevas variables */
 .text-unicauca-blue { color: var(--unicauca-blue-primary) !important; }
@@ -1029,11 +1031,10 @@ h2.section-title {
 
 <!-- Mostrar los botones de filtro si no se pasa el parámetro 'anio_semestre' -->
 <div>
-    <button class="filter-button" data-period="2024-2">2024-2</button>
-    <button class="filter-button" data-period="2025-1">2025-1</button>
-    <button class="filter-button" data-period="2025-2">2025-2</button>
-    <button class="filter-button" data-period="2026-1">2026-1</button>
-
+    <button class="filter-button <?php echo ($anio_semestre == '2024-2') ? 'active' : ''; ?>" data-period="2024-2">2024-2</button>
+    <button class="filter-button <?php echo ($anio_semestre == '2025-1') ? 'active' : ''; ?>" data-period="2025-1">2025-1</button>
+    <button class="filter-button <?php echo ($anio_semestre == '2025-2') ? 'active' : ''; ?>" data-period="2025-2">2025-2</button>
+    <button class="filter-button <?php echo ($anio_semestre == '2026-1') ? 'active' : ''; ?>" data-period="2026-1">2026-1</button>
 </div>
  <?php 
 setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'es_ES', 'es'); // Configurar idioma
@@ -1248,8 +1249,8 @@ setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'es_ES', 'es'); // Configurar
     <h2 class="text-center mb-4 text-unicauca-blue">Progreso de Facultades <?php echo $anio_semestre; ?></h2>
 
 <div class="card card-plazo mb-4">
-    <div class="card-header bg-unicauca-blue text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Plazos Clave del Proceso</h5>
+<div class="card-header bg-custom-teal text-white d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Plazos Clave del Proceso</h5>
         <button class="btn btn-sm btn-header-outline text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePlazos" aria-expanded="false" aria-controls="collapsePlazos">
             Mostrar/Ocultar <i class="bi bi-chevron-down"></i>
         </button>
@@ -1354,62 +1355,69 @@ setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'es_ES', 'es'); // Configurar
     </div>
     <?php endif; ?>
 
-    <div class="card card-progress mb-4">
-        <div class="card-header bg-unicauca-blue text-white">
-            <h5 class="mb-0">Progreso General de Facultades</h5>
-        </div>
+<div class="card card-progress mb-4">
+    <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: #04B2B5;">
+        <h5 class="mb-0">Progreso General de Facultades</h5>
+        <button class="btn btn-sm btn-header-outline text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFacultades" aria-expanded="true" aria-controls="collapseFacultades">
+            Mostrar/Ocultar <i class="bi bi-chevron-down"></i>
+        </button>
+    </div>
+    
+    <div class="collapse" id="collapseFacultades"> <!-- Quitamos la clase "show" -->
         <div class="card-body">
             <div class="progress-container-custom">
                 <div class="progress-bar-custom" style="width: <?php echo number_format($progress_facultades, 2); ?>%;">
                     <?php echo number_format($progress_facultades, 2); ?>%
                 </div>
             </div>
-        </div>
- 
 
-    <div class="row">
-   
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0">Facultades Pendientes</h5>
+            <div class="row mt-4">
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">Facultades Pendientes</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                <?php if (empty($facultades_no_recibidas)): ?>
+                                    <li class="list-group-item text-muted">Todas las facultades han enviado su información.</li>
+                                <?php else: ?>
+                                    <?php foreach ($facultades_no_recibidas as $facultad): ?>
+                                        <li class="list-group-item list-group-item-danger-custom">
+                                            <?php echo htmlspecialchars($facultad); ?>
+                                        </li>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body p-0"> <ul class="list-group list-group-flush">
-                        <?php if (empty($facultades_no_recibidas)): ?>
-                            <li class="list-group-item text-muted">Todas las facultades han enviado su información.</li>
-                        <?php else: ?>
-                            <?php foreach ($facultades_no_recibidas as $facultad): ?>
-                                <li class="list-group-item list-group-item-danger-custom">
-                                    <?php echo htmlspecialchars($facultad); ?>
-                                </li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ul>
-                </div>
-            </div>
-        </div>
-             <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-unicauca-green text-white">
-                    <h5 class="mb-0">Facultades Recibidas</h5>
-                </div>
-                <div class="card-body p-0"> <ul class="list-group list-group-flush">
-                        <?php if (empty($facultades_recibidas)): ?>
-                            <li class="list-group-item text-muted">Aún no hay facultades recibidas.</li>
-                        <?php else: ?>
-                            <?php foreach ($facultades_recibidas as $facultad): ?>
-                                <li class="list-group-item list-group-item-success-custom d-flex justify-content-between align-items-center">
-                                    <span><?php echo htmlspecialchars($facultad['nombre']); ?></span>
-                                    <small class="text-muted"><?php echo htmlspecialchars($facultad['fecha_accion']); ?></small>
-                                </li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ul>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-unicauca-green text-white">
+                            <h5 class="mb-0">Facultades Recibidas</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                <?php if (empty($facultades_recibidas)): ?>
+                                    <li class="list-group-item text-muted">Aún no hay facultades recibidas.</li>
+                                <?php else: ?>
+                                    <?php foreach ($facultades_recibidas as $facultad): ?>
+                                        <li class="list-group-item list-group-item-success-custom d-flex justify-content-between align-items-center">
+                                            <span><?php echo htmlspecialchars($facultad['nombre']); ?></span>
+                                            <small class="text-muted"><?php echo htmlspecialchars($facultad['fecha_accion']); ?></small>
+                                        </li>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-           </div>
+</div>
 </div>
     <?php endif; ?>
     </div>
@@ -1448,7 +1456,7 @@ setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'es_ES', 'es'); // Configurar
         const diferencia = fechaPlazo - ahora;
 
         if (diferencia <= 0) {
-            document.getElementById("countdown").innerHTML = "El plazo ha vencido.";
+            document.getElementById("countdown").innerHTML = "Plazo finalizado";
             return;
         }
 

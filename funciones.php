@@ -1,5 +1,18 @@
 <?php
-
+    // Función para obtener el nombre de la facultad
+    function obtenerNombreFacultadcort($departamento_id) {
+        $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+        $sql = "SELECT NOMBREC_FAC FROM facultad,deparmanentos WHERE
+        PK_FAC = FK_FAC AND 
+        deparmanentos.PK_DEPTO = '$departamento_id'";
+        $result = $conn->query($sql);
+        if ($result->num_rows > 0) {    
+            $row = $result->fetch_assoc();
+            return $row['NOMBREC_FAC'];
+        } else {
+            return "Facultad Desconocida";
+        }
+    }
 function obtenerVicerrectorActivo() {
     global $conn;
     
@@ -205,6 +218,50 @@ function obtenerDeptoCerrado($depto, $periodo) {
         return 0; // Si no hay registros, devuelve 0 por defecto
     }
 }
+
+function obtener_envio_depto($depto, $periodo) {
+    // Crear conexión
+    $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+
+    // Verificar conexión
+    if ($conn->connect_error) {
+        die("Error de conexión: " . $conn->connect_error);
+    }
+
+    // Consulta
+    $sql = "SELECT dp_estado_total
+            FROM depto_periodo
+            WHERE fk_depto_dp = ? 
+              AND periodo = ?";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        die("Error al preparar la consulta: " . $conn->error);
+    }
+
+    $stmt->bind_param("is", $depto, $periodo);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $estado_envio = 0; // Valor por defecto: no enviado
+
+    if ($row = $result->fetch_assoc()) {
+        $valor = $row['dp_estado_total'];
+        // Solo si el valor es exactamente 1, retorna 1
+        if ($valor == 1) {
+            $estado_envio = 1;
+        } else {
+            $estado_envio = 0;
+        }
+    }
+
+    $stmt->close();
+    $conn->close();
+
+    return $estado_envio; // 1 = Enviado, 0 = No enviado
+}
+
+
 function existeSolicitudAnterior($cedula, $anio_semestre) {
     $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
 
@@ -355,16 +412,62 @@ function obtener_numero_acta($periodo, $fk_depto) {
 }
 function obtenerperiodonov($anio_semestre) {
     $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
-    $sql = "SELECT periodo.estado_novedad FROM periodo WHERE nombre_periodo = '$anio_semestre'";
-    $result = $conn->query($sql);
+
+    // 1. Verificamos la conexión
+    if ($conn->connect_error) {
+        return "1"; // Si falla la base de datos, asumimos cerrado por seguridad
+    }
+
+    // 2. Usamos Prepared Statements para evitar errores de SQL
+    $sql = "SELECT estado_novedad FROM periodo WHERE nombre_periodo = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $anio_semestre);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        return $row['estado_novedad'];
+        // Si el valor es null o vacío, podrías forzarlo a 1 también
+        return ($row['estado_novedad'] !== null) ? $row['estado_novedad'] : "1";
     } else {
-        return "Período nov Desconocido";
+        // 3. SI NO EXISTE INFORMACIÓN: Mandamos 1 (Cerrado) como solicitaste
+        return "1";
     }
-}
 
+    $stmt->close();
+    $conn->close();
+}
+function contarNovedadesEnBorrador($departamento_id, $anio_semestre) {
+    // Establecer conexión (siguiendo tu ejemplo)
+    $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+
+    // Verificar si hay error de conexión
+    if ($conn->connect_error) {
+        return 0;
+    }
+
+    // Usamos DISTINCT cedula para contar docentes únicos
+    $sql = "SELECT COUNT(DISTINCT cedula) AS total 
+            FROM solicitudes_working_copy 
+            WHERE departamento_id = ? 
+            AND anio_semestre = ? 
+            AND estado_depto = 'PENDIENTE'";
+
+    $count = 0;
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param("is", $departamento_id, $anio_semestre);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($row = $result->fetch_assoc()) {
+            $count = (int)$row['total'];
+        }
+        $stmt->close();
+    }
+    
+    $conn->close();
+    return $count;
+}
 function contarSolicitudesNoAnuladas($anio_semestre) {
     $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
     
@@ -749,4 +852,111 @@ function obtenerobs_vra($id_facultad, $anio_periodo) {
     }
 }
 
+function obtenerDiferenciasPorTipo($departamento_id, $periodo_actual) {
+    $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+    $diferencias = array('Ocasional' => 0, 'Catedra' => 0);
+    
+    $periodo_anterior = obtenerPeriodoAnteriorb($periodo_actual);
+    
+    $query = "
+        SELECT 
+            a.tipo_docente,
+            a.cantidad_actual,
+            IFNULL(b.cantidad_anterior, 0) AS cantidad_anterior,
+            (a.cantidad_actual - IFNULL(b.cantidad_anterior, 0)) AS diferencia
+        FROM (
+            SELECT tipo_docente, COUNT(*) AS cantidad_actual
+            FROM solicitudes
+            WHERE anio_semestre = ?
+              AND (estado IS NULL OR estado <> 'an')
+              AND departamento_id = ?
+            GROUP BY tipo_docente
+        ) AS a
+        LEFT JOIN (
+            SELECT tipo_docente, COUNT(*) AS cantidad_anterior
+            FROM solicitudes
+            WHERE anio_semestre = ?
+              AND (estado IS NULL OR estado <> 'an')
+              AND departamento_id = ?
+            GROUP BY tipo_docente
+        ) AS b
+        ON a.tipo_docente = b.tipo_docente";
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("sisi", $periodo_actual, $departamento_id, $periodo_anterior, $departamento_id);
+    
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        while ($row = $result->fetch_assoc()) {
+            $tipo = $row['tipo_docente'];
+            $diferencias[$tipo] = $row['diferencia'];
+        }
+    }
+    $stmt->close();
+    $conn->close();
+    
+    return $diferencias;
+}
+
+// Función para generar el icono de alerta con SweetAlert2
+function generarIconoAlerta($diferencia, $tipo_docente) {
+    if ($diferencia >= 1) {
+        return '<a href="#" onclick="mostrarAlertaIncremento(' . $diferencia . ', \'' . $tipo_docente . '\')" 
+                 class="text-danger ms-1" style="text-decoration: none;" title="Click para más información">
+                 <i class="fas fa-arrow-up"></i>
+               </a>';
+    }
+    return '';
+}
+
+// Las otras funciones se mantienen igual
+function obtenerDiferenciaTotal($departamento_id, $periodo_actual) {
+    $conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+    $periodo_anterior = obtenerPeriodoAnteriorb($periodo_actual);
+    
+    $query = "
+        SELECT 
+            a.cantidad_actual,
+            IFNULL(b.cantidad_anterior, 0) AS cantidad_anterior,
+            (a.cantidad_actual - IFNULL(b.cantidad_anterior, 0)) AS diferencia
+        FROM (
+            SELECT COUNT(*) AS cantidad_actual
+            FROM solicitudes
+            WHERE anio_semestre = ?
+              AND (estado IS NULL OR estado <> 'an')
+              AND departamento_id = ?
+        ) AS a
+        LEFT JOIN (
+            SELECT COUNT(*) AS cantidad_anterior
+            FROM solicitudes
+            WHERE anio_semestre = ?
+              AND (estado IS NULL OR estado <> 'an')
+              AND departamento_id = ?
+        ) AS b
+        ON 1=1";
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("sisi", $periodo_actual, $departamento_id, $periodo_anterior, $departamento_id);
+    
+    $diferencia = 0;
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $diferencia = $row['diferencia'];
+        }
+    }
+    $stmt->close();
+    $conn->close();
+    
+    return $diferencia;
+}
+
+function obtenerPeriodoAnteriorb($periodo_actual) {
+    list($anio, $semestre) = explode('-', $periodo_actual);
+    if ($semestre == '1') {
+        return ($anio - 1) . '-2';
+    } else {
+        return $anio . '-1';
+    }
+}
 ?>

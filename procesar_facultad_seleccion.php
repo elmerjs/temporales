@@ -109,8 +109,8 @@ try {
             $result_info = $stmt_info->get_result();
 
             if ($solicitud_data = $result_info->fetch_assoc()) {
-                $email_depto_mail = 'elmerjs@unicauca.edu.co'; // Para pruebas
-                // $email_depto_mail = $solicitud_data['email_depto']; // Línea para producción
+                //$email_depto_mail = 'elmerjs@unicauca.edu.co'; // Para pruebas
+                 $email_depto_mail = $solicitud_data['email_depto']; // Línea para producción
 
                 if (!empty($email_depto_mail)) {
                     if (!isset($departamento_emails[$email_depto_mail])) {
@@ -138,7 +138,7 @@ try {
     
     // ===== INICIA NUEVO BLOQUE: ENVÍO DE CORREOS CON PHPMailer (DESPUÉS DEL COMMIT) =====
     if ($success_count > 0 && !empty($departamento_emails)) {
-        $email_vra = 'vra@unicauca.edu.co'; // Reemplazar con una consulta a la BD si es necesario
+        $email_vra = 'labor@unicauca.edu.co'; // Reemplazar con una consulta a la BD si es necesario
 
         foreach ($departamento_emails as $email_depto => $data) {
             $nombre_depto = $data['nombre_depto'];

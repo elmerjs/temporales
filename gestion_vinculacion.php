@@ -604,7 +604,7 @@ $conn->close();
         </span>
     <?php else: ?>
         <span class="status-badge status-pending">
-            <i class="fas fa-clock me-1"></i> Pendiente
+            <i class="fas fa-clock me-1"></i> 
         </span>
     <?php endif; ?>
 </td>
@@ -620,7 +620,7 @@ $conn->close();
         </span>
     <?php else: ?>
         <span class="status-badge status-pending">
-            <i class="fas fa-clock me-1"></i> Pendiente
+            <i class="fas fa-clock me-1"></i> 
         </span>
     <?php endif; ?>
 </td>

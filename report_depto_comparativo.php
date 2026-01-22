@@ -522,18 +522,33 @@ select:disabled {
 
 <?php
     // Semanas catedra
-    $fecha_inicio = new DateTime($fecha_ini_cat);
-$fecha_fin = new DateTime($fecha_fin_cat);
-  $intervalo = $fecha_inicio->diff($fecha_fin);
+// Validar que las variables existan para evitar Warnings, si no existen se asignan como null o vacío
+$fecha_ini_cat  = $fecha_ini_cat ?? '';
+$fecha_fin_cat  = $fecha_fin_cat ?? '';
+$fecha_ini_ocas = $fecha_ini_ocas ?? '';
+$fecha_fin_ocas = $fecha_fin_ocas ?? '';
 
-// Obtener el total de días y convertir a semanas
-$dias = $intervalo->days;
-$semanas_cat = ceil($dias / 7); // redondea hacia arriba
-// Semanas ocasionales
-$inicio_ocas = new DateTime($fecha_ini_ocas);
-$fin_ocas = new DateTime($fecha_fin_ocas);
-$dias_ocas = $inicio_ocas->diff($fin_ocas)->days;
-$semanas_ocas = ceil($dias_ocas / 7);
+// --- Semanas cátedra ---
+// Solo calculamos si las fechas tienen valor para evitar errores en el objeto DateTime
+if (!empty($fecha_ini_cat) && !empty($fecha_fin_cat)) {
+    $fecha_inicio = new DateTime($fecha_ini_cat);
+    $fecha_fin = new DateTime($fecha_fin_cat);
+    $intervalo = $fecha_inicio->diff($fecha_fin);
+    $dias = $intervalo->days;
+    $semanas_cat = ceil($dias / 7);
+} else {
+    $semanas_cat = 0; // Valor por defecto
+}
+
+// --- Semanas ocasionales ---
+if (!empty($fecha_ini_ocas) && !empty($fecha_fin_ocas)) {
+    $inicio_ocas = new DateTime($fecha_ini_ocas);
+    $fin_ocas = new DateTime($fecha_fin_ocas);
+    $dias_ocas = $inicio_ocas->diff($fin_ocas)->days;
+    $semanas_ocas = ceil($dias_ocas / 7);
+} else {
+    $semanas_ocas = 0; // Valor por defecto
+}
 // Ejecutar la consulta principal
 $sql = "
     SELECT
@@ -664,6 +679,19 @@ echo '<form action="comparativo_espejo.php" method="GET" class="mb-0">';
 echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
 echo '<button type="submit" class="btn-unicauca-light px-4' . botonActivo('comparativo_espejo.php') . '">';
 echo '<i class="fas fa-copy mr-2"></i>Comparativo Espejo';
+echo '</button>';
+echo '</form>';
+    // Botón Comparativo General (NUEVO)
+echo '<form action="report_comparativo_general.php" method="GET" class="mb-0 mr-2">'; // Añadido mr-2 para espaciado
+echo '<input type="hidden" name="anio_semestre" value="' . htmlspecialchars($anio_semestre) . '">';
+// Si también usas el filtro de departamento, podrías agregarlo aquí:
+/*
+if (isset($departamento_id_param) && $departamento_id_param) {
+    echo '<input type="hidden" name="filtro_departamento" value="' . htmlspecialchars($departamento_id_param) . '">';
+}
+*/
+echo '<button type="submit" class="btn btn-info text-white shadow-sm px-4' . botonActivo('report_comparativo_general.php') . '">';
+echo '<i class="fas fa-history mr-2"></i> Análisis de Continuidad Histórica'; 
 echo '</button>';
 echo '</form>';
 
@@ -871,7 +899,7 @@ $devolucion_celda = "
                            color: inherit;
                            position: relative;
                            transition: all 0.2s;'>
-                " . htmlspecialchars($row['departamento']) . "
+                " . (trim($row['departamento']) == 'EDUC FISICA' ? 'EDUCACIÓN F. R Y D' : htmlspecialchars($row['departamento'])) . "
                 <span class='badge bg-primary bg-opacity-10 text-primary ms-2' 
                       style='font-size: 0.7em; 
                              position: absolute;

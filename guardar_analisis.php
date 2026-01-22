@@ -72,14 +72,16 @@ if ($exists) {
 }
 
 // Ejecución y respuesta
+// Ejecución y respuesta
 if ($stmt && $stmt->execute()) {
-    if ($stmt->affected_rows > 0) {
-        header('Location: report_depto_comparativo.php?anio_semestre=' . urlencode($anio_semestre));
-        exit;
-    } else {
-        die(json_encode(['success' => false, 'message' => 'No se realizaron cambios']));
-    }
+    // La consulta se ejecutó sin error.
+    // Redirigir siempre, sin importar si 'affected_rows' es 0 o > 0.
+    // El usuario no necesita saber que no hubo cambios; solo quiere volver a la página.
+    header('Location: report_depto_comparativo.php?anio_semestre=' . urlencode($anio_semestre));
+    exit;
+
 } else {
+    // Si $stmt->execute() falló (devolvió false), entonces sí mostrar un error.
     $error = $stmt ? $stmt->error : $con->error;
     die(json_encode(['success' => false, 'message' => 'Error en ejecución: ' . $error]));
 }
