@@ -295,7 +295,7 @@ $stmt_update_wc->bind_param("sssii", $estado_db, $observacion, $tipo_reemplazo, 
             $tabla_html .= "</tbody></table>";
 
             $asunto = "Respuesta de Vicerrectoría a Novedades de Contratación - " . $nombre_entidad;
-            $cuerpo_email = "<html><body><h2>Notificación de Trámite de Novedades</h2><p>La Vicerrectoría Académica ha dado respuesta a un grupo de novedades para su dependencia (<strong>" . htmlspecialchars($nombre_entidad) . "</strong>).</p><p>A continuación se presenta el resumen:</p>" . $tabla_html . "<p>Este es un correo generado automáticamente. Por favor, revise la plataforma para más detalles.</p></body></html>";
+            $cuerpo_email = "<html><body><h2>Notificación de Trámite de Novedades</h2><p>La Vicerrectoría Académica ha dado respuesta a un grupo de novedades para   su dependencia (<strong>" . htmlspecialchars($nombre_entidad) . "</strong>).</p><p>A continuación se presenta el resumen:</p>" . $tabla_html . "<p>Una vez aprobadas las novedades, los procesos de modificación o vinculación de profesores temporales, el proceso toma aproximadamente 10 días hábiles en hacerse efectivo. Este plazo se cumple tras realizar los trámites en Talento Humano y Secretaría General, instancias que generan los actos administrativos correspondientes</p><p>Este es un correo generado automáticamente. Por favor, revise la plataforma para más detalles.</p></body></html>";
             
             $mail = new PHPMailer(true);
             try {
@@ -311,7 +311,7 @@ $stmt_update_wc->bind_param("sssii", $estado_db, $observacion, $tipo_reemplazo, 
 
                 $mail->setFrom($config['from_email'], $config['from_name']);
                 $mail->addAddress($email_destinatario, $nombre_entidad);
-                
+                $mail->addCC('laboracademica@unicauca.edu.co ', 'Labor');
                 $mail->isHTML(true);
                 $mail->Subject = $asunto;
                 $mail->Body    = $cuerpo_email;

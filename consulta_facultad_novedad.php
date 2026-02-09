@@ -352,12 +352,13 @@ $estructura_vra_json = json_encode($datos_agrupados_vra);
 
 $sql_aprobados = "
     SELECT 
-        s.id_solicitud, f.Nombre_fac_minb, d.depto_nom_propio,
+        s.id_solicitud, 
+        s.enviado_a_puntos,      -- Campo para la marca visual
+        s.fecha_actualizacion,   -- Campo para el ordenamiento
+        f.Nombre_fac_minb, 
+        d.depto_nom_propio,
         s.tipo_docente, s.cedula, s.nombre, s.novedad,
-        
-        -- === CAMBIO CLAVE: Tomamos los puntos de la tabla 'solicitudes' ===
         s_orig.puntos, 
-        
         s.tipo_reemplazo, s.oficio_fac, s.fecha_oficio_fac, s.oficio_con_fecha_fac,
         s.tipo_dedicacion, s.tipo_dedicacion_r,
         s.horas, s.horas_r,
@@ -369,14 +370,13 @@ $sql_aprobados = "
         deparmanentos d ON d.PK_DEPTO = s.departamento_id
     JOIN 
         facultad f ON f.PK_FAC = d.FK_FAC
-    -- === CAMBIO CLAVE: Unimos con la tabla 'solicitudes' para obtener los puntos correctos ===
     LEFT JOIN 
         solicitudes s_orig ON s_orig.id_novedad = s.id_solicitud
     WHERE 
         s.estado_vra = 'APROBADO' 
         AND (s.archivado IS NULL OR s.archivado = 0)
     ORDER BY
-        s.novedad, f.Nombre_fac_minb, d.depto_nom_propio, s.nombre;
+        s.fecha_actualizacion DESC; -- Orden inicial desde la base de datos
 ";
 
 $resultado_aprobados = $conn->query($sql_aprobados);
@@ -472,7 +472,7 @@ foreach ($solicitudes_agrupadas as $cedula => $oficios) {
         }
     }
 }
-    
+ /*   
     // --- INICIO: NUEVO BLOQUE DE ORDENAMIENTO PERSONALIZADO ---
     usort($datos_para_tabla, function($a, $b) {
         // 1. Asignamos una prioridad numérica a cada tipo de novedad
@@ -504,6 +504,35 @@ foreach ($solicitudes_agrupadas as $cedula => $oficios) {
             return $compDepto;
         }
 
+        return strcmp($a['nombre'], $b['nombre']);
+    });*/
+    
+    // --- BLOQUE DE ORDENAMIENTO PERSONALIZADO ---
+    usort($datos_para_tabla, function($a, $b) {
+        // 1. Prioridad: Fecha de actualización (Descendente: la más nueva primero)
+        $fechaA = strtotime($a['fecha_actualizacion'] ?? '1970-01-01');
+        $fechaB = strtotime($b['fecha_actualizacion'] ?? '1970-01-01');
+
+        if ($fechaA !== $fechaB) {
+            return $fechaB <=> $fechaA; // Operador nave espacial para orden descendente
+        }
+        
+        // 2. Criterio secundario: Novedad (opcional, si las fechas son idénticas)
+        $prioridad = [
+            'Modificar (Vinculación)' => 1,
+            'Modificar (Dedicación)' => 1,
+            'Vincular' => 2,
+            'Liberar'  => 3
+        ];
+        
+        $prioridadA = $prioridad[$a['novedad_display']] ?? 99;
+        $prioridadB = $prioridad[$b['novedad_display']] ?? 99;
+
+        if ($prioridadA !== $prioridadB) {
+            return $prioridadA <=> $prioridadB;
+        }
+
+        // 3. Criterio final: Nombre del docente
         return strcmp($a['nombre'], $b['nombre']);
     });
     // --- FIN: NUEVO BLOQUE DE ORDENAMIENTO ---
@@ -559,7 +588,7 @@ if (!$tieneDatos) {
                     <th>Observación</th>
                 </tr>
             </thead>
-            <tbody>
+           <tbody>
                 <?php foreach ($datos_para_tabla as $solicitud): ?>
                     <?php
                         // --- Preparamos los datos combinados y truncados ---
@@ -573,15 +602,32 @@ if (!$tieneDatos) {
                     ?>
                     <tr data-id="<?= htmlspecialchars($solicitud['id_solicitud']) ?>">
                         <td><input type="checkbox" class="row-checkbox"></td>
-                        <td><?= htmlspecialchars($solicitud['novedad_display']) ?></td>
+
+                        <td>
+                            <?= htmlspecialchars($solicitud['novedad_display']) ?>
+                            <?php if (isset($solicitud['enviado_a_puntos']) && $solicitud['enviado_a_puntos'] == 1): ?>
+                                <span title="Ya se generó previo" class="ml-2 text-blue-500">
+                                    <i class="fas fa-history text-xs"></i>
+                                </span>
+                            <?php endif; ?>
+                        </td>
+
                         <td title="<?= $oficio_completo ?>"><?= $oficio_corto ?></td>
+
                         <td><?= $depto_completo ?></td>
+
                         <td><?= htmlspecialchars($solicitud['tipo_docente']) ?></td>
+
                         <td><?= htmlspecialchars($solicitud['cedula']) ?></td>
+
                         <td title="<?= $nombre_completo ?>"><?= $nombre_corto ?></td>
+
                         <td><?= htmlspecialchars($solicitud['dedicacion_unificada_inicial']) ?></td>
+
                         <td><?= htmlspecialchars($solicitud['dedicacion_unificada_final']) ?></td>
+
                         <td contenteditable="true" class="editable-cell" data-field="puntos"><?= htmlspecialchars($solicitud['puntos'] ?? '') ?></td>
+
                         <td contenteditable="true" class="editable-cell" data-field="tipo_reemplazo" title="<?= $observacion_completa ?>"><?= $observacion_corta ?></td>
                     </tr>
                 <?php endforeach; ?>
@@ -595,7 +641,7 @@ if (!$tieneDatos) {
     
     <button id="btnGenerarWord" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
         <i class="fas fa-file-word mr-2"></i>
-        Generar Oficio Definitivo
+        Generar Lote para proyección
     </button>
 </div>
 
@@ -834,16 +880,30 @@ function llenarModalVRA(oficio_fac) {
     // ===================================================================
     // ===== BLOQUE 1: LÓGICA DE ORDENAMIENTO (Prioridad de visualización)
     // ===================================================================
-    const ordenNovedades = ['modificacion', 'cambio de vinculacion', 'adicionar', 'eliminar'];
+     const ordenNovedades = [
+        'cambio vinculación', // 1. Cambio de vinculación
+        'cambio vinculacion', // (variante sin tilde por seguridad)
+        'modificar',          // 2. Cambio dedicación
+        'modificacion',       // (variante por si acaso)
+        'adicionar',          // 3. Vincular
+        'eliminar'            // 4. Liberar (Desvincular)
+    ];
 
     solicitudesFiltradas.sort((a, b) => {
         const novedadA = (a.novedad || '').toLowerCase();
         const novedadB = (b.novedad || '').toLowerCase();
 
+        // Obtener la prioridad de cada registro
         const indexA = ordenNovedades.indexOf(novedadA) !== -1 ? ordenNovedades.indexOf(novedadA) : 999;
         const indexB = ordenNovedades.indexOf(novedadB) !== -1 ? ordenNovedades.indexOf(novedadB) : 999;
 
-        return indexA - indexB;
+        // 1. CRITERIO PRINCIPAL: Ordenar por el tipo de novedad definido arriba
+        if (indexA !== indexB) {
+            return indexA - indexB;
+        }
+
+        // 2. CRITERIO SECUNDARIO: Ordenar alfabéticamente por NOMBRE del profesor
+        return (a.nombre || '').localeCompare(b.nombre || '');
     });
 
     if (solicitudesFiltradas.length > 0) {
@@ -880,39 +940,62 @@ function llenarModalVRA(oficio_fac) {
             // ===================================================================
             let tipoReemplazoHtml = `<span class="text-sm text-gray-600">${sol.tipo_reemplazo || ''}</span>`;
             
-            if (sol.estado_vra === 'PENDIENTE') {
-                const currentNovedad = (sol.novedad || '').toLowerCase();
-                const currentTipoReemplazo = sol.tipo_reemplazo || 'Otro'; 
-                let optionsHtml = '';
+ if (sol.estado_vra === 'PENDIENTE') {
+    const currentNovedad = (sol.novedad || '').toLowerCase();
+    const currentTipoReemplazo = sol.tipo_reemplazo || 'Otro'; 
+    let optionsHtml = '';
 
-                if (currentNovedad === 'adicionar' || currentNovedad === 'modificar' || currentNovedad === 'cambio vinculación' || currentNovedad.includes('modificacion')) {
-                    const options = ["Ajuste de Matrículas", "No legalizó", "Otras fuentes de financiacion", "Reemplazo", "Reemplazo jubilación", "Reemplazo necesidad docente", "Reemplazo por Fallecimiento", "Reemplazo por Licencia", "Reemplazo renuncia", "Reemplazos NN", "Ajuste Puntos", "Ajuste por VRA", "Otro"];
-                    options.forEach(opt => {
-                        optionsHtml += `<option value="${opt}" ${currentTipoReemplazo === opt ? 'selected' : ''}>${opt}</option>`;
-                    });
-                } else if (currentNovedad === 'eliminar') {
-                    const options = ["Fallecimiento", "Renuncia", "Ajuste de Matrículas", "No legalizó", "Reemplazos NN", "Otro"];
-                    options.forEach(opt => {
-                        optionsHtml += `<option value="${opt}" ${currentTipoReemplazo === opt ? 'selected' : ''}>${opt}</option>`;
-                    });
-                } else {
-                    // Opción genérica si no cae en los casos anteriores
-                    optionsHtml = `<option value="Otro" selected>Otro</option>`;
-                }
-                
-                tipoReemplazoHtml = `<select class="w-full border-gray-300 rounded-md shadow-sm text-xs tipo-reemplazo-select focus:ring-blue-500 focus:border-blue-500" data-id="${sol.solicitud_id}">${optionsHtml}</select>`;
-            }
+    if (currentNovedad === 'adicionar' || currentNovedad === 'modificar' || currentNovedad === 'cambio vinculación' || currentNovedad.includes('modificacion')) {
+        // Lista CORREGIDA con las 4 opciones nuevas
+        const options = [
+            "Ajuste de Matrículas", 
+            "Ajuste Horas Labor", 
+            "Ajuste Horas Labor PIC", 
+            "Ajuste por necesidad Docente",
+            "No legalizó", 
+            "Otras fuentes de financiacion", 
+            "Reemplazo", 
+            "Reemplazo jubilación", 
+            "Reemplazo necesidad docente", 
+            "Reemplazo por Fallecimiento", 
+            "Reemplazo por Licencia", 
+            "Reemplazo renuncia", 
+            "Reemplazos NN", 
+            "Ajuste Puntos", 
+            "Ajuste por VRA", 
+            "Otro"
+        ];
+        
+        options.forEach(opt => {
+            optionsHtml += `<option value="${opt}" ${currentTipoReemplazo === opt ? 'selected' : ''}>${opt}</option>`;
+        });
+    }  else if (currentNovedad === 'eliminar') {
+    const options = ["Fallecimiento", "Renuncia", "No Acepta Vinculación", "Ajuste de Matrículas", "No legalizó", "Reemplazos NN", "Otro"];
+    options.forEach(opt => {
+        optionsHtml += `<option value="${opt}" ${currentTipoReemplazo === opt ? 'selected' : ''}>${opt}</option>`;
+    });
+    } else {
+        // Opción genérica si no cae en los casos anteriores
+        optionsHtml = `<option value="Otro" selected>Otro</option>`;
+    }
+    
+    tipoReemplazoHtml = `<select class="w-full border-gray-300 rounded-md shadow-sm text-xs tipo-reemplazo-select focus:ring-blue-500 focus:border-blue-500" data-id="${sol.solicitud_id}">${optionsHtml}</select>`;
+}
 
             // ===================================================================
             // ===== BLOQUE 4: RENOMBRAMIENTO DE NOVEDADES (Visualización)
             // ===================================================================
             let novedadDisplay = sol.novedad || '';
             const novedadLower = novedadDisplay.toLowerCase();
-            
+
             if (novedadLower.includes('modificar') && !novedadLower.includes('vinculación') && !novedadLower.includes('vinculacion')) {
                 novedadDisplay = 'Modificar dedicación';
             } else if (novedadDisplay === 'modificacion') {
                 novedadDisplay = 'Cambio de dedicacion';
+            } else if (novedadLower === 'adicionar') {
+                novedadDisplay = 'Vincular';
+            } else if (novedadLower === 'eliminar') {
+                novedadDisplay = 'Liberar';
             }
 
             // ===================================================================
@@ -1691,41 +1774,69 @@ $(document).ready(function() {
     });
 
     // 4. Funcionalidad del botón "Generar Oficio Definitivo"
-    $('#btnGenerarWord').on('click', function() {
-        var seleccionados = [];
-        table.rows({ 'search': 'applied' }).every(function() {
-            var rowNode = this.node();
-            if ($(rowNode).find('input.row-checkbox').is(':checked')) {
-                var fila = {
-                    id: $(rowNode).data('id'),
-                    puntos: $(rowNode).find('td[data-field="puntos"]').text(),
-                    tipo_reemplazo: $(rowNode).find('td[data-field="tipo_reemplazo"]').text()
-                };
-                seleccionados.push(fila);
-            }
-        });
+// Variable global para guardar la selección temporalmente
+let seleccionTemporal = [];
 
-        if (seleccionados.length === 0) {
-            alert('Por favor, seleccione al menos una solicitud para generar el oficio.');
-            return;
+// 1. Abrir el modal tras validar selección
+$('#btnGenerarWord').on('click', function() {
+    seleccionTemporal = [];
+    table.rows({ 'search': 'applied' }).every(function() {
+        var rowNode = this.node();
+        if ($(rowNode).find('input.row-checkbox').is(':checked')) {
+            seleccionTemporal.push({
+                id: $(rowNode).data('id'),
+                puntos: $(rowNode).find('td[data-field="puntos"]').text().trim(),
+                tipo_reemplazo: $(rowNode).find('td[data-field="tipo_reemplazo"]').text().trim()
+            });
         }
-
-        const dataToSend = JSON.stringify(seleccionados);
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'generar_word_vra_srh.php';
-        form.target = '_blank';
-
-        const hiddenField = document.createElement('input');
-        hiddenField.type = 'hidden';
-        hiddenField.name = 'seleccionados';
-        hiddenField.value = dataToSend;
-        form.appendChild(hiddenField);
-
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
     });
+
+    if (seleccionTemporal.length === 0) return alert('Por favor, seleccione al menos una solicitud.');
+
+    // Pre-llenar fecha actual y mostrar modal
+    document.getElementById('input_fecha_vra').value = new Date().toISOString().split('T')[0];
+    document.getElementById('modalOficioVRA').classList.remove('hidden');
+});
+
+// 2. Función para cerrar modal
+function cerrarModalOficio() {
+    document.getElementById('modalOficioVRA').classList.add('hidden');
+}
+
+// 3. Acción final al confirmar dentro del modal
+document.getElementById('btnConfirmarProcesar').addEventListener('click', function() {
+    const consecutivo = document.getElementById('input_consecutivo').value;
+    const fecha = document.getElementById('input_fecha_vra').value;
+    const elaboro = document.getElementById('input_elaboro').value;
+
+    if (!consecutivo || !fecha || !elaboro) return alert('Todos los campos son obligatorios.');
+
+    // Crear y enviar formulario (Acción inmediata = No bloqueo)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'generar_word_vra_srh.php';
+    form.target = '_blank';
+
+    const agregar = (n, v) => {
+        const i = document.createElement('input');
+        i.type = 'hidden'; i.name = n; i.value = v;
+        form.appendChild(i);
+    };
+
+    agregar('seleccionados', JSON.stringify(seleccionTemporal));
+    agregar('consecutivo_vra', consecutivo);
+    agregar('fecha_oficio_vra', fecha);
+    agregar('elaborado_por_vra', elaboro);
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    cerrarModalOficio();
+    
+    // Recarga para actualizar estados en la tabla
+    setTimeout(() => { location.reload(); }, 2000);
+});
     
     // 5. Funcionalidad del NUEVO botón "Generar Previo"
     $('#btnGenerarPrevio').on('click', function() {
@@ -1783,5 +1894,33 @@ $(document).ready(function() {
     
     
 </script>
+    <div id="modalOficioVRA" class="fixed inset-0 bg-gray-800 bg-opacity-75 h-full w-full hidden z-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+            <h2 class="text-xl font-bold text-gray-800">Datos del Oficio Definitivo</h2>
+            <button onclick="cerrarModalOficio()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Número Consecutivo:</label>
+                <input type="number" id="input_consecutivo" value="1" class="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Fecha del Oficio:</label>
+                <input type="date" id="input_fecha_vra" class="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Elaborado por:</label>
+                <input type="text" id="input_elaboro" placeholder="Nombre del funcionario" class="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end space-x-3">
+            <button onclick="cerrarModalOficio()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-md transition">Cancelar</button>
+            <button id="btnConfirmarProcesar" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition">Generar y Guardar</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

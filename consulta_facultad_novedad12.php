@@ -10,9 +10,13 @@ require_once('conn.php');
 require('funciones.php');
 
 // --- VARIABLES ESENCIALES ---
-$anio_semestre = $_POST['anio_semestre'] ?? $_GET['anio_semestre'] ?? '2025-2';
-$_SESSION['anio_semestre'] = $anio_semestre; // ← Añade esta línea
+$anio_semestre = $_POST['anio_semestre'] 
+                 ?? $_GET['anio_semestre'] 
+                 ?? $_SESSION['anio_semestre'] // <--- AGREGA ESTO AQUÍ
+                 ?? '2026-1'; // <--- Tu nuevo año por defecto
 
+// Actualizamos la memoria
+$_SESSION['anio_semestre'] = $anio_semestre;
 // --- VARIABLES ESENCIALES ---
 
 // ===== INICIA EL NUEVO CÓDIGO DE FILTRO =====
@@ -624,7 +628,7 @@ if ($status_fac === 'En Proceso') {
                                         } elseif ($status_vra === 'Rechazado Total VRA') {
                                             $color_vra = 'bg-red-100 text-red-800';
                                             $icon_vra  = '<i class="fas fa-times-circle"></i>';
-                                            $text_vra  = 'Finalizado VRA';
+                                            $text_vra  = 'Finalizado Rechazado VRA';
                                         } elseif ($status_vra === 'Finalizado Mixto VRA') {
                                             $color_vra = 'bg-blue-100 text-blue-800';
                                             $icon_vra  = '<i class="fas fa-check-double"></i>';
@@ -673,7 +677,7 @@ if ($status_fac === 'En Proceso') {
                                 <div class="flex space-x-2 mt-4">
                             <button data-oficio="<?= htmlspecialchars($oficio_fecha) ?>" 
                                     class="ver-detalles-btn w-3/4 bg-[#003366] hover:bg-[#002244] text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
-                                Ver/Gestionar Solicitudes
+                                Ver Solicitudes
                             </button>
 <?php 
     // Separamos el código de la fecha para enviarlos limpios
@@ -1221,7 +1225,7 @@ function renderizarContenidoAcordeon(headerElement) {
             } else if (status_vra === 'Rechazado Total VRA') {
                 color_vra = 'bg-red-100 text-red-800';
                 icon_vra = '<i class="fas fa-times-circle"></i>';
-                text_vra = 'Finalizado VRA';
+                text_vra = 'Finalizado Rechazado VRA';
             } else if (status_vra === 'Finalizado Mixto VRA') {
                 color_vra = 'bg-blue-100 text-blue-800';
                 icon_vra = '<i class="fas fa-check-double"></i>';
@@ -1247,7 +1251,7 @@ const cardHtml = `
             <strong>${codigo}</strong> <span class="font-normal">${fechaFormateada}</span>
         </p>
     </div>
-    <button data-oficio="${oficio}" class="ver-detalles-btn w-full mt-4 bg-[#003366] hover:bg-[#002244] text-white font-bold py-2 px-4 rounded-md">Ver/ Gestionar Solicitudes</button>
+    <button data-oficio="${oficio}" class="ver-detalles-btn w-full mt-4 bg-[#003366] hover:bg-[#002244] text-white font-bold py-2 px-4 rounded-md">Ver Solicitudes</button>
 </div>`;
             cardsContainer.innerHTML += cardHtml;
         }
@@ -1404,17 +1408,19 @@ function aplicarFiltroGlobal() {
     // ===== ¡NUEVO! LÓGICA PARA LOS BOTONES DE ACCIÓN =========================
     // =========================================================================
     
-    const btnAvalar = document.getElementById('btn-avalar-seleccionados');
-    const btnNoAvalar = document.getElementById('btn-no-avalar-seleccionados');
-    const wordGenModal = document.getElementById('wordGenModal');
+// =========================================================================
+// LÓGICA UNIFICADA Y SEGURA (ESTADO + OFICIO + DESCARGA)
+// =========================================================================
 
-      
-      
-// ===== INICIA LA NUEVA FUNCIÓN DE CARGA =====
+const btnAvalar = document.getElementById('btn-avalar-seleccionados');
+const btnNoAvalar = document.getElementById('btn-no-avalar-seleccionados');
+const wordGenModal = document.getElementById('wordGenModal');
+const wordGenForm = document.getElementById('wordGenForm');
+
+// ===== FUNCIÓN DE CARGA (Mantenemos la tuya) =====
 function toggleLoading(show, message = 'Procesando...') {
     const overlay = document.getElementById('loadingOverlay');
     const messageEl = document.getElementById('loadingMessage');
-    // Agrupamos todos los botones de acción para manejarlos fácilmente
     const actionButtons = [
         document.getElementById('btn-avalar-seleccionados'),
         document.getElementById('btn-no-avalar-seleccionados'),
@@ -1424,179 +1430,176 @@ function toggleLoading(show, message = 'Procesando...') {
     if (show) {
         messageEl.textContent = message;
         overlay.classList.remove('hidden');
-        // Deshabilitamos los botones para prevenir múltiples envíos
         actionButtons.forEach(btn => btn && (btn.disabled = true));
     } else {
         overlay.classList.add('hidden');
-        // Volvemos a habilitar los botones
         actionButtons.forEach(btn => btn && (btn.disabled = false));
     }
 }
-// ===== INICIA EL NUEVO CÓDIGO =====
+
+// ===== BOTÓN LIMPIAR =====
 const btnLimpiar = document.getElementById('btn-limpiar-seleccion');
 if (btnLimpiar) {
     btnLimpiar.addEventListener('click', limpiarSeleccion);
 }
-// ===== TERMINA EL NUEVO CÓDIGO =====
 
-    // --- ACCIÓN DE AVALAR ---
- // --- ACCIÓN DE AVALAR (MEJORADA) ---
-// --- ACCIÓN DE AVALAR (MEJORADA CON NOTIFICACIÓN TEMPORAL) ---
-btnAvalar.addEventListener('click', () => {
-    if (solicitudesSeleccionadas.length === 0) return alert('Por favor, seleccione al menos una solicitud.');
-
-    toggleLoading(true, 'Procesando aval... Enviando correo...');
-
-    const formData = new FormData();
-    formData.append('action', 'avalar');
-    formData.append('anio_semestre', anioSemestre);
-    solicitudesSeleccionadas.forEach(id => formData.append('selected_ids[]', id));
-
-    fetch('procesar_facultad_seleccion.php', { method: 'POST', body: formData })
-    .then(response => {
-        if (!response.ok) throw new Error('La respuesta del servidor no fue exitosa.');
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            // ===== ¡AQUÍ ESTÁ EL CAMBIO! =====
-            // 1. Reemplazamos el alert() por nuestra notificación temporal.
-            showToast(data.message, 5000); 
-
-            // 2. El formulario de Word ahora aparece INMEDIATAMENTE.
-            document.getElementById('wordGenSelectedIds').value = data.data.processed_ids.join(',');
-            document.getElementById('fecha_oficio').value = new Date().toISOString().split('T')[0];
-            wordGenModal.classList.remove('hidden');
-        } else {
-            // Si hay un error, sí usamos un alert para detener el proceso.
-            alert('Error: ' + data.message);
+// =========================================================================
+// 1. BOTÓN AVALAR (SOLO ABRE EL MODAL, NO GUARDA NADA AÚN)
+// =========================================================================
+if (btnAvalar) {
+    btnAvalar.addEventListener('click', () => {
+        if (solicitudesSeleccionadas.length === 0) {
+            return alert('Por favor, seleccione al menos una solicitud para avalar.');
         }
-    }).catch(error => {
-        console.error('Error de conexión o script:', error);
-        alert('Ocurrió un error inesperado al procesar la solicitud.');
-    }).finally(() => {
-        // Ocultamos la pantalla de carga principal
-        toggleLoading(false);
+
+        // A. Preparar datos visuales
+        document.getElementById('wordGenSelectedIds').value = solicitudesSeleccionadas.join(',');
+        document.getElementById('fecha_oficio').value = new Date().toISOString().split('T')[0];
+
+        // B. Abrir modal
+        wordGenModal.classList.remove('hidden');
     });
-});
+}
 
-    // --- ACCIÓN DE NO AVALAR ---
-// --- ACCIÓN DE NO AVALAR (MEJORADA) ---
-// --- ACCIÓN DE NO AVALAR (REVISADA) ---
-btnNoAvalar.addEventListener('click', () => {
-    if (solicitudesSeleccionadas.length === 0) {
-        alert('Por favor, seleccione al menos una solicitud.');
-        return;
+// =========================================================================
+// 2. FORMULARIO DEL MODAL (HACE EL TRABAJO DURO: BD + WORD)
+// =========================================================================
+// =========================================================================
+// 2. FORMULARIO DEL MODAL (VERSIÓN FINAL SIN MENSAJES MOLESTOS)
+// =========================================================================
+// =========================================================================
+    // 2. FORMULARIO DEL MODAL (CORREGIDO PARA DETENERSE SI EXISTE DUPLICADO)
+    // =========================================================================
+    if (wordGenForm) {
+        wordGenForm.onsubmit = async function(event) {
+            // 1. Detener envío automático
+            event.preventDefault();
+            
+            // 2. Bloquear pantalla para evitar doble clic
+            toggleLoading(true, 'Verificando número de oficio...');
+
+            const oficioInput = document.getElementById('oficio');
+            const oficioValue = oficioInput.value.trim();
+            const anioSemestre = document.getElementById('wordGenAnioSemestre').value;
+            const idFacultad = document.getElementById('wordGenIdFacultad').value;
+
+            // Validaciones visuales
+            if (!oficioValue) {
+                toggleLoading(false); // Desbloquear
+                return alert('El número de oficio es obligatorio.');
+            }
+
+            try {
+                // --- A. VERIFICAR DUPLICADO ---
+                // Agregamos "&nocache=" para asegurar que la validación sea real y no de memoria
+                const checkUrl = `verificar_oficio_fac.php?oficio=${encodeURIComponent(oficioValue)}&anio_semestre=${anioSemestre}&id_facultad=${idFacultad}&nocache=${Date.now()}`;
+                
+                const checkRes = await fetch(checkUrl);
+                const checkData = await checkRes.json();
+
+                // SI EXISTE: ALERTA Y FRENO TOTAL
+                if (checkData.existe) {
+                    toggleLoading(false); // <--- IMPORTANTE: Desbloqueamos la pantalla para que puedas corregir
+                    alert('⛔ ERROR: Este número de oficio YA FUE REGISTRADO anteriormente.\n\nPor favor, cambie el consecutivo e intente de nuevo.');
+                    return; // <--- AQUÍ SE DETIENE EL CÓDIGO. NO PASA A GUARDAR.
+                }
+
+                // --- B. SI NO EXISTE: GUARDAR EN BD ---
+                document.getElementById('loadingMessage').textContent = 'Guardando y generando documento...';
+
+                const formData = new FormData();
+                formData.append('action', 'avalar');
+                formData.append('anio_semestre', anioSemestre);
+                formData.append('numero_oficio', oficioValue);
+                formData.append('fecha_oficio', document.getElementById('fecha_oficio').value);
+                formData.append('elaborado_por', document.getElementById('elaborado_por').value);
+                
+                const ids = document.getElementById('wordGenSelectedIds').value.split(',');
+                ids.forEach(id => formData.append('selected_ids[]', id));
+
+                const response = await fetch('./procesar_facultad_seleccion.php', { method: 'POST', body: formData });
+                const responseText = await response.text();
+                let data;
+                try { data = JSON.parse(responseText); } catch(e) { throw new Error("Respuesta inválida del servidor."); }
+
+                if (data.success) {
+                    // --- C. ÉXITO: DESCARGAR WORD ---
+                    showToast('¡Guardado exitoso! Descargando...', 3000);
+
+                    setTimeout(() => {
+                        this.action = 'generar_word_solicitudes_seleccion.php';
+                        this.method = 'POST';
+                        HTMLFormElement.prototype.submit.call(this); // Descarga forzada
+                    }, 500);
+
+                    // Recarga final
+                    setTimeout(() => {
+                        toggleLoading(false);
+                        wordGenModal.classList.add('hidden');
+                        window.location.href = window.location.href; 
+                    }, 2500);
+
+                } else {
+                    throw new Error(data.message || 'Error al guardar.');
+                }
+
+            } catch (error) {
+                console.error(error);
+                toggleLoading(false); // Desbloquear siempre en caso de error
+                
+                const msg = error.message || '';
+                // Ignorar errores de red por la descarga
+                if (!msg.includes('Network') && !msg.includes('fetch')) {
+                    alert('Atención: ' + msg);
+                }
+            }
+        };
     }
+// =========================================================================
+// 3. BOTÓN NO AVALAR (ESTE SÍ ENVÍA DIRECTO)
+// =========================================================================
+if (btnNoAvalar) {
+    btnNoAvalar.addEventListener('click', () => {
+        if (solicitudesSeleccionadas.length === 0) return alert('Seleccione al menos una solicitud.');
 
-    const observacion = prompt("Por favor, ingrese la justificación para el NO AVAL (obligatorio):");
+        const observacion = prompt("Por favor, ingrese la justificación para el NO AVAL (obligatorio):");
+        if (observacion === null) return;
+        if (observacion.trim() === '') return alert('La justificación es obligatoria.');
 
-    // Check if the user clicked "Cancel"
-    if (observacion === null) {
-        return; 
-    }
+        toggleLoading(true, 'Procesando devolución... Enviando correo...');
 
-    // Check if the user entered an empty string
-    if (observacion.trim() === '') {
-        alert('La justificación es obligatoria para no avalar.');
-        return;
-    }
+        const formData = new FormData();
+        formData.append('action', 'no_avalar');
+        formData.append('observacion', observacion);
+        formData.append('anio_semestre', anioSemestre); // Variable global PHP/JS
+        solicitudesSeleccionadas.forEach(id => formData.append('selected_ids[]', id));
 
-    toggleLoading(true, 'Procesando devolución... Enviando correo...');
-
-    const formData = new FormData();
-    formData.append('action', 'no_avalar');
-    formData.append('observacion', observacion); // Send the observation
-    formData.append('anio_semestre', '<?php echo $anio_semestre; ?>'); // Send the semester
-    solicitudesSeleccionadas.forEach(id => {
-        formData.append('selected_ids[]', id);
+        fetch('procesar_facultad_seleccion.php', { 
+            method: 'POST', 
+            body: formData 
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error técnico al procesar.');
+        })
+        .finally(() => {
+            toggleLoading(false);
+        });
     });
+}
 
-    fetch('procesar_facultad_seleccion.php', { 
-        method: 'POST', 
-        body: formData 
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert(data.message);
-        if (data.success) {
-            location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error de conexión o script:', error);
-        alert('Ocurrió un error inesperado al procesar la solicitud.');
-    })
-    .finally(() => {
-        toggleLoading(false);
-    });
-}); 
-      
-      aplicarFiltroGlobal();
+aplicarFiltroGlobal();
       
 // ... justo después del cierre del `if (tipoUsuario == 2)`
 }   
     });
-</script>
-    <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Seleccionamos los elementos del formulario modal
-    const wordGenForm = document.getElementById('wordGenForm');
-    const oficioInput = document.getElementById('oficio');
-    const btnCloseAndReload = document.getElementById('btnCloseAndReload');
-
-    if (wordGenForm) {
-        // Convertimos el listener a una función 'async' para poder usar 'await'
-        wordGenForm.addEventListener('submit', async function(event) {
-            
-            // PREVENIR el envío automático para hacer nuestras validaciones primero
-            event.preventDefault(); 
-            
-            const oficioValue = oficioInput.value.trim();
-            
-            // VALIDACIÓN 1: Formato del oficio (la que ya tenías)
-            if (oficioValue.includes('/') && oficioValue.substring(oficioValue.lastIndexOf('/') + 1) === '') {
-                alert('El número de oficio debe tener un valor después del "/". Por favor, complételo.');
-                return; // Detiene la ejecución
-            }
-
-            // VALIDACIÓN 2: Verificar si el oficio ya existe en la BD
-            const anioSemestre = document.getElementById('wordGenAnioSemestre').value;
-            const idFacultad = document.getElementById('wordGenIdFacultad').value;
-            const checkUrl = `verificar_oficio_fac.php?oficio=${encodeURIComponent(oficioValue)}&anio_semestre=${anioSemestre}&id_facultad=${idFacultad}`;
-            
-            try {
-                const response = await fetch(checkUrl);
-                const data = await response.json();
-
-                // Si el oficio ya existe, mostrar alerta y detener
-                if (data.existe) {
-                    alert('Error: El número de oficio ya ha sido utilizado en este período para esta facultad. Por favor, ingrese un número diferente.');
-                    return; 
-                }
-                
-                  // 1. Mostramos una notificación de éxito temporal
-                showToast('Oficio validado. Generando documento y recargando...', 3000);
-
-                // 2. Enviamos el formulario para iniciar la descarga del Word
-                this.submit();
-
-                // 3. Programamos el cierre del modal y la recarga automática
-                setTimeout(() => {
-                    wordGenModal.classList.add('hidden'); // Ocultar el modal
-                    location.reload();                    // Recargar la página
-                }, 1000); // 1 segundos de espera
-
-            } catch (error) {
-                console.error('Error al verificar el oficio:', error);
-                alert('No se pudo verificar el número de oficio. Intente de nuevo.');
-            }
-        });
-    }
-});
-        // Añade esta función en tu <script>
-// Reemplaza tu función showToast con esta
-function showToast(message, duration = 3000) {
+    
+      function showToast(message, duration = 3000) {
     const toast = document.getElementById('toast-notification');
     const toastMessage = document.getElementById('toast-message');
 
@@ -1612,5 +1615,6 @@ function showToast(message, duration = 3000) {
     }
 }
 </script>
+   
 </body>
 </html>

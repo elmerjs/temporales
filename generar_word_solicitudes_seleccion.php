@@ -37,9 +37,7 @@ if (empty($anio_semestre) || $id_facultad === 0) {
 // ==============================================================================
 // ===== INICIO DE LA LÓGICA MEJORADA PARA "CAMBIO DE VINCULACIÓN" ==============
 // ==============================================================================
-// ==============================================================================
-// ===== INICIO DE LA LÓGICA CORREGIDA Y AJUSTADA AL ESTADO ==============
-// ==============================================================================
+// 
 
 // El array final de IDs que se van a actualizar y a incluir en el Word
 $ids_a_procesar = $selected_ids_array;
@@ -100,12 +98,10 @@ $ids_a_procesar = array_unique($ids_a_procesar);
 // ===== FIN DE LA LÓGICA CORREGIDA =============================================
 // ==============================================================================
 
-// ==============================================================================
-// ===== FIN DE LA LÓGICA MEJORADA ==============================================
-// ==============================================================================
 
 
 // === UPDATE PARA CADA SOLICITUD SELECCIONADA (USANDO LA LISTA COMPLETA) ===
+/*
 $sql_update = "UPDATE solicitudes_working_copy 
                SET oficio_fac = ?, 
                    fecha_oficio_fac = ?, 
@@ -123,7 +119,7 @@ foreach ($ids_a_procesar as $id) {
     $stmt_update->execute();
 }
 $stmt_update->close();
-
+*/
 // Mapeo de imágenes por facultad
 $facultades = [
     1 => ['encab' => 'img/encabezado_decanatura_artes.png', 'pie' => 'img/pieartes.png'],
@@ -283,8 +279,14 @@ if (!empty($ids_excluir)) {
     $sql .= " AND sw.id_solicitud NOT IN ($placeholders_excluir)";
 }
 
-$sql .= " ORDER BY d.depto_nom_propio ASC, sw.novedad DESC, sw.nombre ASC";
-
+//$sql .= " ORDER BY d.depto_nom_propio ASC, sw.novedad DESC, sw.nombre ASC";
+$sql .= " ORDER BY d.depto_nom_propio ASC, 
+          CASE 
+            WHEN sw.novedad = 'adicionar' THEN 1 
+            WHEN sw.novedad = 'Eliminar' THEN 2 
+            ELSE 3 
+          END ASC, 
+          sw.nombre ASC";
 $stmt = $conn->prepare($sql);
 if ($stmt) {
     // Construir los tipos y parámetros para bind_param
@@ -740,7 +742,7 @@ $textrun->addText($texto_cambio_dentro, ['italic' => true, 'size' => 8]);
 
     // --- SECCIÓN 2: NOVEDADES REGULARES (si existen para este depto) ---
     if (isset($grouped_solicitudes[$departamento_nombre])) {
- // 1. Guardamos las novedades en una variable
+    // 1. Guardamos las novedades en una variable
     $solicitudes_novedades = $grouped_solicitudes[$departamento_nombre];
 
     // 2. Reordenamos para que "Modificar" salga primero
@@ -752,16 +754,29 @@ $textrun->addText($texto_cambio_dentro, ['italic' => true, 'size' => 8]);
 
     // 3. Recorremos ya reordenado
     foreach ($solicitudes_novedades as $novedad_tipo => $solicitudes_por_novedad) {
-        if (strtolower($novedad_tipo) === 'modificar') {
-            $novedad_mostrar = 'Modificación - Cambio de Dedicación';
-        } else {
-            $novedad_mostrar = ucfirst($novedad_tipo);
+        
+        // --- LÓGICA DE TRADUCCIÓN DE TÉRMINOS ---
+        $novedad_key = strtolower($novedad_tipo); // Normalizamos a minúsculas para comparar
+        
+        switch ($novedad_key) {
+            case 'modificar':
+                $novedad_mostrar = 'Modificación - Cambio de Dedicación';
+                break;
+            case 'adicionar':
+                $novedad_mostrar = 'Vincular';
+                break;
+            case 'Eliminar':
+                $novedad_mostrar = 'Desvincular';
+                break;
+            default:
+                // Si no es ninguna de las anteriores, ponemos la primera letra en mayúscula
+                $novedad_mostrar = ucfirst($novedad_tipo);
+                break;
         }
 
+        // 4. Añadimos el texto al Word
         $section->addText('Novedad: ' . htmlspecialchars($novedad_mostrar), $fontStyleb, $paragraphStyleLeft);
-
-
-            $section->addTextBreak(0);
+        $section->addTextBreak(0);
 
             $table = $section->addTable('ColspanRowspan');
             $table->setWidth(100 * 50, TblWidth::PERCENT);

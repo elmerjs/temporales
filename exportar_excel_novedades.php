@@ -89,8 +89,7 @@ function procesarCambiosVinculacion($solicitudes) {
     return array_merge($resultado_final, $otras_novedades);
 }
 
-// 4. Construir la consulta SQL
-// 4. Construir la consulta SQL universal (Versión Segura)
+// 4. Construir la consulta SQL - Asegurando incluir tipo_reemplazo
 $sql = "SELECT s.*, f.NOMBREF_FAC as nombre_facultad, d.depto_nom_propio as nombre_departamento
         FROM solicitudes_working_copy s
         JOIN facultad f ON s.facultad_id = f.PK_FAC
@@ -124,25 +123,19 @@ if (empty($resultado_bruto)) {
 // 5. Procesar los datos (esto desordena el resultado de la BD)
 $datos_procesados = procesarCambiosVinculacion($resultado_bruto);
 
-// ==========================================================
-// ===== ¡AQUÍ ESTÁ LA SOLUCIÓN! Ordenamos el array en PHP =====
-// ==========================================================
-// Se crean "columnas" temporales para poder ordenar el array
+// Ordenamos el array en PHP
 $col_facultad = [];
 $col_depto = [];
 $col_fecha = [];
 $col_nombre = [];
 
-// Se construyen las columnas manualmente para asegurar tamaños consistentes
 foreach ($datos_procesados as $fila) {
     $col_facultad[] = $fila['nombre_facultad'] ?? '';
     $col_depto[] = $fila['depto_nom_propio'] ?? '';
-    $col_fecha[] = $fila['fecha_oficio_depto'] ?? ''; // <-- Si no existe, se añade ''
+    $col_fecha[] = $fila['fecha_oficio_depto'] ?? '';
     $col_nombre[] = $fila['nombre'] ?? '';
 }
 
-// Se ordena el array $datos_procesados usando las columnas como guía
-// Esta línea ya no dará error
 array_multisort(
     $col_facultad, SORT_ASC,
     $col_depto, SORT_ASC,
@@ -150,27 +143,28 @@ array_multisort(
     $col_nombre, SORT_ASC,
     $datos_procesados
 );
-// ==========================================================
 
-// 6. Crear el archivo Excel (El resto del script no necesita cambios)
-// ...
+// 6. Crear el archivo Excel
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 $sheet->setTitle('Novedades ' . $anio_semestre);
 
-// Encabezados y estilo (sin cambios)
+// MODIFICACIÓN 1: Actualizar los encabezados para incluir "Tipo Reemplazo" después de "Observación VRA"
 $headers = [
     'Facultad', 'Departamento', 'Oficio Depto', 'Oficio Fac', 'Novedad', 'Cédula', 'Nombre Completo',
-    'Tipo Docente', 'Dedicación/Horas Popayán', 'Dedicación/Horas Reg.', 'Estado Facultad', 'Estado VRA', 'Observación Facultad', 'Observación VRA',
-    'Enviado RRHH' // <-- NUEVO ENCABEZADO
+    'Tipo Docente', 'Dedicación/Horas Popayán', 'Dedicación/Horas Reg.', 'Estado Facultad', 'Estado VRA', 
+    'Observación Facultad', 'Observación VRA', 'Tipo Reemplazo', // <-- NUEVO: Tipo Reemplazo después de Observación VRA
+    'Enviado RRHH', 'Consecutivo VRA/Lote', 'Fecha Generación VRA', 'Elaborado Por'
 ];
 $sheet->fromArray($headers, NULL, 'A1');
+
 $headerStyle = [
     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '003366']]
 ];
-// Cambiamos el rango para incluir la nueva columna O
-$sheet->getStyle('A1:O1')->applyFromArray($headerStyle); 
+// Actualizamos el rango para incluir todas las columnas (A1:S1)
+$sheet->getStyle('A1:S1')->applyFromArray($headerStyle);
+
 // 7. Llenar el archivo con los datos
 $row_num = 2;
 foreach ($datos_procesados as $fila) {
@@ -186,55 +180,85 @@ foreach ($datos_procesados as $fila) {
     }
 
     $enviado_rrhh = ($fila['archivado'] ?? 0) == 1 ? 'OK' : 'NO';
+    $tipo_reemplazo = $fila['tipo_reemplazo'] ?? ''; // <-- Obtener tipo_reemplazo
 
-$datos_fila = [
-    $fila['nombre_facultad'], $fila['nombre_departamento'], $fila['oficio_con_fecha'], $fila['oficio_con_fecha_fac'],
-    $fila['novedad'], $fila['cedula'], $fila['nombre'], $fila['tipo_docente'], $dedicacion_pop, $dedicacion_reg,
-    $fila['estado_facultad'], $fila['estado_vra'], $fila['observacion_facultad'], $fila['observacion_vra'],
-    $enviado_rrhh // <-- NUEVO DATO
-];
+    $datos_fila = [
+        $fila['nombre_facultad'], 
+        $fila['nombre_departamento'], 
+        $fila['oficio_con_fecha'], 
+        $fila['oficio_con_fecha_fac'],
+        $fila['novedad'], 
+        $fila['cedula'], 
+        $fila['nombre'], 
+        $fila['tipo_docente'], 
+        $dedicacion_pop, 
+        $dedicacion_reg,
+        $fila['estado_facultad'], 
+        $fila['estado_vra'], 
+        $fila['observacion_facultad'], 
+        $fila['observacion_vra'],
+        $tipo_reemplazo, // <-- NUEVO: Columna Tipo Reemplazo
+        $enviado_rrhh,
+        $fila['oficio_con_fecha_vra'],
+        $fila['fecha_generacion_vra'],
+        $fila['elaborado_por_vra']
+    ];
+    
     $sheet->fromArray($datos_fila, NULL, 'A' . $row_num);
 
-    // ==========================================================
-    // ===== ¡AQUÍ ESTÁ LA NUEVA LÓGICA DE RESALTADO! =====
-    // ==========================================================
-    // Comprobamos si alguno de los estados es 'RECHAZADO'
-     if (strtoupper($fila['estado_facultad']) === 'RECHAZADO' || strtoupper($fila['estado_vra']) === 'RECHAZADO') {
-        // Definimos el estilo de fondo rosa suave
+    // Lógica de resaltado (actualizar rangos)
+    if (strtoupper($fila['estado_facultad']) === 'RECHAZADO' || strtoupper($fila['estado_vra']) === 'RECHAZADO') {
         $rejectedStyle = [
             'fill' => [
                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'FFF0F1'] // Color rosa claro
+                'startColor' => ['rgb' => 'FFF0F1']
             ]
         ];
-        // Aplicamos el estilo a toda la fila
-        $sheet->getStyle('A' . $row_num . ':O' . $row_num)->applyFromArray($rejectedStyle);
-    } 
-    // Si no hay rechazos, comprobamos si fue APROBADO por VRA
-    elseif (strtoupper($fila['estado_vra']) === 'APROBADO') {
-        // Definimos el estilo de fondo verde claro
+        // Actualizar rango a S (columna 19)
+        $sheet->getStyle('A' . $row_num . ':S' . $row_num)->applyFromArray($rejectedStyle);
+    } elseif (strtoupper($fila['estado_vra']) === 'APROBADO') {
         $approvedStyle = [
             'fill' => [
                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'F0FFF4'] // Un color verde menta muy suave
+                'startColor' => ['rgb' => 'F0FFF4']
             ]
         ];
-        // Aplicamos el estilo a toda la fila
-        $sheet->getStyle('A' . $row_num . ':O' . $row_num)->applyFromArray($approvedStyle);
+        // Actualizar rango a S (columna 19)
+        $sheet->getStyle('A' . $row_num . ':S' . $row_num)->applyFromArray($approvedStyle);
     }
-    // ==========================================================
     
     $row_num++;
 }
 
-// Auto-ajustar el ancho de las columnas
-foreach(range('A', 'O') as $columnID) {
+// MODIFICACIÓN 2: Configurar anchos de columnas específicos
+// Columnas que se autoajustan normalmente
+foreach(range('A', 'L') as $columnID) {
     $sheet->getColumnDimension($columnID)->setAutoSize(true);
 }
+
+// MODIFICACIÓN 3: Configurar columna de Observación Facultad (M) - con ancho fijo
+$sheet->getColumnDimension('M')->setWidth(25); // Ancho fijo para Observación Facultad
+$sheet->getColumnDimension('M')->setAutoSize(false);
+
+// MODIFICACIÓN 4: Configurar columna de Observación VRA (N) - con ancho fijo y wrap text
+$sheet->getColumnDimension('N')->setWidth(30); // Ancho fijo para Observación VRA
+$sheet->getColumnDimension('N')->setAutoSize(false);
+// Habilitar wrap text para esta columna
+$sheet->getStyle('N2:N' . ($row_num-1))
+      ->getAlignment()
+      ->setWrapText(true);
+
+// MODIFICACIÓN 5: Columna Tipo Reemplazo (O) - autoajustable
+$sheet->getColumnDimension('O')->setAutoSize(true);
+
+// MODIFICACIÓN 6: El resto de columnas (P a S) autoajustables
+foreach(range('P', 'S') as $columnID) {
+    $sheet->getColumnDimension($columnID)->setAutoSize(true);
+}
+
 // =================================================================
-// ===== ¡AQUÍ SE AÑADE LA LEYENDA DE COLORES! =====
+// ===== LEYENDA DE COLORES (actualizada para nueva columna) =====
 // =================================================================
-// Dejamos dos filas de espacio
 $row_num += 2;
 
 // Título de la leyenda
@@ -260,12 +284,11 @@ $row_num++;
 
 // Fila para EN TRÁMITE (Sin Fondo)
 $sheet->setCellValue('B' . $row_num, 'En Trámite');
-$sheet->getStyle('A' . $row_num)->getFill() // Celda de ejemplo sin fondo
+$sheet->getStyle('A' . $row_num)->getFill()
       ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
       ->getStartColor()->setRGB('FFFFFF');
-$sheet->getStyle('A' . $row_num)->getFont()->setBold(true); // Para que el borde sea visible
+$sheet->getStyle('A' . $row_num)->getFont()->setBold(true);
 $sheet->getStyle('A' . $row_num)->getBorders()->getOutline()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-
 
 // =================================================================
 // 8. Forzar la descarga del archivo

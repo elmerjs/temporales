@@ -2310,10 +2310,14 @@ echo "</td>";
                     </form>";
             }
             echo "</td>";
+// 1. Normalizamos el valor a minúsculas y quitamos espacios
+$novedad_valor = strtolower(trim($row["novedad"] ?? ''));
+
+// 2. Ahora comparamos siempre contra minúsculas
 if (
     $tipo_usuario == 3 && 
-    ($row["novedad"] ?? '') == 'adicionar' && 
-    strtoupper($row["estado_vra"] ?? '') !== 'APROBADO'
+    ($novedad_valor == 'adicionar' || $novedad_valor == 'modificar') && 
+    strtoupper(trim($row["estado_vra"] ?? '')) !== 'APROBADO'
 ) {
     echo "<td class='td-simple centered-column'>
         <button type='button' class='download-btn btn btn-sm'
