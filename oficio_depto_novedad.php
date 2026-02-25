@@ -1,13 +1,12 @@
 <?php
-require 'vendor/autoload.php'; // Asegúrate de cargar PHPWord correctamente
-require 'cn.php'; // Asegúrate de que este archivo contiene la conexión a la base de datos
+require 'vendor/autoload.php'; 
+require 'cn.php'; 
 require 'funciones.php';
+
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Style\Language;
 use PhpOffice\PhpWord\SimpleType\Jc;
-
-
 use PhpOffice\PhpWord\Style\Table;
 use PhpOffice\PhpWord\Style\Cell;
 use PhpOffice\PhpWord\Style\Border;
@@ -24,30 +23,33 @@ require 'vendor/phpmailer/phpmailer/src/PHPMailer.php';
 require 'vendor/phpmailer/phpmailer/src/SMTP.php';
 $config = require 'config_email.php';
 
+// ==========================================
+// 🚦 INTERRUPTOR DE MODO DE CORREO
+// true  = MODO PRUEBAS (Envía a correo quemado)
+// false = MODO PRODUCCIÓN (Envía a la Facultad)
+$modo_pruebas = false; 
+$correo_pruebas = 'elmerjs@unicauca.edu.co'; 
+// ==========================================
+
 // Definir estilos de texto para las celdas de la tabla
 $paragraphStyle = array('spaceAfter' => 0, 'spaceBefore' => 0, 'spacing' => 0);
-
 $cellTextStyle = array('size' => 9, 'name' => 'Arial');
 $cellTextStyleb = array('size' => 8, 'name' => 'Arial');
 $cellTextStylef = array('size' => 6, 'name' => 'Arial');
-
-// Estilos para la celda del encabezado de la tabla
 $headerCellStyle = array('bgColor' => '#f2f2f2');
 
 // Crear una nueva instancia de PhpWord
 $phpWord = new PhpWord();
-// Definir dimensiones de una página tamaño carta en twips
-$pageWidth = 12240; // 21.59 cm (8.5 pulgadas) en twips
-$pageHeight = 15840; // 27.94 cm (11 pulgadas) en twips
+$pageWidth = 12240; 
+$pageHeight = 15840; 
 
 $section = $phpWord->addSection(array(
     'pageSizeW' => $pageWidth, 
     'pageSizeH' => $pageHeight,
-    'marginLeft' => 1700,    // 3 cm a la izquierda (en twips)
-    'marginRight' => 1700,  // 3 cm a la derecha (en twips)
+    'marginLeft' => 1700,    
+    'marginRight' => 1700,  
 ));
 $phpWord->getSettings()->setThemeFontLang(new Language(Language::ES_ES));
-// Agregar el encabezado
 
 // Obtener los parámetros de la URL
 $departamento_id = $_GET['departamento_id'];
@@ -58,12 +60,10 @@ $nombre_fac = $_GET['nombre_fac'];
 $num_acta = $_GET['acta'] ?? '';
 $fecha_acta = $_GET['fecha_acta'] ?? '';
 
-// Formatear la fecha en el formato "día de mes de año"
+// Formatear la fecha
 setlocale(LC_TIME, 'es_ES.UTF-8', 'es_ES', 'Spanish_Spain', 'es');
-
 $fecha_acta_b = '';
 if (!empty($fecha_acta)) {
-    // Si la fecha no está vacía, intentar formatearla
     $timestamp = strtotime($fecha_acta);
     if ($timestamp !== false) {
         $fecha_acta_b = strftime('%d de %B de %Y', $timestamp);
@@ -72,7 +72,7 @@ if (!empty($fecha_acta)) {
 
 // Unir el número de acta con la fecha formateada
 if (empty($num_acta) && empty($fecha_acta_b)) {
-    $acta = 'Acta no especificada'; // O un valor vacío si prefieres que no se muestre nada
+    $acta = 'Acta no especificada'; 
 } elseif (empty($num_acta)) {
     $acta = 'Acta del ' . $fecha_acta_b;
 } elseif (empty($fecha_acta_b)) {
@@ -82,16 +82,12 @@ if (empty($num_acta) && empty($fecha_acta_b)) {
 }
 
 $facultad_id= obteneridfac($departamento_id);
-
 $fecha_oficio = $_GET['fecha_oficio'];
 $oficio_con_fecha_depto = $num_oficio . " " . $fecha_oficio;
-
 $folios = isset($_GET['folios']) && trim($_GET['folios']) !== '' ? trim($_GET['folios']) : 0;
-
 $decano = obtenerDecano($facultad_id);
- // Función para obtener el nombre del departamento
-    
 
+// Array de departamentos (Imágenes)
 $departamentos = [
     1 => ['encabezado' => 'img/encabezado_artes_plasticas.png', 'pie' => 'img/pieartes.png'],
     2 => ['encabezado' => 'img/encabezado_diseno.png', 'pie' => 'img/pieartes.png'],
@@ -159,30 +155,24 @@ if (array_key_exists($departamento_id, $departamentos)) {
 $encabezado_oficio = $num_oficio;
 $header = $section->addHeader();
 $header->addImage($imgencabezado, array(
-    //'width' => 460, // Incrementar el ancho en un 10%
-    'height' => 80, // Incrementar el alto en un 10%
-    'marginTop' => -284, // Subir la imagen para compensar el esacio de margen superior de 1 cm
-   // 'marginRight' => 1700, // Mover la imagen 3 cm más a la derecha (3 cm * 567 twips/cm)
-         'align' => 'left', // Alinear a la derecha
-
+    'height' => 80, 
+    'marginTop' => -284, 
+    'align' => 'left', 
 ));
 
 $paragraphStylexz = array('lineHeight' => 0.8, 'spaceAfter' => 0, 'spaceBefore' => 0);
-
 $fontStylecuerpo = array('name' => 'Arial', 'size' => 11);
 
 $section->addText($encabezado_oficio, array('size' => 11, 'bold' => false, 'name' => 'Arial'),$paragraphStylexz);
 
-
 // Obtener la fecha actual en español
-
 $fecha_actual = strftime('%d de %B de %Y', strtotime($fecha_oficio));
 $section->addText('Popayán, ' . $fecha_actual,$fontStylecuerpo,$paragraphStylexz);
-$saltoLineaStyle = array('lineHeight' => 0.8); // Estilo personalizado para el salto de línea
+$saltoLineaStyle = array('lineHeight' => 0.8); 
 
 $section->addTextBreak(1, $paragraphStylexz);
 
- // Agregar textos sin espacio entre ellos
+// Agregar textos sin espacio entre ellos
 $section->addText('Decano', $fontStylecuerpo, array('spaceBefore' => 0, 'spaceAfter' => 0));
 $decano = mb_strtoupper($decano, 'UTF-8');
 $section->addText($decano, $fontStylecuerpo, array('spaceBefore' => 0, 'spaceAfter' => 0));
@@ -193,7 +183,7 @@ $section->addText('Universidad del Cauca', $fontStylecuerpo, array('spaceBefore'
 $section->addTextBreak(); // Inserta un salto de línea
 $section->addText('Cordial saludo,',$fontStylecuerpo);
 
-$styleParagraph = array('align' => 'both'); // Define el estilo para justificar el texto
+$styleParagraph = array('align' => 'both'); 
 $nombre_depto= obtenerNombreDepartamento($departamento_id);
     $section->addText(
         'Asunto: Solicitud Novedad(es) de vinculación Departamento de '.obtenerNombreDepartamento($departamento_id) . ' periodo '.$anio_semestre.'.',
@@ -205,7 +195,7 @@ $nombre_depto= obtenerNombreDepartamento($departamento_id);
 // Escapar las variables para prevenir inyecciones SQL
 $departamento_id = $con->real_escape_string($departamento_id);
 $anio_semestre = $con->real_escape_string($anio_semestre);
-date_default_timezone_set('America/Bogota'); // Configurar la zona horaria de Colombia
+date_default_timezone_set('America/Bogota'); 
 
 $fecha_hora_envio = date('Y-m-d H:i:s');
 
@@ -218,15 +208,9 @@ $result = $con->query($sql_select);
 
 if ($result->num_rows > 0) {
     $row = $result->fetch_assoc();
-$acepta_vra = obteneraceptacionvra($facultad_id, $anio_semestre);
-
-// Inicializamos la variable $sql_update_fac con un valor vacío
-$sql_update_fac = '';
-
-
-} else {
-  //  echo "No se encontró el registro en depto_periodo";
-}
+    $acepta_vra = obteneraceptacionvra($facultad_id, $anio_semestre);
+    $sql_update_fac = '';
+} 
 
 $consulta_depto = "SELECT DISTINCT NOMBRE_DEPTO_CORT, depto_nom_propio 
                     FROM solicitudes_working_copy 
@@ -240,11 +224,11 @@ if (!$resultadodepto) {
     die('Error en la consulta: ' . $con->error);
 }
 
-$nom_depto = ""; // Inicializar la variable para almacenar el nombre del departamento
+$nom_depto = ""; 
 $paragraphStylec = array('spaceAfter' => 1);
 
 while ($rowdepto = $resultadodepto->fetch_assoc()) {
-$nom_depto = mb_strtoupper($rowdepto['depto_nom_propio'], 'UTF-8');
+    $nom_depto = mb_strtoupper($rowdepto['depto_nom_propio'], 'UTF-8');
 }
 $nom_depto = mb_strtoupper($nombre_depto, 'UTF-8');
 
@@ -252,7 +236,6 @@ $section->addText('Departamento de ' . $nombre_depto,
     array('bold' => true), 
     $paragraphStylec
 );
-// Negrilla para el texto del departamento
 
 // Consulta SQL para obtener los tipos de docentes
 $consulta_tipo = "SELECT DISTINCT tipo_docente AS tipo_d
@@ -270,22 +253,22 @@ if (!$resultadotipo) {
 }
 $paragraphStyleb = array('spaceBefore' => 50, 'spaceAfter' => 10, 'lineHeight' => 1);
 $fontStyleb = array('name' => 'Arial', 'size' => 10);
-$iteracion = 0; // Inicializar un contador de iteraciones
+$iteracion = 0; 
 $paragraphStyleb = array('spaceBefore' => 50, 'spaceAfter' => 10, 'lineHeight' => 1);
 $fontStyleb = array('name' => 'Arial', 'size' => 10);
 $cellTextStyle = array('name' => 'Arial', 'size' => 9);
 $headerCellStyle = array('bgColor' => 'F2F2F2', 'valign' => VerticalJc::CENTER);
 $paragraphStyle = array('alignment' => Jc::CENTER, 'spaceAfter' => 0, 'spaceBefore' => 0);
 
-// NUEVO: Estilos para el texto de las observaciones
+// Estilos para el texto de las observaciones
 $paragraphStyleLeft = array('alignment' => Jc::LEFT, 'spaceAfter' => 0, 'spaceBefore' => 0);
-$observationTextStyle = array('name' => 'Arial', 'size' => 10); // Puedes ajustar el estilo
+$observationTextStyle = array('name' => 'Arial', 'size' => 10); 
 
 // --- INICIO DE CAMBIOS PARA "CAMBIO DE VINCULACIÓN" ---
 
 // 1. Identificar casos de "Cambio de vinculación"
-$cambio_vinculacion_cedulas = []; // Para almacenar las cédulas de los profesores con cambio de vinculación
-$cambio_vinculacion_data = []; // Para almacenar todos los datos de sus solicitudes
+$cambio_vinculacion_cedulas = []; 
+$cambio_vinculacion_data = []; 
 
 $sql_cambio_vinculacion = "
     SELECT 
@@ -319,8 +302,8 @@ if (!$result_cambio_vinculacion) {
 
 while ($row_cambio = $result_cambio_vinculacion->fetch_assoc()) {
     $cedula = $row_cambio['cedula'];
-    $cambio_vinculacion_cedulas[] = $cedula; // Almacenar las cédulas para exclusión futura
-    $cambio_vinculacion_data[] = $row_cambio; // Almacenar todos los datos
+    $cambio_vinculacion_cedulas[] = $cedula; 
+    $cambio_vinculacion_data[] = $row_cambio; 
 }
 
 // Convertir el array de cédulas a una cadena para usar en el SQL IN clause
@@ -331,7 +314,7 @@ if (!empty($cambio_vinculacion_cedulas)) {
 
 // 2. Sección para "Cambio de vinculación" si hay casos
 if (!empty($cambio_vinculacion_data)) {
-    $section->addTextBreak(1); // Espacio antes de esta nueva sección
+    $section->addTextBreak(1); 
     $section->addText('Novedad: Modificación - Cambio de Vinculación', $fontStyleb, $paragraphStyleb);
     $iteracion++;
 
@@ -352,7 +335,6 @@ if (!empty($cambio_vinculacion_data)) {
                 $salida_info[] = $cambio_row['dedicacion_r_eliminar'] . ' (Regionalización)';
             }
         } elseif ($tipo_docente_eliminar == "Catedra") {
-            // **CAMBIO AQUÍ: Solo incluir si las horas son mayores a cero**
             if (isset($cambio_row['horas_eliminar']) && (float)$cambio_row['horas_eliminar'] > 0) {
                 $salida_info[] = $cambio_row['horas_eliminar'] . 'hr (Popayán)';
             }
@@ -362,22 +344,17 @@ if (!empty($cambio_vinculacion_data)) {
         }
         
        // --- INICIO DE LA MODIFICACIÓN (PASO 1) ---
-        // Texto que irá ARRIBA de la tabla (solo el nombre)
         $texto_profesor_arriba = "Profesor: {$nombre_profesor}";
 
-        // Texto que irá DENTRO de la tabla (la descripción del cambio)
         $texto_cambio_dentro = "Cambia de: " . ($tipo_docente_eliminar ?: 'N/A');
         if (!empty($salida_info)) {
             $texto_cambio_dentro .= " - " . implode(" y ", $salida_info);
         }
-        $texto_cambio_dentro = "($texto_cambio_dentro)"; // Lo encerramos en paréntesis
+        $texto_cambio_dentro = "($texto_cambio_dentro)"; 
         // --- FIN DE LA MODIFICACIÓN (PASO 1) ---
         
-$section->addText($texto_profesor_arriba, $observationTextStyle, $paragraphStyleLeft);
-        /*if (!empty($observacion_adicionar)) {
-            $section->addText('Observación: ' . $observacion_adicionar, $observationTextStyle, $paragraphStyleLeft);
-        }*/
-        $section->addTextBreak(0); // Pequeño espacio antes de la tabla de adición
+        $section->addText($texto_profesor_arriba, $observationTextStyle, $paragraphStyleLeft);
+        $section->addTextBreak(0); 
 
         // Tabla de "Adicionar" para este profesor
         $styleTable = array(
@@ -389,7 +366,7 @@ $section->addText($texto_profesor_arriba, $observationTextStyle, $paragraphStyle
         $table = $section->addTable('CambioVinculacionTable');
         $table->setWidth(100 * 50, \PhpOffice\PhpWord\SimpleType\TblWidth::PERCENT);
 
-        // Encabezados de la tabla (igual que la de adicionar)
+        // Encabezados de la tabla 
         $row_header = $table->addRow();
         $textrun_header = $row_header->addCell(400, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addTextRun($paragraphStyle);
         $textrun_header->addText('N', $cellTextStyle);
@@ -398,9 +375,9 @@ $section->addText($texto_profesor_arriba, $observationTextStyle, $paragraphStyle
         $row_header->addCell(3600, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyle, $paragraphStyle);
         $row_header->addCell(700, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('Dedic/hr', $cellTextStyle, $paragraphStyle);
         $row_header->addCell(700, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('H.de Vida', $cellTextStyle, $paragraphStyle);
-        //$row_header->addCell(1000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Tipo Docente', $cellTextStyle, $paragraphStyle);
-// --- CAMBIO 1: Encabezado de la tabla de "Cambio de Vinculación" ---
-$row_header->addCell(2200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Observación', $cellTextStyle, $paragraphStyle);
+        // Encabezado de la tabla de "Cambio de Vinculación" 
+        $row_header->addCell(2200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Observación', $cellTextStyle, $paragraphStyle);
+        
         $row_subheader = $table->addRow();
         $row_subheader->addCell(400, array('vMerge' => 'continue'));
         $row_subheader->addCell(1200, array('vMerge' => 'continue'));
@@ -413,37 +390,37 @@ $row_header->addCell(2200, array_merge($headerCellStyle, array('vMerge' => 'rest
 
         // Fila de datos para este profesor
         $table->addRow();
-        $table->addCell(400, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(1, $cellTextStyle, $paragraphStyle); // Siempre 1 para esta tabla específica
+        $table->addCell(400, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(1, $cellTextStyle, $paragraphStyle); 
         $table->addCell(1200, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($cedula_profesor, $cellTextStyle, $paragraphStyle);
         $table->addCell(3600, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($nombre_profesor, $cellTextStyle, $paragraphStyle);
 
-if ($cambio_row['tipo_docente_adicionar'] == "Ocasional") {
-    // --- LÓGICA PARA LA DEDICACIÓN EN POPAYÁN ---
-    $dedicacion_popayan = strtoupper(trim($cambio_row['dedicacion_adicionar'] ?: ''));
-    $display_popayan = ''; // Por defecto es vacío
-    if ($dedicacion_popayan === 'MT') {
-        $display_popayan = 'OMT';
-    } elseif ($dedicacion_popayan === 'TC') {
-        $display_popayan = 'OTC';
-    } elseif (!empty($dedicacion_popayan)) {
-        $display_popayan = 'O'; // Si hay algo, pero no es MT o TC
-    }
-    
-    // --- LÓGICA PARA LA DEDICACIÓN EN REGIONALIZACIÓN ---
-    $dedicacion_regional = strtoupper(trim($cambio_row['dedicacion_r_adicionar'] ?: ''));
-    $display_regional = ''; // Por defecto es vacío
-    if ($dedicacion_regional === 'MT') {
-        $display_regional = 'OMT';
-    } elseif ($dedicacion_regional === 'TC') {
-        $display_regional = 'OTC';
-    } elseif (!empty($dedicacion_regional)) {
-        $display_regional = 'O';
-    }
+        if ($cambio_row['tipo_docente_adicionar'] == "Ocasional") {
+            // --- LÓGICA PARA LA DEDICACIÓN EN POPAYÁN ---
+            $dedicacion_popayan = strtoupper(trim($cambio_row['dedicacion_adicionar'] ?: ''));
+            $display_popayan = ''; 
+            if ($dedicacion_popayan === 'MT') {
+                $display_popayan = 'OMT';
+            } elseif ($dedicacion_popayan === 'TC') {
+                $display_popayan = 'OTC';
+            } elseif (!empty($dedicacion_popayan)) {
+                $display_popayan = 'O'; 
+            }
+            
+            // --- LÓGICA PARA LA DEDICACIÓN EN REGIONALIZACIÓN ---
+            $dedicacion_regional = strtoupper(trim($cambio_row['dedicacion_r_adicionar'] ?: ''));
+            $display_regional = ''; 
+            if ($dedicacion_regional === 'MT') {
+                $display_regional = 'OMT';
+            } elseif ($dedicacion_regional === 'TC') {
+                $display_regional = 'OTC';
+            } elseif (!empty($dedicacion_regional)) {
+                $display_regional = 'O';
+            }
 
-    // Añadir las celdas con los nuevos valores formateados
-    $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_popayan), $cellTextStyle, $paragraphStyle);
-    $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_regional), $cellTextStyle, $paragraphStyle);
-}
+            // Añadir las celdas con los nuevos valores formateados
+            $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_popayan), $cellTextStyle, $paragraphStyle);
+            $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_regional), $cellTextStyle, $paragraphStyle);
+        }
         elseif ($cambio_row['tipo_docente_adicionar'] == "Catedra") {
             $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($cambio_row['horas_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
             $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($cambio_row['horas_r_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);
@@ -455,49 +432,52 @@ if ($cambio_row['tipo_docente_adicionar'] == "Ocasional") {
         $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
             ->addText(mb_strtoupper($cambio_row['anexa_hv_docente_nuevo'] ?: '', 'UTF-8'), $cellTextStyle, $paragraphStyle);
         
-        
         $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
             ->addText(mb_strtoupper($cambio_row['actualiza_hv_antiguo'] ?: '', 'UTF-8'), $cellTextStyle, $paragraphStyle);
-       /* $table->addCell(1000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-            ->addText(utf8_decode($cambio_row['tipo_docente_adicionar'] ?: ''), $cellTextStyle, $paragraphStyle);*/
-        // --- CAMBIO 2: Celda de datos en la tabla de "Cambio de Vinculación" ---
-// --- INICIO DE LA MODIFICACIÓN (PASO 3) ---
-// Combinamos la observación existente con la nueva descripción del cambio
-$observacion_existente = utf8_decode($cambio_row['observacion_adicionar'] ?: '');
-$observacion_final = $observacion_existente;
-if (!empty($observacion_existente)) {
-    $observacion_final .= ' '; // Añadir espacio si hay texto
-}
-$observacion_final .= $texto_cambio_dentro;
+        
+        // --- INICIO DE LA MODIFICACIÓN (PASO 3) ---
+        // Combinamos la observación existente con la nueva descripción del cambio
+        $observacion_existente = utf8_decode($cambio_row['observacion_adicionar'] ?: '');
+        $observacion_final = $observacion_existente;
+        if (!empty($observacion_existente)) {
+            $observacion_final .= ' '; 
+        }
+        $observacion_final .= $texto_cambio_dentro;
 
-// Añadimos la celda de Observación con el texto combinado y con estilos
-$cell = $table->addCell(2200, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0]);
-$textrun = $cell->addTextRun($paragraphStyle);
+        // Añadimos la celda de Observación 
+        $cell = $table->addCell(2200, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0]);
+        $textrun = $cell->addTextRun($paragraphStyle);
 
-// Si hay una observación original, la añadimos en texto normal
-if (!empty($observacion_existente)) {
-    $textrun->addText(htmlspecialchars($observacion_existente) . ' ', $cellTextStyle);
-}
-// Añadimos la descripción del cambio en itálica para diferenciarla
-$textrun->addText(htmlspecialchars($texto_cambio_dentro), ['italic' => true, 'size' => 9]);
-// --- FIN DE LA MODIFICACIÓN (PASO 3) ---
-        $section->addTextBreak(0); // Espacio entre cada profesor de cambio de vinculación
+        // Si hay una observación original, la añadimos en texto normal
+        if (!empty($observacion_existente)) {
+            $textrun->addText(htmlspecialchars($observacion_existente) . ' ', $cellTextStyle);
+        }
+        // Añadimos la descripción del cambio en itálica para diferenciarla
+        $textrun->addText(htmlspecialchars($texto_cambio_dentro), ['italic' => true, 'size' => 9]);
+        // --- FIN DE LA MODIFICACIÓN (PASO 3) ---
+        
+        $section->addTextBreak(0); 
 
         // Actualizar el estado de ambas solicitudes a 'ENVIADO'
         $id_solicitud_adicionar = $cambio_row['id_solicitud_adicionar'];
-        $sql_update_adicionar = "
-                UPDATE solicitudes_working_copy 
-                SET 
-                    estado_depto = 'ENVIADO',
-                    oficio_depto = '$num_oficio',
-                    fecha_oficio_depto = '$fecha_oficio',
-                    oficio_con_fecha = '$oficio_con_fecha_depto'
-                WHERE 
-                    id_solicitud = '$id_solicitud_adicionar'
-            ";
-        $con->query($sql_update_adicionar); // Ejecutar actualización para la novedad "adicionar"
+        // PARA CAMBIO DE VINCULACIÓN: SI ES ADICIÓN, GUARDAMOS EL ACTA FOR-59
+        // 1. Limpieza de datos
+        $novedad_actual_add = 'adicionar'; 
+        // 2. Manejo seguro de la fecha
+        $fecha_acta_sql = empty($fecha_acta) ? "NULL" : "'$fecha_acta'";
+        
+        $sql_set_add = "estado_depto = 'ENVIADO', 
+                        oficio_depto = '$num_oficio', 
+                        fecha_oficio_depto = '$fecha_oficio', 
+                        oficio_con_fecha = '$oficio_con_fecha_depto',
+                        numero_acta59 = '$num_acta', 
+                        fecha_acta59 = $fecha_acta_sql"; // SIEMPRE guardar acta en la parte de adición
+
+        $sql_update_adicionar = "UPDATE solicitudes_working_copy SET $sql_set_add WHERE id_solicitud = '$id_solicitud_adicionar'";
+        $con->query($sql_update_adicionar); 
 
         $id_solicitud_eliminar = $cambio_row['id_solicitud_eliminar'];
+        // En la parte de eliminar NO guardamos acta (no es necesario o ya se guardó en la adición asociada)
         $sql_update_eliminar = "
                 UPDATE solicitudes_working_copy 
                 SET 
@@ -508,12 +488,11 @@ $textrun->addText(htmlspecialchars($texto_cambio_dentro), ['italic' => true, 'si
                 WHERE 
                     id_solicitud = '$id_solicitud_eliminar'
             ";
-        $con->query($sql_update_eliminar); // Ejecutar actualización para la novedad "eliminar"
+        $con->query($sql_update_eliminar); 
     }
 }
 
 // Consulta para obtener los distintos tipos de novedad
-// Ahora excluye las cédulas que ya se manejaron en "Cambio de vinculación"
 $consulta_novedad_tipos = "SELECT DISTINCT novedad
                             FROM solicitudes_working_copy
                             WHERE departamento_id = '$departamento_id'
@@ -533,46 +512,46 @@ if (!$resultado_novedad_tipos) {
     die('Error en la consulta de novedades: ' . $con->error);
 }
 
-// $iteracion = 0; // Para el addTextBreak entre bloques de novedad
-// Mantén el $iteracion que ya tenías para la primera sección.
-
 // Bucle principal: ahora itera por cada tipo de 'novedad'
 while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
     $novedad_actual = $row_novedad_tipo['novedad'];
 
-    // Si no es la primera iteración, añadir un salto de línea para separar las tablas
     if ($iteracion > 0) {
         $section->addTextBreak(1);
     }
 
+    // LÓGICA DE REEMPLAZO DE PALABRAS PARA EL DOCUMENTO
     if ($novedad_actual === 'Modificar') {
-    $novedad_mostrar = 'Modificación - Cambio de Dedicación';
-} else {
-    $novedad_mostrar = ucfirst($novedad_actual); // Primera letra en mayúscula
-}
+        $novedad_mostrar = 'Modificación - Cambio de Dedicación';
+    } elseif ($novedad_actual === 'Eliminar') {
+        $novedad_mostrar = 'Desvincular';
+    } elseif ($novedad_actual === 'adicionar') {
+        $novedad_mostrar = 'Vincular'; // <--- Cambio solicitado
+    } else {
+        // Por si existe algún otro tipo de novedad no contemplado
+        $novedad_mostrar = ucfirst($novedad_actual); 
+    }
 
-$section->addText('Novedad: ' . $novedad_mostrar, $fontStyleb, $paragraphStyleb);
+    $section->addText('Novedad: ' . $novedad_mostrar, $fontStyleb, $paragraphStyleb);
     $iteracion++;
 
-    // Consulta para obtener las solicitudes para la novedad actual
-    // Incluye 's_observacion' para poder extraerlo antes de la tabla
     $consultat = "SELECT solicitudes_working_copy.*,
                           facultad.nombre_fac_min AS nombre_facultad,
                           facultad.email_fac AS email_facultad,
                           deparmanentos.depto_nom_propio AS nombre_departamento
-                   FROM solicitudes_working_copy
-                   JOIN deparmanentos ON deparmanentos.PK_DEPTO = solicitudes_working_copy.departamento_id
-                   JOIN facultad ON facultad.PK_FAC = solicitudes_working_copy.facultad_id
-                   WHERE departamento_id = '$departamento_id'
-                   AND anio_semestre = '$anio_semestre'
-                   AND novedad = '$novedad_actual'
-                     AND estado_depto = 'PENDIENTE'"; // Mantener solo pendientes aquí
+                    FROM solicitudes_working_copy
+                    JOIN deparmanentos ON deparmanentos.PK_DEPTO = solicitudes_working_copy.departamento_id
+                    JOIN facultad ON facultad.PK_FAC = solicitudes_working_copy.facultad_id
+                    WHERE departamento_id = '$departamento_id'
+                    AND anio_semestre = '$anio_semestre'
+                    AND novedad = '$novedad_actual'
+                      AND estado_depto = 'PENDIENTE'"; 
 
     if (!empty($cedulas_excluir_str)) {
-        $consultat .= " AND cedula NOT IN ($cedulas_excluir_str)"; // Excluir casos de "Cambio de Vinculación"
+        $consultat .= " AND cedula NOT IN ($cedulas_excluir_str)"; 
     }
-                   
-    $consultat .= " ORDER BY solicitudes_working_copy.nombre ASC"; // Ordenar por nombre del profesor
+                    
+    $consultat .= " ORDER BY solicitudes_working_copy.nombre ASC"; 
 
     $resultadot = $con->query($consultat);
 
@@ -586,54 +565,30 @@ $section->addText('Novedad: ' . $novedad_mostrar, $fontStyleb, $paragraphStyleb)
     
     // Primero, recoger todas las observaciones y guardar los datos para la tabla
     while ($row = $resultadot->fetch_assoc()) {
-        $cont_for_observations++; // Incrementa el contador para el número de ítem
+        $cont_for_observations++; 
         if (!empty($row['s_observacion'])) {
             $obs_text = $row['s_observacion'];
             if (!isset($unique_observations[$obs_text])) {
                 $unique_observations[$obs_text] = [];
             }
-            $unique_observations[$obs_text][] = $cont_for_observations; // Almacena el número de ítem
+            $unique_observations[$obs_text][] = $cont_for_observations; 
         }
-        $temp_results[] = $row; // Guardar la fila para la segunda iteración (llenado de tabla)
+        $temp_results[] = $row; 
     }
 
-    // Mostrar las observaciones como un párrafo concatenado si existen
-   /* if (!empty($unique_observations)) {
-        $observation_text_output = '';
-        $first_obs_output = true;
-        foreach ($unique_observations as $obs_content => $indices_array) {
-            if (!$first_obs_output) {
-                $observation_text_output .= ' '; // Espacio entre observaciones distintas
-            }
-            // Formatear los índices: (1), (1) y (2), (1) (2) y (3)
-            $formatted_indices = '';
-            if (count($indices_array) > 1) {
-                $last_index = array_pop($indices_array);
-                $formatted_indices = '(' . implode(') (', $indices_array) . ') y (' . $last_index . ')';
-            } else {
-                $formatted_indices = '(' . $indices_array[0] . ')';
-            }
-            $observation_text_output .= $formatted_indices . ' ' . utf8_decode($obs_content);
-            $first_obs_output = false;
-        }
-        $section->addText($observation_text_output, $observationTextStyle, $paragraphStyleLeft);
-        $section->addTextBreak(0); // Añadir un salto de línea después de las observaciones y antes de la tabla
-    }
-*/
     // Estilo de la tabla
     $styleTable = array(
         'borderSize' => 6,
         'borderColor' => '999999',
-        'cellMargin' => 60, // Margen interno de las celdas (en unidades twips)
+        'cellMargin' => 60, 
     );
 
     $phpWord->addTableStyle('ColspanRowspan', $styleTable);
     $table = $section->addTable('ColspanRowspan');
-    // Mantiene el ancho de la tabla como estaba en tu código original
     $table->setWidth(100 * 50, \PhpOffice\PhpWord\SimpleType\TblWidth::PERCENT);
 
 
-    // Encabezados de la tabla - Primera fila (¡Sin Observación!)
+    // Encabezados de la tabla - Primera fila
     $row = $table->addRow();
     
     // Nº
@@ -644,8 +599,8 @@ $section->addText('Novedad: ' . $novedad_mostrar, $fontStyleb, $paragraphStyleb)
     // Cédula
     $row->addCell(1200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Cédula', $cellTextStyle, $paragraphStyle);
     
-    // Nombre (ancho ajustado para compensar la eliminación de la columna Observación)
-    $row->addCell(3400, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyle, $paragraphStyle); // Aumentado el ancho del nombre
+    // Nombre
+    $row->addCell(3400, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Nombre', $cellTextStyle, $paragraphStyle); 
     
     // Dedicación/hr
     $row->addCell(700, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('Dedic/hr', $cellTextStyle, $paragraphStyle);
@@ -653,41 +608,31 @@ $section->addText('Novedad: ' . $novedad_mostrar, $fontStyleb, $paragraphStyleb)
     // Hoja de vida
     $row->addCell(700, array_merge($headerCellStyle, array('alignment' => Jc::CENTER, 'gridSpan' => 2, 'vMerge' => 'restart')))->addText('H.de Vida', $cellTextStyle, $paragraphStyle);
 
-    // Tipo Docente
-  //  $row->addCell(1000, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Tipo Docente', $cellTextStyle, $paragraphStyle);
-    // --- CAMBIO 3: Encabezado de las tablas de novedades normales ---
-$row->addCell(2200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Observación', $cellTextStyle, $paragraphStyle);
+    // Observación
+    $row->addCell(2200, array_merge($headerCellStyle, array('vMerge' => 'restart')))->addText('Observación', $cellTextStyle, $paragraphStyle);
 
-    // Encabezados de la tabla - Segunda fila (para celdas fusionadas, ¡Sin Observación!)
+    // Encabezados de la tabla - Segunda fila
     $row = $table->addRow();
-    // Celdas 'continue' para los vMerge 'restart' de la fila anterior
-    $row->addCell(400, array('vMerge' => 'continue')); // Nº
-    $row->addCell(1200, array('vMerge' => 'continue')); // Cédula
-    $row->addCell(3400, array('vMerge' => 'continue')); // Nombre (ancho ajustado)
-    
-    // Sub-encabezados de Dedicación/hr
+    $row->addCell(400, array('vMerge' => 'continue')); 
+    $row->addCell(1200, array('vMerge' => 'continue')); 
+    $row->addCell(3400, array('vMerge' => 'continue')); 
     $row->addCell(350, $headerCellStyle)->addText('Pop', $cellTextStyleb, $paragraphStyle);
     $row->addCell(350, $headerCellStyle)->addText('Reg', $cellTextStyleb, $paragraphStyle);
-    
-    // Sub-encabezados de Hoja de vida
     $row->addCell(350, $headerCellStyle)->addText('Nuevo', $cellTextStyleb, $paragraphStyle);
     $row->addCell(350, $headerCellStyle)->addText('Antig', $cellTextStyleb, $paragraphStyle);
+    $row->addCell(2200, array('vMerge' => 'continue')); 
 
-    // Celdas 'continue' para Tipo Docente
-   // $row->addCell(1000, array('vMerge' => 'continue')); // Tipo Docente
-
-$row->addCell(2200, array('vMerge' => 'continue')); // Celda 'continue' para Observación
-
-    $cont = 0; // Contador de filas dentro de cada tabla de novedad
-    // Ahora iteramos sobre los resultados almacenados temporalmente
+    $cont = 0; 
+    // Iterar sobre los resultados almacenados temporalmente
     foreach ($temp_results as $row) {
         $cont++;
-        // Asumiendo que 'facultad_id' y 'email_facultad' son necesarios para otras partes del oficio.
-        // Si no, se pueden eliminar.
-        $facultad_id = $row['facultad_id'];
-        $facultad_email = $row['email_facultad']; // Usar el de la BD si existe, sino el fallback
+        // CORREO DESTINO (LÓGICA DEL INTERRUPTOR)
+        if ($modo_pruebas) {
+            $facultad_email = $correo_pruebas; 
+        } else {
+            $facultad_email = $row['email_facultad']; 
+        }
         
-        //$facultad_email = 'elmerjs@unicauca.edu.co';
         $table->addRow();
         
         // Columna Nº
@@ -699,41 +644,32 @@ $row->addCell(2200, array('vMerge' => 'continue')); // Celda 'continue' para Obs
         // Columna Nombre
         $full_nombre = utf8_decode($row['nombre'] ?: '');
         $display_nombre_in_word = $full_nombre; 
-        $table->addCell(3400, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($display_nombre_in_word, $cellTextStyle, $paragraphStyle); // Ancho ajustado
+        $table->addCell(3400, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText($display_nombre_in_word, $cellTextStyle, $paragraphStyle); 
 
         // Columnas de Dedicación/horas según el tipo de docente
-        // Columnas de Dedicación/horas según el tipo de docente
-if ($row['tipo_docente'] == "Ocasional") {
-    // --- LÓGICA PARA LA DEDICACIÓN EN POPAYÁN ---
-    $dedicacion_popayan = strtoupper(trim($row['tipo_dedicacion'] ?: ''));
-    $display_popayan = 'O'; // Valor por defecto
-    if ($dedicacion_popayan === 'MT') {
-        $display_popayan = 'OMT';
-    } elseif ($dedicacion_popayan === 'TC') {
-        $display_popayan = 'OTC';
-    }
-    
-    // --- LÓGICA PARA LA DEDICACIÓN EN REGIONALIZACIÓN ---
-    $dedicacion_regional = strtoupper(trim($row['tipo_dedicacion_r'] ?: ''));
-    $display_regional = 'O'; // Valor por defecto
-    if ($dedicacion_regional === 'MT') {
-        $display_regional = 'OMT';
-    } elseif ($dedicacion_regional === 'TC') {
-        $display_regional = 'OTC';
-    }
-    
-    // Si la dedicación original estaba vacía, mostramos la celda vacía para no poner una "O" solitaria.
-    if (empty($dedicacion_popayan)) {
-        $display_popayan = '';
-    }
-    if (empty($dedicacion_regional)) {
-        $display_regional = '';
-    }
+        if ($row['tipo_docente'] == "Ocasional") {
+            $dedicacion_popayan = strtoupper(trim($row['tipo_dedicacion'] ?: ''));
+            $display_popayan = 'O'; 
+            if ($dedicacion_popayan === 'MT') {
+                $display_popayan = 'OMT';
+            } elseif ($dedicacion_popayan === 'TC') {
+                $display_popayan = 'OTC';
+            }
+            
+            $dedicacion_regional = strtoupper(trim($row['tipo_dedicacion_r'] ?: ''));
+            $display_regional = 'O'; 
+            if ($dedicacion_regional === 'MT') {
+                $display_regional = 'OMT';
+            } elseif ($dedicacion_regional === 'TC') {
+                $display_regional = 'OTC';
+            }
+            
+            if (empty($dedicacion_popayan)) { $display_popayan = ''; }
+            if (empty($dedicacion_regional)) { $display_regional = ''; }
 
-    // Añadir las celdas con los nuevos valores formateados
-    $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_popayan), $cellTextStyle, $paragraphStyle);
-    $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_regional), $cellTextStyle, $paragraphStyle);
-} elseif ($row['tipo_docente'] == "Catedra") {
+            $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_popayan), $cellTextStyle, $paragraphStyle);
+            $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($display_regional), $cellTextStyle, $paragraphStyle);
+        } elseif ($row['tipo_docente'] == "Catedra") {
             $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($row['horas'] ?: ''), $cellTextStyle, $paragraphStyle);
             $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])->addText(utf8_decode($row['horas_r'] ?: ''), $cellTextStyle, $paragraphStyle);
         } else {
@@ -748,36 +684,35 @@ if ($row['tipo_docente'] == "Ocasional") {
         $table->addCell(350, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
             ->addText(mb_strtoupper($row['actualiza_hv_antiguo'] ?: '', 'UTF-8'), $cellTextStyle, $paragraphStyle);
 
-        // Columna Tipo Docente
-        /*$table->addCell(1000, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-            ->addText(utf8_decode($row['tipo_docente'] ?: ''), $cellTextStyle, $paragraphStyle); 
-        */
-        
-        // --- CAMBIO 4: Celda de datos en las tablas de novedades normales ---
+        // Celda de Observación
         $table->addCell(2200, ['borderSize' => 1, 'marginTop' => 0, 'marginBottom' => 0])
-      ->addText(utf8_decode($row['s_observacion'] ?: ''), $cellTextStyle, $paragraphStyle);
+            ->addText(utf8_decode($row['s_observacion'] ?: ''), $cellTextStyle, $paragraphStyle);
         
         
-        // --- INICIO: Nuevo UPDATE para cada registro mostrado en la tabla ---
+        // --- INICIO: Actualización Segura con Acta (Solo para Adiciones Puras) ---
         $id_solicitud_actual = $row['id_solicitud'];
-        $sql_update_solicitudes_estado = "
-                UPDATE solicitudes_working_copy 
-                SET 
-                    estado_depto = 'ENVIADO',
-                    oficio_depto = '$num_oficio',
-                    fecha_oficio_depto = '$fecha_oficio',
-                    oficio_con_fecha = '$oficio_con_fecha_depto'
-                WHERE 
-                    id_solicitud = '$id_solicitud_actual'
-            ";
+        
+        // 1. Limpieza de datos
+        $novedad_actual_row = strtolower(trim($row['novedad'] ?? ''));
+        
+        // 2. Manejo seguro de la fecha
+        $fecha_acta_sql = empty($fecha_acta) ? "NULL" : "'$fecha_acta'";
+        
+        // 3. Construimos la parte BASE de la consulta
+        $sql_set = "estado_depto = 'ENVIADO', 
+                    oficio_depto = '$num_oficio', 
+                    fecha_oficio_depto = '$fecha_oficio', 
+                    oficio_con_fecha = '$oficio_con_fecha_depto'";
 
-
-        if ($con->query($sql_update_solicitudes_estado) === TRUE) {
-            // echo "Estado de solicitud con ID {$id_solicitud_actual} actualizado a ENVIADO correctamente.";
-        } else {
-            // echo "Error al actualizar el estado de la solicitud con ID {$id_solicitud_actual}: " . $con->error;
+        // 4. CONDICIÓN: Si es 'adicionar', agregamos los campos del acta
+        if ($novedad_actual_row == 'adicionar' || $novedad_actual_row == 'adicion') {
+            $sql_set .= ", numero_acta59 = '$num_acta', fecha_acta59 = $fecha_acta_sql";
         }
-        // --- FIN: Nuevo UPDATE para cada registro mostrado en la tabla ---
+
+        // 5. Ejecutamos
+        $sql_update_solicitudes_estado = "UPDATE solicitudes_working_copy SET $sql_set WHERE id_solicitud = '$id_solicitud_actual'";
+        $con->query($sql_update_solicitudes_estado);
+        // --- FIN: Actualización Segura ---
     }
 }
 $fontStyleSmall = array('name' => 'Arial', 'size' => 7, 'italic' => true);
@@ -788,18 +723,17 @@ $section->addText(
     $fontStyleSmall, 
     $paragraphStyleSmall
 );
-    $section->addTextBreak(); // Inserta un salto de línea
+    $section->addTextBreak(); 
 
 // Pie de página
-//$piedepagina = "\n\nUniversitariamente";
 $section->addText('Universitariamente, ',$fontStylecuerpo);
 
-    $section->addTextBreak(); // Inserta un salto de línea
+    $section->addTextBreak(); 
 $section->addText(mb_strtoupper($elaboro, 'UTF-8'), $fontStylecuerpo,$paragraphStylexz);
 $section->addText('Jefe de Departamento de ' . ($nombre_depto), $fontStylecuerpo);
 // Definir estilo de fuente para texto en cursiva con tamaño 8
 $fontStyle = array('italic' => true, 'size' => 8);
-$paragraphStyle = array('indentation' => array('left' => 720)); // 720 twips = 0.5 pulgada
+$paragraphStyle = array('indentation' => array('left' => 720)); 
 
 // Agregar el texto inicial con estilo de fuente definido, sin sangría
 if ($folios == 1) {
@@ -809,20 +743,12 @@ if ($folios == 1) {
 } else {
     $section->addText('Anexo: (  ) folio(s)', $fontStyle);
 }
-// Consulta a la base de datos para obtener datos relevantes
-
-
 
 $consultacant = "
     SELECT COUNT(*) as cant_profesores
     FROM solicitudes_working_copy 
     WHERE departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' AND (solicitudes_working_copy.estado <> 'an' OR solicitudes_working_copy.estado IS NULL) and solicitudes_working_copy.novedad = 'adicionar'
 ";
-
-// Excluir de nuevo las cédulas que ya se manejaron en el conteo total de profesores.
-/*if (!empty($cedulas_excluir_str)) {
-    $consultacant .= " AND cedula NOT IN ($cedulas_excluir_str)";
-}*/
 
 $resultadocant = $con->query($consultacant);
 
@@ -868,15 +794,11 @@ if ($acta !== 'Acta no especificada') {
 }
 $section->addText('('.$cant_profesores.') Formatos PA-GA-5.1-FOR 45 Revisión Requisitos Vinculación Docente', $fontStyle, array('spaceAfter' => 0));
 
-//$section->addText($piedepagina, array('size' => 12, 'italic' => true));
-
-// Pie de página
 $footer = $section->addFooter();
 $footer->addImage($imgpie, array(
-    'width' => 490, // Ajusta el ancho según sea necesario
-    //'height' => 65, // Ajusta el alto según sea necesario
-    'marginTop' => 0, // Ajusta el margen superior según sea necesario
-    'marginRight' => 1000, // Ajusta el margen derecho según sea necesario
+    'width' => 490, 
+    'marginTop' => 0, 
+    'marginRight' => 1000, 
 ));
 
 // Encabezados HTTP para la descarga
@@ -884,13 +806,8 @@ header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessi
 header('Content-Disposition: attachment;filename="document.docx"');
 header('Cache-Control: max-age=0');
 
-// Guardar el archivo en formato DOCX y enviarlo al navegador
 $writer = IOFactory::createWriter($phpWord, 'Word2007');
 $writer->save('php://output');
-
-//envio  a php email: 
-
-// Enviar variables a otro archivo PHP (antes del exit)
 
 // Configuración de PHPMailer para el envío de correo
 $mail = new PHPMailer(true);
@@ -900,12 +817,11 @@ try {
     $mail->isSMTP();
     $mail->Host         = 'smtp.gmail.com';
     $mail->SMTPAuth     = true;
-    $mail->Username     =$config['smtp_username']; // Cambia esto por tu correo
-    $mail->Password     = $config['smtp_password']; // Cambia esto por tu contraseña
+    $mail->Username     =$config['smtp_username']; 
+    $mail->Password     = $config['smtp_password']; 
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port         = 587;
 
-    // Opciones SSL para mayor compatibilidad
     $mail->SMTPSoptions = [
         'ssl' => [
             'verify_peer' => false,
@@ -917,11 +833,10 @@ try {
     // Configurar destinatarios
     $mail->setFrom('ejurado@unicauca.edu.co', 'solicitudes vinculación');
     $mail->addAddress($facultad_email, 'Destinatario');
-$mail->addCC('ejurado@unicauca.edu.co'); // Enviar copia
+    $mail->addCC('ejurado@unicauca.edu.co'); 
 
-    // Contenido del correo
     $mail->isHTML(true);
-    $mail->CharSet = 'UTF-8';    // Asegúrate de que el correo se envíe en UTF-8
+    $mail->CharSet = 'UTF-8';    
     $mail->Subject = 'Notificación: solicitud de Novedades de vinculación temporales - ' . $nombre_depto;
     $mail->Body    = "
         <p>Cordial saludo, </p>
@@ -930,13 +845,12 @@ $mail->addCC('ejurado@unicauca.edu.co'); // Enviar copia
         <p>Universitariamente,</p>
         <p><strong>Vicerrectoría Académica</strong></p>
     ";
-    // Enviar el correo
+    
     $mail->send();
-  //  echo "Correo enviado correctamente a $facultad_email.";
+  
 } catch (Exception $e) {
-  //  echo "No se pudo enviar el correo: {$mail->ErrorInfo}";
+  // Manejo de errores
 }
 
-
-exit; // Terminar el script para evitar cualquier salida adicional
+exit; 
 ?>

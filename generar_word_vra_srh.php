@@ -185,6 +185,12 @@ foreach ($transacciones_agrupadas as $id_transaccion => $cedulas_en_oficio) {
                 $total_horas = floatval($fila_final['horas']) + floatval($fila_final['horas_r']);
                 $vinculacion_final = ($total_horas > 0) ? $total_horas . ' hrs' : '';
             }
+            // --- INICIO AGREGADO ---
+            // Si la sede dice Regionalización (sin importar mayúsculas/tildes), agregamos (Reg)
+            if (!empty($fila_final['sede']) && stripos($fila_final['sede'], 'Regionaliza') !== false) {
+                $vinculacion_final .= ' (Reg)';
+            }
+            // --- FIN AGREGADO ---
             $fila_final['dedicacion_unificada_final'] = $vinculacion_final;
 
             $datos_para_word[] = $fila_final;
@@ -217,6 +223,11 @@ foreach ($otras_novedades as $fila) {
         $total_horas = floatval($fila['horas']) + floatval($fila['horas_r']);
         $vinculacion_final = ($total_horas > 0) ? $total_horas . ' hrs' : '';
     }
+    // --- INICIO AGREGADO ---
+    if (!empty($fila['sede']) && stripos($fila['sede'], 'Regionaliza') !== false) {
+        $vinculacion_final .= ' (Reg)';
+    }
+    // --- FIN AGREGADO ---
     $fila['dedicacion_unificada_final'] = $vinculacion_final;
 
     $vinculacion_inicial = '';

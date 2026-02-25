@@ -1467,9 +1467,18 @@ function configurarModalEdicionVRA(tipoDocenteInicial) {
             
             cardsContainer.innerHTML = '';
             
-            for (const oficio_fac in oficios) {
+            const oficiosArray = Object.keys(oficios);
+            oficiosArray.sort((a, b) => {
+                // Extraer la parte de fecha (formato: "8.7.2-31/005 2026-02-05")
+                const fechaA = a.split(' ').pop() || ''; // toma el último elemento después del espacio
+                const fechaB = b.split(' ').pop() || '';
+                // Comparar lexicográficamente (YYYY-MM-DD ya es ordenable)
+                return fechaA.localeCompare(fechaB);
+            });
+
+            // Recorrer los oficios en orden
+            for (const oficio_fac of oficiosArray) {
                 const solicitudesDelOficio = oficios[oficio_fac];
-                
                 // Si el filtro está activo y no hay pendientes, saltar este oficio
                 if (filtroActivo && !solicitudesDelOficio.some(sol => sol.estado_vra === 'PENDIENTE')) {
                     continue;

@@ -4,6 +4,7 @@ $active_menu_item = 'gestion_depto';
 
 require('include/headerz.php');
 require 'funciones.php';
+
 //require 'actualizar_usuario.php'; // <-- Incluir aquí
  if (!isset($_SESSION['name']) || empty($_SESSION['name'])) {
     // Si no hay sesión activa, muestra un mensaje y redirige
@@ -13,15 +14,45 @@ require 'funciones.php';
     exit(); // Detener toda la ejecución del script
 }
 
-    // Obtener los parámetros de la URL
+
+// 1. Obtener los parámetros de la URL
 $facultad_id = isset($_POST['facultad_id']) ? $_POST['facultad_id'] : null;
 $anio_semestre = $_POST['anio_semestre'] ?? $_GET['anio_semestre'] ?? null;
 $departamento_id = $_POST['departamento_id'] ?? $_GET['departamento_id'] ?? null;
- $aniose= $anio_semestre;
-        $cierreperiodo = obtenerperiodo($anio_semestre);
-        $cierreperiodonov = obtenerperiodonov($anio_semestre);
+
+// -------------------------------------------------------------------------
+// 2. CONEXIÓN A BASE DE DATOS (MOVIDA AQUÍ ARRIBA PARA QUE FUNCIONE)
+// -------------------------------------------------------------------------
+$conn = new mysqli('localhost', 'root', '', 'contratacion_temporales');
+
+if ($conn->connect_error) {
+    die("Conexión fallida: " . $conn->connect_error);
+}
+// -------------------------------------------------------------------------
 
 
+// 3. AHORA SÍ: OPTIMIZACIÓN - BUSCAR ACTA GLOBAL
+$id_acta_gestion = "";
+$num_acta_global = "";
+$fecha_acta_global = "";
+
+$sql_acta_gen = "SELECT id_acta, numero_acta, fecha_reunion 
+                 FROM actas_seleccion_docente 
+                 WHERE departamento_id = '$departamento_id' AND anio_semestre = '$anio_semestre' 
+                 ORDER BY id_acta DESC LIMIT 1";
+
+$res_acta_gen = $conn->query($sql_acta_gen);
+
+if ($res_acta_gen && $row_ag = $res_acta_gen->fetch_assoc()) {
+    $id_acta_gestion = $row_ag['id_acta'];
+    $num_acta_global = $row_ag['numero_acta'];
+    $fecha_acta_global = $row_ag['fecha_reunion'];
+}
+// ------------------------------------------------
+
+$aniose= $anio_semestre;
+$cierreperiodo = obtenerperiodo($anio_semestre);
+$cierreperiodonov = obtenerperiodonov($anio_semestre);
 ?>
 
 
@@ -781,78 +812,122 @@ th {
     <div style="max-width: 1800px; width: 100%; margin: auto;">
 
 <div class="top-nav">
-    <div class="container position-relative d-flex align-items-center justify-content-center"> <?php if ($tipo_usuario != 3): ?>
+    <div class="container position-relative d-flex align-items-center justify-content-center"> 
+        <?php if ($tipo_usuario != 3): ?>
             <a href="report_depto_full.php?anio_semestre=<?= urlencode($anio_semestre) ?>" 
                class="btn-unicauca-light position-absolute start-0" title="Regresar a 'Gestión facultad'">
                 <i class="fas fa-arrow-left me-2"></i> Regresar
             </a>
         <?php endif; ?>
         
-        <div class="text-white fw-bold"> <i class="fas fa-university me-2"></i> Gestión Departamento
+        <div class="text-white fw-bold d-flex align-items-center"> 
+            <i class="fas fa-university me-2"></i> Gestión Departamento
+            <span class="ms-3 badge bg-light text-dark shadow-sm" style="font-size: 0.9rem; opacity: 0.9;">
+                <i class="far fa-calendar-alt me-1"></i> 
+                <?php echo htmlspecialchars($_POST['anio_semestre']); ?>
+            </span>
         </div>
-        </div>
+    </div>
 </div>
-    <div class="container">
+
+<div class="container">
+    <div class="institutional-card">
+        <div class="card-header-unicauca">
+            <div class="summary-header d-flex align-items-center justify-content-between p-2" style="border-bottom: 2px dashed #16A8E1; background-color: #f8f9fa; border-radius: 8px;">
+                <div class="summary-container" style="margin: 0; padding: 0; border: none; background: none; box-shadow: none;">
+                    <ul class="summary-data-list" style="margin: 0; padding: 0; display: flex; gap: 15px;">
+                        <li>
+                            <span class="label-heading">Facultad:</span>
+                            <span class="data-value"><?php echo obtenerNombreFacultadcort($departamento_id); ?></span>
+                        </li>
+                        <li>
+                            <span class="label-heading">Departamento:</span>
+                            <span class="data-value"><?php echo obtenerNombreDepartamento($_POST['departamento_id']); ?></span>
+                        </li>
+                        </ul>
+    </div>    
+
+    <?php if($tipo_usuario == 3): 
+        // =======================================================================
+        // 🎚️ INTERRUPTOR MAESTRO PARA GESTIÓN DE ACTA (FOR-59)
+        // true  = ACTIVO (Los botones funcionan)
+        // false = INACTIVO (Los botones se ven pero no hacen nada)
+        $modo_activo = false; 
+        // =======================================================================
+
+        // 1. Lógica interna
+        $count_borrador = contarNovedadesEnBorrador($departamento_id, $anio_semestre);
         
- <div class="institutional-card">
-                 <div class="card-header-unicauca">
-<div class="summary-header">
-<div class="summary-container">
-    <ul class="summary-data-list">
-        <li>
-            <span class="label-heading">Facultad:</span>
-            <span class="data-value"><?php echo obtenerNombreFacultadcort($departamento_id); ?></span>
-        </li>
-        <li>
-            <span class="label-heading">Departamento:</span>
-            <span class="data-value"><?php echo obtenerNombreDepartamento($_POST['departamento_id']); ?></span>
-        </li>
-        <li>
-            <span class="label-heading">Periodo:</span>
-            <span class="data-value"><?php echo htmlspecialchars($_POST['anio_semestre']); ?></span>
-        </li>
-    </ul>
-</div>   
+        // Variables de estilo para Acta FOR-59
+        $clase_estado   = $modo_activo ? "" : "disabled";
+        $estilo_bloqueo = $modo_activo ? "" : "pointer-events: none; opacity: 0.6;";
+        
+        $word_bloqueado = (!$modo_activo || empty($id_acta_gestion));
+        $clase_word     = $word_bloqueado ? "disabled" : "";
+        $estilo_word    = $word_bloqueado ? "pointer-events: none; opacity: 0.6;" : "";
+
+        // 2. Definición de URLs
+        $url_for59_edit = "gestion_for59.php?departamento_id=" . urlencode($departamento_id) . 
+                          "&anio_semestre=" . urlencode($anio_semestre) . 
+                          "&id_acta=" . $id_acta_gestion;
+        
+        $url_for59_word = "generar_word_for59.php?departamento_id=" . urlencode($departamento_id) . 
+                          "&anio_semestre=" . urlencode($anio_semestre) . 
+                          "&id_acta=" . $id_acta_gestion;
+        
+        $url_novedad    = "consulta_todo_depto_novedad.php?facultad_id=" . urlencode($facultad_id) . 
+                          "&anio_semestre=" . urlencode($anio_semestre) . 
+                          "&departamento_id=" . urlencode($departamento_id);
+    ?>
     
-<?php
-$count_borrador = contarNovedadesEnBorrador($departamento_id, $anio_semestre);
+    <div class="d-flex align-items-center gap-2">
+        
+        <div class="btn-group" role="group" style="height: 38px;">
+            <a href="<?php echo htmlspecialchars($url_for59_edit); ?>" 
+               class="btn btn-outline-primary <?php echo $clase_estado; ?>" 
+               style="display: inline-flex; align-items: center; padding: 0 12px; border-radius: 6px 0 0 6px; font-weight: 600; border: 2px solid #002A9E; color: #002A9E; background: white; white-space: nowrap; text-decoration: none; font-size: 0.85rem; <?php echo $estilo_bloqueo; ?>"
+               title="Acta de Selección (Solo Inicio de Semestre)">
 
-// 2. Definimos la URL (si no está definida arriba)
-$url_novedad = "consulta_todo_depto_novedad.php?" .
-               "facultad_id=" . urlencode($facultad_id) .
-               "&anio_semestre=" . urlencode($anio_semestre) .
-               "&departamento_id=" . urlencode($departamento_id);
+                <i class="fas fa-file-signature me-2"></i> 
+                <span><?php echo $id_acta_gestion ? 'Editar Acta PM-FO-4-FOR-59' : 'Crear Acta PM-FO-4-FOR-59'; ?></span>
+            </a>
 
-// 3. Renderizado del botón para Usuario Tipo 3
-if($tipo_usuario == 3) {
-    if($cierreperiodonov <> 1) { /* Período ABIERTO */ ?>
-        <a href="<?php echo htmlspecialchars($url_novedad); ?>" 
-           class="btn btn-primary" 
-           style="display: inline-flex; align-items: center; position: relative; padding: 8px 16px; border-radius: 6px; font-weight: 500; text-decoration: none;" 
-           title="Crear novedades o ver novedades pendientes de envío a facultad">
-            
-            <i class="fas fa-file-alt mr-2"></i> 
-            <span>Preparar Novedades</span>
-            
-            <?php if ($count_borrador > 0): ?>
-                <span style="background-color: #ffc107; color: black; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px; font-weight: bold; border: 1px solid #333; line-height: 1;">
-                    <?php echo $count_borrador; ?> en borrador
-                </span>
-            <?php endif; ?>
-        </a>
+            <a href="<?php echo htmlspecialchars($url_for59_word); ?>" 
+               class="btn btn-outline-primary <?php echo $clase_word; ?>" 
+               style="display: inline-flex; align-items: center; padding: 0 10px; border-radius: 0 6px 6px 0; font-weight: 600; border: 2px solid #002A9E; border-left: none; color: #002A9E; background: white; <?php echo $estilo_word; ?>"
+               title="Descargar Acta de Inicio en formato Word (.docx)">
+                <i class="fas fa-file-word"></i>
+            </a>
+        </div>
 
-    <?php } else { /* Período CERRADO */ ?>
-        <a href="#" class="btn btn-secondary disabled-btn" 
-           style="display: inline-flex; align-items: center; cursor: not-allowed; opacity: 0.6; padding: 8px 16px; border-radius: 6px; text-decoration: none;"
-           title="Período cerrado para novedades">
-            <i class="fas fa-lock mr-2"></i> 
-            <span>Preparar Novedades</span>
-        </a>
-    <?php }
-}
-?>
+        <?php if($cierreperiodonov <> 1): /* Período ABIERTO */ ?>
+            <a href="<?php echo htmlspecialchars($url_novedad); ?>" 
+               class="btn btn-primary" 
+               style="display: inline-flex; align-items: center; justify-content: center; position: relative; padding: 0 16px; border-radius: 6px; font-weight: 500; text-decoration: none; height: 38px; white-space: nowrap;" 
+               title="Crear novedades o ver novedades pendientes de envío a facultad">
+                
+                <i class="fas fa-file-alt me-2"></i> 
+                <span>Preparar Novedades</span>
+                
+                <?php if ($count_borrador > 0): ?>
+                    <span style="background-color: #ffc107; color: black; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px; font-weight: bold; border: 1px solid #333; line-height: 1;">
+                        <?php echo $count_borrador; ?> en borrador
+                    </span>
+                <?php endif; ?>
+            </a>
+
+        <?php else: /* Período CERRADO */ ?>
+            <a href="#" class="btn btn-secondary disabled-btn" 
+               style="display: inline-flex; align-items: center; justify-content: center; cursor: not-allowed; opacity: 0.6; padding: 0 16px; border-radius: 6px; text-decoration: none; height: 38px; white-space: nowrap;"
+               title="Período cerrado para novedades">
+                <i class="fas fa-lock me-2"></i> 
+                <span>Preparar Novedades</span>
+            </a>
+        <?php endif; ?>
+
+    </div>
+    <?php endif; ?>
 </div>
-
 
     <?php
                     $nombre_fac=obtenerNombreFacultad($departamento_id);
@@ -896,6 +971,8 @@ $facultad_id = obtenerIdFacultad($departamento_id);
 
     require 'cn.php';
     // Consulta SQL para obtener los tipos de docentes
+
+                     
 $consulta_tipo = "SELECT DISTINCT tipo_docente AS tipo_d
                   FROM solicitudes  where solicitudes.estado <> 'an' OR solicitudes.estado IS NULL;";
 
@@ -1049,11 +1126,16 @@ echo ")</h4>";
 
         $item = 1;
         $todosLosRegistrosValidos = true;
-        $datos_acta = obtener_acta($anio_semestre, $departamento_id);
-
-        $num_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['acta_periodo']) : "";
-        $fecha_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['fecha_acta']) : "";
-
+       if (!empty($num_acta_global)) {
+            // 1. Prioridad: Usar datos del acta nueva (cargados al inicio)
+            $num_acta = htmlspecialchars($num_acta_global);
+            $fecha_acta = htmlspecialchars($fecha_acta_global);
+        } else {
+            // 2. Fallback: Si no hay acta nueva, buscar con el método antiguo
+            $datos_acta = obtener_acta($anio_semestre, $departamento_id);
+            $num_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['acta_periodo']) : "";
+            $fecha_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['fecha_acta']) : "";
+        }
       while ($row = $result->fetch_assoc()) {
     if ($row["anexa_hv_docente_nuevo"] == 'si' || $row["actualiza_hv_antiguo"] == 'si') {
         $contadorHV++;

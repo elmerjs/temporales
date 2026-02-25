@@ -1852,16 +1852,15 @@ SELECT
     s.tipo_docente,
     s.cedula,
     s.nombre,
-    s.tipo_dedicacion,     -- ✅ Original dedicacion from 'solicitudes'
-    s.tipo_dedicacion_r,   -- ✅ Original dedicacion_r from 'solicitudes'
-    s.horas,               -- ✅ Original hours from 'solicitudes'
-    s.horas_r,             -- ✅ Original hours_r from 'solicitudes'
+    s.tipo_dedicacion,
+    s.tipo_dedicacion_r,
+    s.horas,
+    s.horas_r,
     s.sede,
     s.anexa_hv_docente_nuevo,
     s.actualiza_hv_antiguo,
     s.visado,
     s.estado,
-    -- Determine the 'novedad' based on pending changes in swc
     CASE
         WHEN swc.novedad = 'Modificar' AND swc.estado_depto IN ('ENVIADO', 'PENDIENTE')
              AND swc.estado_facultad <> 'RECHAZADO' AND swc.estado_vra <> 'RECHAZADO'
@@ -1871,7 +1870,7 @@ SELECT
              AND swc.estado_facultad <> 'RECHAZADO' AND swc.estado_vra <> 'RECHAZADO'
              AND NOT (swc.estado_facultad = 'APROBADO' AND swc.estado_vra = 'APROBADO')
         THEN 'Eliminar'
-        ELSE s.novedad -- Default to original 'novedad' if no active pending change
+        ELSE s.novedad 
     END AS novedad,
     s.puntos,
     s.s_observacion,
@@ -1886,20 +1885,24 @@ SELECT
     s.experiencia_docente,
     s.experiencia_profesional,
     s.otra_experiencia,
-    -- Get status fields from swc if a relevant novelty exists, else NULL/PENDIENTE
-    COALESCE(swc.estado_depto, 'APROBADO') AS estado_depto, -- Assuming 'APROBADO' if no active novelty in SWC
+    COALESCE(swc.estado_depto, 'APROBADO') AS estado_depto,
     COALESCE(swc.oficio_depto, NULL) AS oficio_depto,
     COALESCE(swc.fecha_envio_depto, NULL) AS fecha_envio_depto,
     COALESCE(swc.aprobador_depto_id, NULL) AS aprobador_depto_id,
-    COALESCE(swc.estado_facultad, 'APROBADO') AS estado_facultad, -- Assuming 'APROBADO' if no active novelty in SWC
+    COALESCE(swc.estado_facultad, 'APROBADO') AS estado_facultad,
     COALESCE(swc.observacion_facultad, NULL) AS observacion_facultad,
     COALESCE(swc.fecha_aprobacion_facultad, NULL) AS fecha_aprobacion_facultad,
     COALESCE(swc.aprobador_facultad_id, NULL) AS aprobador_facultad_id,
-    COALESCE(swc.estado_vra, 'APROBADO') AS estado_vra, -- Assuming 'APROBADO' if no active novelty in SWC
+    COALESCE(swc.estado_vra, 'APROBADO') AS estado_vra,
     COALESCE(swc.observacion_vra, NULL) AS observacion_vra,
     COALESCE(swc.fecha_aprobacion_vra, NULL) AS fecha_aprobacion_vra,
     COALESCE(swc.aprobador_vra_id, NULL) AS aprobador_vra_id,
-    s.id_solicitud AS fk_id_solicitud_original, -- Original ID
+    
+    -- NUEVOS CAMPOS (Desde SWC)
+    swc.numero_acta59,
+    swc.fecha_acta59,
+
+    s.id_solicitud AS fk_id_solicitud_original, 
     f.nombre_fac_minb AS nombre_facultad,
     d.depto_nom_propio AS nombre_departamento,
     'original_or_modified_or_deleted' AS tipo_registro_para_debug
@@ -1914,11 +1917,10 @@ LEFT JOIN
         swc.fk_id_solicitud_original = s.id_solicitud
         AND swc.anio_semestre = s.anio_semestre
         AND swc.departamento_id = s.departamento_id
-        AND swc.tipo_docente = s.tipo_docente -- Match on type and other filters too
-        AND swc.cedula = s.cedula -- Match on cedula
-        AND swc.novedad IN ('Modificar', 'Eliminar') -- Only link relevant novelties
-        AND (swc.estado <> 'an' OR swc.estado IS NULL) -- Not cancelled in working copy
-        -- Filter for pending/sent states, not yet fully approved or rejected
+        AND swc.tipo_docente = s.tipo_docente
+        AND swc.cedula = s.cedula
+        AND swc.novedad IN ('Modificar', 'Eliminar')
+        AND (swc.estado <> 'an' OR swc.estado IS NULL)
         AND (swc.estado_depto = 'ENVIADO' OR swc.estado_depto = 'PENDIENTE')
         AND swc.estado_facultad <> 'RECHAZADO'
         AND swc.estado_vra <> 'RECHAZADO'
@@ -1929,8 +1931,7 @@ WHERE
     AND s.departamento_id = '$departamento_id'
     AND s.anio_semestre = '$anio_semestre'
     AND s.tipo_docente = '$tipo_docente'
-    AND (s.estado <> 'an' OR s.estado IS NULL) -- Exclude original records that might have been cancelled
-    -- Exclude original records if they are marked for deletion AND that deletion has been approved
+    AND (s.estado <> 'an' OR s.estado IS NULL) 
     AND NOT EXISTS (
         SELECT 1
         FROM solicitudes_working_copy swc_approved_del
@@ -1943,7 +1944,6 @@ WHERE
             AND swc_approved_del.departamento_id = '$departamento_id'
             AND swc_approved_del.tipo_docente = '$tipo_docente'
     )
-    -- Ensure this record isn't an 'adicionar' that's already shown via the UNION ALL below
     AND NOT EXISTS (
         SELECT 1
         FROM solicitudes_working_copy swc_add
@@ -1959,7 +1959,6 @@ WHERE
 
 UNION ALL
 
--- Records that are new additions from working_copy (only 'adicionar' type)
 SELECT
     sw.id_solicitud,
     sw.anio_semestre,
@@ -1968,16 +1967,16 @@ SELECT
     sw.tipo_docente,
     sw.cedula,
     sw.nombre,
-    sw.tipo_dedicacion,     -- ✅ Use working_copy dedication for additions
+    sw.tipo_dedicacion,
     sw.tipo_dedicacion_r,
-    sw.horas,               -- ✅ Use working_copy hours for additions
+    sw.horas,
     sw.horas_r,
     sw.sede,
     sw.anexa_hv_docente_nuevo,
     sw.actualiza_hv_antiguo,
     sw.visado,
     sw.estado,
-    sw.novedad, -- This will be 'adicionar'
+    sw.novedad,
     sw.puntos,
     sw.s_observacion,
     sw.tipo_reemplazo,
@@ -2003,7 +2002,12 @@ SELECT
     sw.observacion_vra,
     sw.fecha_aprobacion_vra,
     sw.aprobador_vra_id,
-    sw.fk_id_solicitud_original, -- This will be NULL for new additions
+    
+    -- NUEVOS CAMPOS (Directos de SWC)
+    sw.numero_acta59,
+    sw.fecha_acta59,
+
+    sw.fk_id_solicitud_original,
     f.nombre_fac_minb AS nombre_facultad,
     d.depto_nom_propio AS nombre_departamento,
     'adicionar' AS tipo_registro_para_debug
@@ -2019,15 +2023,14 @@ WHERE
     AND sw.anio_semestre = '$anio_semestre'
     AND sw.tipo_docente = '$tipo_docente'
     AND (sw.estado <> 'an' OR sw.estado IS NULL)
-    AND sw.novedad = 'adicionar' -- Only bring 'adicionar' novelties here
+    AND sw.novedad = 'adicionar'
     AND (sw.estado_depto = 'ENVIADO' OR sw.estado_depto = 'PENDIENTE')
     AND sw.estado_facultad <> 'RECHAZADO'
     AND sw.estado_vra <> 'RECHAZADO'
-    AND NOT (sw.estado_facultad = 'APROBADO' AND sw.estado_vra = 'APROBADO') -- Exclude if fully approved
+    AND NOT (sw.estado_facultad = 'APROBADO' AND sw.estado_vra = 'APROBADO')
 
 ORDER BY nombre ASC;
 ";
-
 $result = $conn->query($sql);
 
     // Generate a unique ID for the section that will be hidden/shown
@@ -2125,12 +2128,49 @@ echo ")</h4>";
 
         $item = 1;
         $todosLosRegistrosValidos = true;
-        $datos_acta = obtener_acta($anio_semestre, $departamento_id);
-//pendiente  cambiar esto que era para oficio inicial por nuevos datos  de oficio novedad
-        $num_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['acta_periodo']) : "";
-        $fecha_acta = ($datos_acta !== 0) ? htmlspecialchars($datos_acta['fecha_acta']) : "";
-        $num_acta = 0;
+       // --- INICIO: LÓGICA INTELIGENTE PARA MODAL Y BOTONES ---
+        $num_acta = "";
         $fecha_acta = "";
+
+        // 1. Buscamos la ÚLTIMA acta creada en la base de datos para este depto/periodo
+        // Ordenamos por ID descendente para obtener la más reciente
+        $sql_last_modal = "SELECT id_acta, numero_acta, fecha_reunion 
+                           FROM actas_seleccion_novedades 
+                           WHERE departamento_id = ? AND anio_semestre = ? 
+                           ORDER BY id_acta DESC LIMIT 1";
+
+        $stmt_lm = $conn->prepare($sql_last_modal);
+        $stmt_lm->bind_param("ss", $departamento_id, $anio_semestre);
+        $stmt_lm->execute();
+        $res_lm = $stmt_lm->get_result();
+        $last_acta_modal = $res_lm->fetch_assoc();
+        $stmt_lm->close();
+
+        if ($last_acta_modal) {
+            // 2. Verificamos si esta acta YA FUE UTILIZADA (Enviada a Facultad)
+            // Si existen registros con estado 'ENVIADO' que tengan este número de acta, se considera cerrada.
+            $num_verif = $last_acta_modal['numero_acta'];
+            
+            $sql_check_uso = "SELECT 1 FROM solicitudes_working_copy 
+                              WHERE departamento_id = ? AND anio_semestre = ? 
+                              AND numero_acta59 = ? AND estado_depto = 'ENVIADO' LIMIT 1";
+            
+            $stmt_cu = $conn->prepare($sql_check_uso);
+            $stmt_cu->bind_param("sss", $departamento_id, $anio_semestre, $num_verif);
+            $stmt_cu->execute();
+            $ya_usada = $stmt_cu->get_result()->num_rows > 0;
+            $stmt_cu->close();
+
+            // 3. DECISIÓN:
+            if (!$ya_usada) {
+                // Si el acta existe y NO se ha usado (está en borrador), precargamos los datos
+                $num_acta = $last_acta_modal['numero_acta'];
+                $fecha_acta = $last_acta_modal['fecha_reunion'];
+            }
+            // Si $ya_usada es verdadero, dejamos $num_acta y $fecha_acta vacíos ("").
+            // Esto hará que el modal aparezca vacío, obligando a generar/escribir una nueva acta para el nuevo paquete.
+        }
+        // --- FIN: LÓGICA INTELIGENTE ---
 
       while ($row = $result->fetch_assoc()) {
     if ($row["anexa_hv_docente_nuevo"] == 'si' || $row["actualiza_hv_antiguo"] == 'si') {
@@ -2319,28 +2359,38 @@ if (
     ($novedad_valor == 'adicionar' || $novedad_valor == 'modificar') && 
     strtoupper(trim($row["estado_vra"] ?? '')) !== 'APROBADO'
 ) {
-    echo "<td class='td-simple centered-column'>
-        <button type='button' class='download-btn btn btn-sm'
-            id='btn-solicitud-" . htmlspecialchars($row["id_solicitud"]) . "'
-            data-id-solicitud='" . htmlspecialchars($row["id_solicitud"]) . "'
-            data-departamento-id='" . htmlspecialchars($departamento_id) . "'
-            data-anio-semestre='" . htmlspecialchars($anio_semestre) . "'
-            data-numero-acta='" . htmlspecialchars($num_acta) . "'
-            data-fecha-acta='" . htmlspecialchars($fecha_acta) . "'
-            data-pregrado='" . htmlspecialchars($row["pregrado"] ?? '') . "'
-            data-especializacion='" . htmlspecialchars($row["especializacion"] ?? '') . "'
-            data-maestria='" . htmlspecialchars($row["maestria"] ?? '') . "'
-            data-doctorado='" . htmlspecialchars($row["doctorado"] ?? '') . "'
-            data-otro_estudio='" . htmlspecialchars($row["otro_estudio"] ?? '') . "'
-            data-experiencia-docente='" . htmlspecialchars($row["experiencia_docente"] ?? '') . "'
-            data-experiencia-profesional='" . htmlspecialchars($row["experiencia_profesional"] ?? '') . "'
-            data-otra-experiencia='" . htmlspecialchars($row["otra_experiencia"] ?? '') . "'
-            data-cedula-profesor='" . htmlspecialchars($row["cedula"] ?? '') . "'  
-            data-bs-toggle='modal'
-            data-bs-target='#actaModal'>
-            <i class='fa-solid fa-file-arrow-down' style='font-size:16px; color:#1A73E8;'></i>
-        </button>
-    </td>";
+   // 1. LÓGICA DE PRIORIDAD (El cambio clave):
+// Si el registro ya tiene un acta guardada (histórico), usamos esa.
+// Si no (está vacía), usamos la variable global ($num_acta) del acta actual.
+$acta_final_for45 = !empty($row['numero_acta59']) ? $row['numero_acta59'] : $num_acta;
+$fecha_final_for45 = !empty($row['fecha_acta59']) ? $row['fecha_acta59'] : $fecha_acta;
+
+// 2. EL BOTÓN (Usando las nuevas variables):
+echo "<td class='td-simple centered-column'>
+    <button type='button' class='download-btn btn btn-sm'
+        id='btn-solicitud-" . htmlspecialchars($row["id_solicitud"]) . "'
+        data-id-solicitud='" . htmlspecialchars($row["id_solicitud"]) . "'
+        data-departamento-id='" . htmlspecialchars($departamento_id) . "'
+        data-anio-semestre='" . htmlspecialchars($anio_semestre) . "'
+        
+        /* AQUÍ EL CAMBIO: Usamos las variables calculadas arriba */
+        data-numero-acta='" . htmlspecialchars($acta_final_for45) . "'
+        data-fecha-acta='" . htmlspecialchars($fecha_final_for45) . "'
+        
+        data-pregrado='" . htmlspecialchars($row["pregrado"] ?? '') . "'
+        data-especializacion='" . htmlspecialchars($row["especializacion"] ?? '') . "'
+        data-maestria='" . htmlspecialchars($row["maestria"] ?? '') . "'
+        data-doctorado='" . htmlspecialchars($row["doctorado"] ?? '') . "'
+        data-otro_estudio='" . htmlspecialchars($row["otro_estudio"] ?? '') . "'
+        data-experiencia-docente='" . htmlspecialchars($row["experiencia_docente"] ?? '') . "'
+        data-experiencia-profesional='" . htmlspecialchars($row["experiencia_profesional"] ?? '') . "'
+        data-otra-experiencia='" . htmlspecialchars($row["otra_experiencia"] ?? '') . "'
+        data-cedula-profesor='" . htmlspecialchars($row["cedula"] ?? '') . "'  
+        data-bs-toggle='modal'
+        data-bs-target='#actaModal'>
+        <i class='fa-solid fa-file-arrow-down' style='font-size:16px; color:#1A73E8;'></i>
+    </button>
+</td>";
 } else {
     echo "<td class='td-simple centered-column'></td>";
 }
@@ -2754,7 +2804,39 @@ if ($stmt_count) {
 ?>
 
 <div class="">
- 
+ <?php
+// --- LÓGICA PARA DETECTAR CANDIDATOS AL ACTA FOR-59 (NOVEDADES) ---
+// Regla: 
+// 1. Novedad = 'adicionar'
+// 2. Estado = 'PENDIENTE'
+// 3. EXCLUIR si la misma cédula tiene un 'Eliminar' pendiente (Caso Modificación/Morales)
+
+$sql_for59_check = "
+    SELECT COUNT(*) as total_candidatos
+    FROM solicitudes_working_copy s1
+    WHERE s1.departamento_id = ? 
+      AND s1.anio_semestre = ?
+      AND s1.novedad = 'adicionar'
+      AND s1.estado_depto = 'PENDIENTE'
+      AND (s1.archivado = 0 OR s1.archivado IS NULL)
+      -- AQUÍ ESTÁ EL FILTRO ANTI-MODIFICACIONES (CASO MORALES)
+      AND NOT EXISTS (
+          SELECT 1 
+          FROM solicitudes_working_copy s2 
+          WHERE s2.cedula = s1.cedula 
+            AND s2.departamento_id = s1.departamento_id 
+            AND s2.anio_semestre = s1.anio_semestre 
+            AND s2.novedad = 'Eliminar'
+            AND s2.estado_depto = 'PENDIENTE'
+      )
+";
+
+$stmt_f59 = $conn->prepare($sql_for59_check);
+$stmt_f59->bind_param("ss", $departamento_id, $anio_semestre);
+$stmt_f59->execute();
+$conteo_for59 = $stmt_f59->get_result()->fetch_assoc()['total_candidatos'];
+$stmt_f59->close();
+?>
     
     
     
@@ -2916,23 +2998,138 @@ if (!empty($data_modificar)) {
     <?php endif; ?>
 </div></div>
 <div class="card mb-5 shadow-lg">
-    <div class="card-header bg-primary text-white">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        
         <h4 class="mb-0">
             <i class="fas fa-plus-circle me-3"></i>Vincular
             <?php
-            // Obtener el número de elementos en el array $data_adicionar
-            // Esto te dará el conteo exacto de las novedades de tipo 'Adicionar'
             $conteo_adicionar = count($data_adicionar);
-            $conteo_adicionar_pend= $count_adicionar_pend;
+            // ... otros contadores que tengas ...
             ?>
-            <?php if ($conteo_adicionar > 0): ?>
-               
-
-            <?php endif; ?>
-            
-             <?php if ($conteo_adicionar_pend > 0): ?><?php endif; ?>
         </h4>
+
+        <div class="d-flex gap-2 align-items-center">
+            <?php
+            // =======================================================================
+            // 🎚️ INTERRUPTOR MAESTRO PARA GESTIÓN DE ACTA (NOVEDADES)
+            // true  = ACTIVO (El botón funciona)
+            // false = INACTIVO (El botón se muestra bloqueado - "Próximamente")
+            $habilitar_gestion_actas = false; 
+            // =======================================================================
+
+            // 1. LÓGICA DE GESTIÓN DE ACTAS (NUEVO vs EDITAR)
+            $id_acta_gestionar = null;
+            $modo_acta = 'crear'; // por defecto
+            
+            // A. Buscar la ÚLTIMA acta registrada para este depto/semestre
+            $sql_last_acta = "SELECT id_acta, numero_acta FROM actas_seleccion_novedades 
+                              WHERE departamento_id = ? AND anio_semestre = ? 
+                              ORDER BY id_acta DESC LIMIT 1";
+            $stmt_la = $conn->prepare($sql_last_acta);
+            $stmt_la->bind_param("ss", $departamento_id, $anio_semestre);
+            $stmt_la->execute();
+            $res_la = $stmt_la->get_result();
+            $last_acta = $res_la->fetch_assoc();
+            $stmt_la->close();
+
+            if ($last_acta) {
+                // B. Verificar si esta acta YA FUE UTILIZADA en un envío anterior (Histórico)
+                $num_acta_verif = $last_acta['numero_acta'];
+                $sql_uso = "SELECT 1 FROM solicitudes_working_copy 
+                            WHERE departamento_id = ? AND anio_semestre = ? 
+                            AND numero_acta59 = ? AND estado_depto = 'ENVIADO' LIMIT 1";
+                
+                $stmt_uso = $conn->prepare($sql_uso);
+                $stmt_uso->bind_param("sss", $departamento_id, $anio_semestre, $num_acta_verif);
+                $stmt_uso->execute();
+                $es_historica = $stmt_uso->get_result()->num_rows > 0;
+                $stmt_uso->close();
+
+                if ($es_historica) {
+                    // Si la última acta ya se envió, iniciamos una NUEVA (Modo Crear)
+                    $modo_acta = 'crear';
+                    $id_acta_gestionar = null;
+                } else {
+                    // Si no se ha enviado, seguimos editando la misma (Modo Editar)
+                    $modo_acta = 'editar';
+                    $id_acta_gestionar = $last_acta['id_acta'];
+                }
+            }
+            
+            // C. Consulta de conteo SOLO para el badge visual (ya no bloquea el botón)
+            $sql_for59 = "SELECT COUNT(*) as total 
+                          FROM solicitudes_working_copy s1 
+                          WHERE s1.departamento_id = ? AND s1.anio_semestre = ? 
+                          AND s1.novedad = 'adicionar' AND s1.estado_depto = 'PENDIENTE' 
+                          AND (s1.archivado = 0 OR s1.archivado IS NULL)
+                          AND NOT EXISTS (
+                              SELECT 1 FROM solicitudes_working_copy s2 
+                              WHERE s2.cedula = s1.cedula AND s2.departamento_id = s1.departamento_id 
+                              AND s2.anio_semestre = s1.anio_semestre AND s2.novedad = 'Eliminar' 
+                              AND s2.estado_depto = 'PENDIENTE'
+                          )";
+            $stmt_f59 = $conn->prepare($sql_for59);
+            $stmt_f59->bind_param("ss", $departamento_id, $anio_semestre);
+            $stmt_f59->execute();
+            $conteo_for59 = $stmt_f59->get_result()->fetch_assoc()['total'];
+            $stmt_f59->close();
+
+         
+$btn_url = "gestion_acta_novedades.php?departamento_id=" . urlencode($departamento_id) . "&anio_semestre=" . urlencode($anio_semestre) . "&id_acta=" . $id_acta_gestionar;
+
+// Estilo base: blanco con azul (máximo contraste sobre fondo azul)
+$btn_style = "background-color: #ffffff; color: #002A9E; border: 1px solid #002A9E; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s;";
+
+if ($modo_acta == 'editar') {
+    $btn_text = "Editar Acta PM-FO-4-FOR-59(En curso)";
+    $btn_title = "Continuar editando el Acta actual";
+    // Destacar edición con borde doble (blanco + azul) manteniendo fondo blanco
+    $btn_style = "background-color: #ffffff; color: #002A9E; border: 2px solid #ffffff; outline: 1px solid #002A9E; outline-offset: -2px; box-shadow: 0 2px 6px rgba(0,42,158,0.2);";
+} else {
+    $btn_text = "Crear Acta PM-FO-4-FOR-59";
+    $btn_title = "Crear una nueva Acta PM-FO-4-FOR-59 para este lote";
+}
+
+if (!$habilitar_gestion_actas) {
+    $btn_url = "javascript:void(0);";
+    $btn_style = "background-color: #e9ecef; color: #6c757d; border: 1px solid #dee2e6; cursor: not-allowed; opacity: 0.9; pointer-events: none;";
+    $btn_title = "Funcionalidad de Actas de Novedades próximamente disponible.";
+}
+?>
+
+<a href="<?= $btn_url ?>" 
+   class="btn btn-sm fw-bold shadow-sm d-flex align-items-center gap-2" 
+   style="<?= $btn_style ?>"
+   title="<?= $btn_title ?>"
+   onmouseover="this.style.backgroundColor='#f0f4ff'; this.style.borderColor='#002A9E';" 
+   onmouseout="this.style.backgroundColor='<?= ($modo_acta == 'editar' && $habilitar_gestion_actas) ? '#ffffff' : ($habilitar_gestion_actas ? '#ffffff' : '#e9ecef') ?>'; this.style.borderColor='<?= (!$habilitar_gestion_actas) ? '#dee2e6' : '#002A9E' ?>'">
+    
+    <i class="fas fa-file-signature"></i> 
+    <span><?= $btn_text ?></span>
+    
+    <?php if ($conteo_for59 > 0): ?>
+        <span class="badge bg-danger text-white rounded-pill ms-1 border border-white">
+            <?= $conteo_for59 ?>
+        </span>
+    <?php else: ?>
+        <!-- Badge "0" ahora visible sobre fondo blanco -->
+        <span class="badge bg-white text-dark rounded-pill ms-1 border border-primary" style="border-color: #002A9E !important; color: #002A9E !important; background-color: #ffffff !important;">
+            0
+        </span>
+    <?php endif; ?>
+</a>
+
+            <?php if ($modo_acta == 'editar' && $habilitar_gestion_actas): ?>
+                <a href="generar_word_novedades.php?departamento_id=<?= urlencode($departamento_id) ?>&anio_semestre=<?= urlencode($anio_semestre) ?>&id_acta=<?= $id_acta_gestionar ?>" 
+                   class="btn btn-white btn-sm fw-bold shadow-sm text-primary bg-white" 
+                   style="border: 1px solid white;"
+                   title="Descargar Acta Actual en Word">
+                    <i class="fas fa-file-word fa-lg text-primary"></i>
+                </a>
+            <?php endif; ?>
+        </div>
     </div>
+    
     <div class="card-body p-2">
 
         <?php if (!empty($data_adicionar)): ?>
@@ -2988,7 +3185,7 @@ if (!empty($data_modificar)) {
                             }
                             ?>
                             <tr class="<?= $row_class ?>">
-                                                        <td><?= htmlspecialchars($row['cedula']) ?></td>
+                                                                        <td><?= htmlspecialchars($row['cedula']) ?></td>
                                 <td title="<?= htmlspecialchars($row['nombre']) ?>">
                                     <?= htmlspecialchars(mb_strimwidth($row['nombre'], 0, 14, '…')) ?>
                                 </td>
@@ -3041,9 +3238,9 @@ if (!empty($data_modificar)) {
                                     <?= htmlspecialchars(mb_strimwidth($row['s_observacion'], 0, 14, '…')) ?>
                                 </td>
 
-                              
+                             
                                 
-                                              <?php
+                                                                <?php
                         // Asegúrate de que $estado_facultad y $estado_depto están definidos y normalizados
                         $estado_facultad = strtolower(trim($row['estado_facultad'] ?? ''));
                         $estado_depto = strtolower(trim($row['estado_depto'] ?? ''));
@@ -3077,12 +3274,12 @@ if (!empty($data_modificar)) {
                                             <?= $deshacer_adicion_disabled_attr ?>
                                             onclick="confirmDeshacer('Adición', 'formDeshacerAdicion_<?= htmlspecialchars($row["id_solicitud"]) ?>');"
                                     >
-                                        <i class='fas fa-undo'></i>
+                                            <i class='fas fa-undo'></i>
                                     </button>
                                 </form>
                             <?php endif; ?>
                         </td>
-                                                                            </tr>
+                                                                    </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
@@ -3096,7 +3293,6 @@ if (!empty($data_modificar)) {
         ?>
     </div>
 </div>
-
 <hr>
 
 <div class="card mb-5 shadow-lg">

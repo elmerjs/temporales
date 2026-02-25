@@ -765,7 +765,7 @@ $textrun->addText($texto_cambio_dentro, ['italic' => true, 'size' => 8]);
             case 'adicionar':
                 $novedad_mostrar = 'Vincular';
                 break;
-            case 'Eliminar':
+            case 'eliminar':
                 $novedad_mostrar = 'Desvincular';
                 break;
             default:

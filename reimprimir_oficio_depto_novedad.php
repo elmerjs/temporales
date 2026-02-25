@@ -546,11 +546,18 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
         $section->addTextBreak(1);
     }
 
+    
+    // LÓGICA DE REEMPLAZO DE PALABRAS PARA EL DOCUMENTO
     if ($novedad_actual === 'Modificar') {
-    $novedad_mostrar = 'Modificación - Cambio de Dedicación';
-} else {
-    $novedad_mostrar = ucfirst($novedad_actual); // Primera letra en mayúscula
-}
+        $novedad_mostrar = 'Modificación - Cambio de Dedicación';
+        } elseif ($novedad_actual === 'Eliminar') {
+            $novedad_mostrar = 'Desvincular';
+        } elseif ($novedad_actual === 'adicionar') {
+            $novedad_mostrar = 'Vincular'; // <--- Cambio solicitado
+        } else {
+            // Por si existe algún otro tipo de novedad no contemplado
+            $novedad_mostrar = ucfirst($novedad_actual); 
+        }
 
 $section->addText('Novedad: ' . $novedad_mostrar, $fontStyleb, $paragraphStyleb);
     $iteracion++;
