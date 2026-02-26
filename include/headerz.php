@@ -1000,7 +1000,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                        COMENTAR DESDE AQUÍ PARA OCULTAR EL PERIODO SIGUIENTE
                        ========================================================== 
                     */
-                    /* ?>
+                     ?>
                     <li class="<?= ($active_menu_item == 'gestion_depto' && $selected_period == $nextPeriod) ? 'active' : '' ?>">
                         <a href="#" class="periodo-link"
                             data-facultad-id="<?php echo $departamento['PK_FAC']; ?>"
@@ -1008,7 +1008,7 @@ nav ul li ul.submenu li.active a::after { /* Opcional: línea para el sub-ítem 
                             data-anio-semestre="<?php echo $nextPeriod; ?>"><?php echo $nextPeriod; ?></a>
                     </li>
                     <?php 
-                    */
+                    
                     // ================= FIN COMENTARIO =========================
                     ?>
 
@@ -1076,13 +1076,13 @@ $previousPeriod3 = restarPeriodo($previousPeriod2);
                         </a>
                     </li>
                 <?php else: // Para Tipo 2 y 3: Comentado para uso futuro ?>
-                    <?php /* ?>
+                    <?php  ?>
                     <li class="<?= ($selected_period == $nextPeriod) ? 'active' : '' ?>">
                         <a href="#" class="report-link" data-facultad-id="<?php echo $departamento['PK_FAC']; ?>" data-anio-semestre="<?php echo $nextPeriod; ?>">
                             <?php echo $nextPeriod; ?>
                         </a>
                     </li>
-                    <?php */ ?>
+                    <?php  ?>
                 <?php endif; ?>
 
             <?php endif; ?>

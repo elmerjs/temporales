@@ -77,8 +77,8 @@ function prepararParaBusqueda($texto) {
 }
 
 // 2. Preparamos términos de búsqueda
-$valor_acta_mostrar = $datos['numero_acta'] ?? ($trd_depto ? $trd_depto . '/' : '');
-
+//$valor_acta_mostrar = $datos['numero_acta'] ?? ($trd_depto ? $trd_depto . '/' : '');
+$valor_acta_mostrar = $datos['numero_acta'] ?? '';
 ?>
 
 <!DOCTYPE html>
@@ -157,8 +157,7 @@ $valor_acta_mostrar = $datos['numero_acta'] ?? ($trd_depto ? $trd_depto . '/' : 
                     <label class="form-label small fw-bold">Serie, Subserie / No de acta</label>
                     <input type="text" name="numero_acta" class="form-control" 
                            placeholder="Ej: 8.3.11-1.57/XX" 
-                           >
-                 
+                           value="<?= htmlspecialchars($valor_acta_mostrar) ?>">
                 </div>
             </div>
         </div>
@@ -362,7 +361,7 @@ $valor_acta_mostrar = $datos['numero_acta'] ?? ($trd_depto ? $trd_depto . '/' : 
                     <textarea name="punto_5_calificacion" id="editor5"><?= $datos['punto_5_calificacion'] ?? '' ?></textarea>
                     <div class="mt-2 text-danger fw-bold" style="font-size: 0.85rem;">
                     <i class="fas fa-paperclip me-1"></i> 
-                    NOTA: Adjuntar formato individual de calificación de Hoja de Vida según Resolución del Consejo de Facultad.
+                    NOTA: Adjuntar en físico, formato individual de calificación de Hoja de Vida según Resolución del Consejo de Facultad.
                 </div>
                 </div>
                 <div class="mb-4">

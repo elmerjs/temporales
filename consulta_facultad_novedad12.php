@@ -369,6 +369,26 @@ $solicitudes_json = json_encode($solicitudes_procesadas_final);
 // ===== FIN DE LA CORRECCIÓN =====
 // ===================================================================
     $statuses_json = json_encode($oficio_statuses_facultad);
+    
+    
+    // ===================================================================
+    $sql_historico = "SELECT 
+        s.oficio_fac, 
+        s.fecha_oficio_fac, 
+        COUNT(s.id_solicitud) AS cantidad_novedades, 
+        GROUP_CONCAT(DISTINCT d.depto_nom_propio SEPARATOR ', ') AS departamentos_incluidos, 
+        MAX(s.elaborado_por) AS elaborado_por
+    FROM solicitudes_working_copy s
+    LEFT JOIN deparmanentos d ON s.departamento_id = d.PK_DEPTO
+    WHERE s.facultad_id = ? AND s.anio_semestre = ? AND s.oficio_fac IS NOT NULL AND s.oficio_fac != ''
+    GROUP BY s.oficio_fac, s.fecha_oficio_fac
+    ORDER BY s.fecha_oficio_fac DESC, s.oficio_fac DESC";
+
+    $stmt_historico = $conn->prepare($sql_historico);
+    $stmt_historico->bind_param("is", $id_facultad, $anio_semestre);
+    $stmt_historico->execute();
+    $historico_oficios = $stmt_historico->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt_historico->close();
 }
 $count_pendientes = 0;
 if ($tipo_usuario == 3 && isset($con) && !$con->connect_error) {
@@ -471,12 +491,12 @@ if ($tipo_usuario == 3 && isset($con) && !$con->connect_error) {
     <p id="toast-message">Mensaje de éxito</p>
 </div>
     <div class="container mx-auto p-8">
-
+<div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
         <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
             
             <h1 class="text-3xl font-bold text-gray-800">
-                Novedades Solicitadas (clasificadas por Oficio)
-                <span class="text-2xl font-normal text-gray-500">(<?= htmlspecialchars($anio_semestre) ?>)</span>
+                Novedades Solicitadas (según Oficio Departamento)
+                <span class="text-3xl font-normal text-gray-500">(<?= htmlspecialchars($anio_semestre) ?>)</span>
             </h1>
 
             <?php
@@ -767,6 +787,70 @@ if ($tipo_usuario == 3 && isset($con) && !$con->connect_error) {
                 </h3>
                 <p class="text-green-700 mt-2">No se encontraron oficios con estado 'Pendiente' en ningún departamento.</p>
             </div>
+        </div>
+           <div class="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm opacity-95">
+                <div class="px-5 py-3.5 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors rounded-t-lg" 
+                     onclick="document.getElementById('historico-content').classList.toggle('hidden'); document.getElementById('historico-icon').classList.toggle('rotate-180');">
+                    <h2 class="text-lg font-semibold text-gray-600">
+                        <i class="fas fa-history text-gray-400 mr-2"></i>Histórico de Oficios Generados por Decanatura hacia Vicerrectoría Académica
+                    </h2>
+                    <i id="historico-icon" class="fas fa-chevron-down text-gray-400 transition-transform duration-300 text-base"></i>
+                </div>
+                
+                <div id="historico-content" class="hidden px-5 pb-5 overflow-x-auto border-t border-gray-200 pt-3">
+                    <table class="min-w-full divide-y divide-gray-200 table-auto">
+                        <thead class="bg-transparent">
+                            <tr>
+                                <th scope="col" class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"># Oficio</th>
+                                <th scope="col" class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+                                <th scope="col" class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Departamentos Incluidos</th>
+                                <th scope="col" class="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Novedades</th>
+                                <th scope="col" class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Elaborado por</th>
+                                <th scope="col" class="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                            <?php if (!empty($historico_oficios)): ?>
+                                <?php foreach ($historico_oficios as $hist): ?>
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-600">
+                                            <?= htmlspecialchars($hist['oficio_fac'] ?? 'S/N') ?>
+                                        </td>
+                                        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                                            <?= htmlspecialchars($hist['fecha_oficio_fac'] ?? '') ?>
+                                        </td>
+                                        <td class="px-4 py-2 text-sm text-gray-500 max-w-xs truncate" title="<?= htmlspecialchars($hist['departamentos_incluidos'] ?? '') ?>">
+                                            <?= htmlspecialchars($hist['departamentos_incluidos'] ?? '') ?>
+                                        </td>
+                                        <td class="px-4 py-2 whitespace-nowrap text-center">
+                                            <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+                                                <?= htmlspecialchars($hist['cantidad_novedades']) ?>
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                                            <?= htmlspecialchars($hist['elaborado_por'] ?? '') ?>
+                                        </td>
+                                        <td class="px-4 py-2 whitespace-nowrap text-center text-sm font-medium">
+                                            <a href="reimpr_novedades_fac.php?facultad_id=<?= urlencode($id_facultad) ?>&anio_semestre=<?= urlencode($anio_semestre) ?>&oficio_fac=<?= urlencode($hist['oficio_fac']) ?>" 
+                                               target="_blank"
+                                               title="Reimprimir Oficio"
+                                               class="inline-flex items-center px-2.5 py-1 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded transition-colors border border-gray-300 shadow-sm text-xs">
+                                                <i class="fas fa-print mr-1"></i> Reimprimir
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="6" class="px-4 py-4 text-center text-sm text-gray-400">
+                                        No se han generado oficios de facultad en este periodo.
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
 <?php endif; ?>
     
@@ -1006,27 +1090,37 @@ function actualizarPanelDeAcciones() {
     }
 
 function llenarModal(oficio) {
-    modalTitle.textContent = 'Solicitudes del Oficio: ' + oficio;
+    // Limpiamos la tabla antes de llenarla
     modalTableBody.innerHTML = '';
+    
+    // 1. Primero filtramos las solicitudes
     const solicitudesFiltradas = todasLasSolicitudes.filter(sol => sol.oficio_con_fecha === oficio);
+
+    // 2. Extraemos el nombre del departamento (si hay resultados)
+    let nombreDepartamento = '';
+    if (solicitudesFiltradas.length > 0) {
+        // Extraemos el nombre. Si por alguna razón no viene en el JSON, evitamos que diga "undefined"
+        const nombre = solicitudesFiltradas[0].nombre_departamento || solicitudesFiltradas[0].depto_nom_propio || '';
+        if (nombre !== '') {
+            nombreDepartamento = nombre + ' - ';
+        }
+    }
+
+    // 3. Asignamos el título dinámico con el nombre y el oficio
+    modalTitle.textContent = 'Solicitudes según Oficio del Departamento: ' + nombreDepartamento + oficio;
 
     // ===================================================================
     // ===== INICIA EL BLOQUE MODIFICADO: LÓGICA DE ORDENAMIENTO =====
     // ===================================================================
-    // 1. Define el orden exacto y personalizado que deseas para las novedades.
     const ordenNovedades = ['modificacion', 'cambio de vinculacion', 'adicionar', 'eliminar'];
 
-    // 2. Ordena el array 'solicitudesFiltradas' según el orden definido.
     solicitudesFiltradas.sort((a, b) => {
         const novedadA = (a.novedad || '').toLowerCase();
         const novedadB = (b.novedad || '').toLowerCase();
 
-        // Encuentra la posición de cada novedad en tu lista de orden.
-        // Si una novedad no está en la lista, se le da un valor alto (999) para enviarla al final.
         const indexA = ordenNovedades.indexOf(novedadA) !== -1 ? ordenNovedades.indexOf(novedadA) : 999;
         const indexB = ordenNovedades.indexOf(novedadB) !== -1 ? ordenNovedades.indexOf(novedadB) : 999;
 
-        // Compara las posiciones para determinar el orden.
         return indexA - indexB;
     });
     // ===================================================================
@@ -1056,6 +1150,7 @@ function llenarModal(oficio) {
                 if (sol.horas && sol.horas > 0) popayanData = `<span class="bg-blue-100 px-2 py-1 rounded">${sol.horas} hrs</span>`;
                 if (sol.horas_r && sol.horas_r > 0) regionalizacionData = `<span class="bg-blue-100 px-2 py-1 rounded">${sol.horas_r} hrs</span>`;
             }
+            
             const tipoDocenteDisplay = (sol.tipo_docente === 'Catedra') ? 'Cátedra' : sol.tipo_docente;
             const estadoFacultadHtml = crearEtiquetaEstado(sol.estado_facultad, sol.observacion_facultad, 'facultad');
             let estadoVraHtml;
@@ -1075,21 +1170,15 @@ function llenarModal(oficio) {
                 detalleFacultadHtml = `<td class="px-6 py-2 whitespace-normal max-w-xs break-words text-xs text-red-700 font-semibold" title="${observacionFac}">${observacionFac}</td>`;
             }
 
-            // ===================================================================
-            // ===== BLOQUE MODIFICADO: LÓGICA PARA MOSTRAR NOVEDADES =====
-            // ===================================================================
-            // Si la novedad contiene "modificar" pero NO contiene "vinculación", mostrar "Modificar dedicación"
+            // Lógica para mostrar novedades
             let novedadDisplay = sol.novedad || '';
             const novedadLower = novedadDisplay.toLowerCase();
             
             if (novedadLower.includes('modificar') && !novedadLower.includes('vinculación') && !novedadLower.includes('vinculacion')) {
                 novedadDisplay = 'Modificar Dedicación';
-            } else if (novedadDisplay === 'modificacion') {
+            } else if (novedadLower === 'modificacion') {
                 novedadDisplay = 'Cambio de dedicacion';
             }
-            // ===================================================================
-            // ===== FIN DEL BLOQUE MODIFICADO =====
-            // ===================================================================
 
             const filaHTML = `<tr class="${rowClass}">
                 ${checkboxHtml}
@@ -1118,6 +1207,9 @@ function llenarModal(oficio) {
     }
 
     actualizarPanelDeAcciones();
+    
+    // Asegúrate de que la variable "modal" esté definida globalmente en tu código. 
+    // Si se llama diferente (ej: document.getElementById('miModal')), debes ajustarlo aquí.
     modal.classList.remove('hidden');
 }
     // --- 3. INICIALIZACIÓN ---
@@ -1263,7 +1355,7 @@ function renderizarContenidoAcordeon(headerElement) {
 <div class="bg-[#F0F4F9] rounded-lg shadow-md p-6 border-l-4 ${borderColorClass} flex flex-col justify-between oficio-card" data-depto="${deptoName}">
     <div>
         <div class="flex justify-between items-start mb-2">
-            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Oficio</h3>
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Oficio Departamento</h3>
             <div class="flex flex-col items-end space-y-1">
                 <span title="${status_fac}" class="px-2 py-0.5 text-xs font-bold rounded-full flex items-center space-x-1 ${color_fac}">${icon_fac} <span>${text_fac}</span></span>
                 <span title="${status_vra}" class="px-2 py-0.5 text-xs font-bold rounded-full flex items-center space-x-1 ${color_vra}">${icon_vra} <span>${text_vra}</span></span>

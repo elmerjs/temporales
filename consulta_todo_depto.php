@@ -852,7 +852,10 @@ th {
         // 🎚️ INTERRUPTOR MAESTRO PARA GESTIÓN DE ACTA (FOR-59)
         // true  = ACTIVO (Los botones funcionan)
         // false = INACTIVO (Los botones se ven pero no hacen nada)
-        $modo_activo = false; 
+        $modo_activo = true; 
+        if ($anio_semestre === '2026-1') {
+            $modo_activo = false;
+        }
         // =======================================================================
 
         // 1. Lógica interna

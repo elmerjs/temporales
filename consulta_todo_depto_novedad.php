@@ -3014,7 +3014,7 @@ if (!empty($data_modificar)) {
             // 🎚️ INTERRUPTOR MAESTRO PARA GESTIÓN DE ACTA (NOVEDADES)
             // true  = ACTIVO (El botón funciona)
             // false = INACTIVO (El botón se muestra bloqueado - "Próximamente")
-            $habilitar_gestion_actas = false; 
+            $habilitar_gestion_actas = true; 
             // =======================================================================
 
             // 1. LÓGICA DE GESTIÓN DE ACTAS (NUEVO vs EDITAR)
@@ -3082,12 +3082,12 @@ $btn_style = "background-color: #ffffff; color: #002A9E; border: 1px solid #002A
 
 if ($modo_acta == 'editar') {
     $btn_text = "Editar Acta PM-FO-4-FOR-59(En curso)";
-    $btn_title = "Continuar editando el Acta actual";
+    $btn_title = "Continuar editando el Acta de Selección actual";
     // Destacar edición con borde doble (blanco + azul) manteniendo fondo blanco
     $btn_style = "background-color: #ffffff; color: #002A9E; border: 2px solid #ffffff; outline: 1px solid #002A9E; outline-offset: -2px; box-shadow: 0 2px 6px rgba(0,42,158,0.2);";
 } else {
     $btn_text = "Crear Acta PM-FO-4-FOR-59";
-    $btn_title = "Crear una nueva Acta PM-FO-4-FOR-59 para este lote";
+    $btn_title = "Crear una nueva Acta de Selección PM-FO-4-FOR-59 para este lote";
 }
 
 if (!$habilitar_gestion_actas) {

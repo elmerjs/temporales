@@ -276,8 +276,11 @@ $estructura_vra_json = json_encode($datos_agrupados_vra);
         <span id="loadingMessage" class="text-lg font-semibold text-gray-700">Procesando...</span>
     </div>
 </div>
-    <div class="container mx-auto p-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Novedades Aprobadas por Facultad (<?php echo htmlspecialchars($anio_semestre); ?>)</h1>
+   <div class="container mx-auto p-8">
+        
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
+            
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Novedades Aprobadas por Facultad (<?php echo htmlspecialchars($anio_semestre); ?>)</h1>
           <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
     <div class="flex justify-between items-center">
         
@@ -340,14 +343,13 @@ $estructura_vra_json = json_encode($datos_agrupados_vra);
                         </div>
                     </div>
                 <?php endforeach; ?>
-            <?php else: ?>
+         <?php else: ?>
                 <p class="text-gray-500 text-center p-10">No hay novedades aprobadas por las facultades para este periodo.</p>
             <?php endif; ?>
         </div>
         
-        
-    
-    <?php
+        </div> 
+        <?php
 // --- INICIO: CÓDIGO PARA LA NUEVA DATATABLE DE APROBADOS ---
 
 $sql_aprobados = "
@@ -375,8 +377,9 @@ $sql_aprobados = "
     WHERE 
         s.estado_vra = 'APROBADO' 
         AND (s.archivado IS NULL OR s.archivado = 0)
+        AND s.anio_semestre = '$anio_semestre' 
     ORDER BY
-        s.fecha_actualizacion DESC; -- Orden inicial desde la base de datos
+        s.fecha_actualizacion DESC; 
 ";
 
 $resultado_aprobados = $conn->query($sql_aprobados);

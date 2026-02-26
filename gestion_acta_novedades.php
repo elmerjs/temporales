@@ -63,7 +63,8 @@ $decano_actual = obtenerDecanoFacultad($departamento_id, $conn);
 $trd_depto = obtenerTRDDepartamento($departamento_id, $conn);
 
 // Preparamos valores para mostrar
-$valor_acta_mostrar = $datos['numero_acta'] ?? ($trd_depto ? $trd_depto . '/' : '');
+//$valor_acta_mostrar = $datos['numero_acta'] ?? ($trd_depto ? $trd_depto . '/' : '');
+$valor_acta_mostrar = $datos['numero_acta'] ?? '';
 
 // Decodificar JSONs
 $compromisos = isset($datos['compromisos_json']) ? json_decode($datos['compromisos_json'], true) : [];
@@ -158,14 +159,8 @@ $sugerencias = []; // Dejamos el array vacío para que cargue rápido. Los datos
                 <div class="col-md-4">
                     <label class="form-label small fw-bold">Serie, Subserie / No de acta</label>
                     <input type="text" name="numero_acta" class="form-control" 
-                           placeholder="Ej: 8.3.11-1.57/XX" 
-                           value="<?= htmlspecialchars($datos['numero_acta'] ?? $valor_acta_mostrar) ?>">
-
-                    <?php if(empty($datos['numero_acta'] ?? '') && $trd_depto): ?>
-                        <div class="form-text x-small text-muted">
-                            Sugerido: <strong><?= $trd_depto ?></strong>
-                        </div>
-                    <?php endif; ?>
+       placeholder="Ej: 8.3.11-1.57/XX" 
+       value="<?= htmlspecialchars($valor_acta_mostrar) ?>">
                 </div>
             </div>
         </div>
@@ -378,7 +373,7 @@ $sugerencias = []; // Dejamos el array vacío para que cargue rápido. Los datos
                 <textarea name="punto_5_calificacion" id="editor5"><?= $datos['punto_5_calificacion'] ?? '' ?></textarea>
                 <div class="mt-2 text-danger fw-bold" style="font-size: 0.85rem;">
                     <i class="fas fa-paperclip me-1"></i> 
-                    NOTA: Adjuntar formato individual de calificación de Hoja de Vida según Resolución del consejo de facultad.
+                    NOTA: Adjuntar (en físico) formato individual de calificación de Hoja de Vida según Resolución del consejo de facultad.
                 </div>
                 
             </div>

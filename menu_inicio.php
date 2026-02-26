@@ -161,7 +161,7 @@ $data = [
         echo "No se encontraron resultados.";
     }
 
-    $conn->close();
+    //$conn->close();
 }
 
 if ($tipo_usuario == 2) {
@@ -289,7 +289,7 @@ if ($result->num_rows > 0) {
 //echo "No se encontraron resultados."; echo "</div>"
     }
 
-    $conn->close();
+    //$conn->close();
 } 
 if ($tipo_usuario == 1 || $tipo_usuario == 4) {
  
@@ -1030,11 +1030,42 @@ h2.section-title {
     <div style="max-width: 1200px; width: 100%; margin: auto;">
 
 <!-- Mostrar los botones de filtro si no se pasa el parámetro 'anio_semestre' -->
-<div>
-    <button class="filter-button <?php echo ($anio_semestre == '2024-2') ? 'active' : ''; ?>" data-period="2024-2">2024-2</button>
-    <button class="filter-button <?php echo ($anio_semestre == '2025-1') ? 'active' : ''; ?>" data-period="2025-1">2025-1</button>
-    <button class="filter-button <?php echo ($anio_semestre == '2025-2') ? 'active' : ''; ?>" data-period="2025-2">2025-2</button>
-    <button class="filter-button <?php echo ($anio_semestre == '2026-1') ? 'active' : ''; ?>" data-period="2026-1">2026-1</button>
+<?php
+// 1. Consultar los 4 periodos más recientes desde la base de datos
+$sql_periodos = "SELECT nombre_periodo FROM periodo WHERE nombre_periodo IS NOT NULL AND nombre_periodo != '' ORDER BY nombre_periodo DESC LIMIT 4";
+$resultado_periodos = $conn->query($sql_periodos);
+
+$periodos_db = [];
+if ($resultado_periodos && $resultado_periodos->num_rows > 0) {
+    while ($fila = $resultado_periodos->fetch_assoc()) {
+        $periodos_db[] = $fila['nombre_periodo'];
+    }
+}
+
+// 2. Invertir el array para mostrarlos cronológicamente (ej: de izquierda a derecha: 2024-2 -> 2025-1)
+$periodos_db = array_reverse($periodos_db);
+
+// 3. Determinar el periodo más reciente
+$periodo_mas_reciente = !empty($periodos_db) ? end($periodos_db) : date('Y') . '-1';
+
+// 4. Asegurar que si $anio_semestre está vacío, tome el más reciente
+if (empty($anio_semestre)) {
+    $anio_semestre = $periodo_mas_reciente;
+}
+?>
+
+<div class="filter-buttons-container">
+    <?php if (!empty($periodos_db)): ?>
+        <?php foreach ($periodos_db as $periodo): ?>
+            <button 
+                class="filter-button <?php echo ($anio_semestre == $periodo) ? 'active' : ''; ?>" 
+                data-period="<?php echo htmlspecialchars($periodo); ?>">
+                <?php echo htmlspecialchars($periodo); ?>
+            </button>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <span class="text-muted small">No hay periodos registrados.</span>
+    <?php endif; ?>
 </div>
  <?php 
 setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'es_ES', 'es'); // Configurar idioma
