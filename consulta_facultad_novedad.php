@@ -278,41 +278,49 @@ $estructura_vra_json = json_encode($datos_agrupados_vra);
 </div>
    <div class="container mx-auto p-8">
         
-        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
-            
-            <h1 class="text-3xl font-bold text-gray-800 mb-6">Novedades Aprobadas por Facultad (<?php echo htmlspecialchars($anio_semestre); ?>)</h1>
-          <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-    <div class="flex justify-between items-center">
+  <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+    
+    <button class="w-full text-left py-4 px-6 flex justify-between items-center focus:outline-none transition-colors duration-200 bg-gray-50 hover:bg-gray-100 border-b border-gray-200"
+         onclick="document.getElementById('novedades-aprobadas-global').classList.toggle('hidden'); document.getElementById('icon-novedades-global').classList.toggle('rotate-180');">
+        <span class="text-xl font-bold text-gray-800">
+            <i class="fas fa-university text-blue-600 mr-3"></i>
+            Novedades Aprobadas por Facultad <span class="text-lg text-gray-500 font-normal ml-1">(<?php echo htmlspecialchars($anio_semestre); ?>)</span>
+        </span>
+        <div class="flex items-center">
+            <span class="text-sm text-gray-500 mr-3 font-normal">Mostrar / Ocultar</span>
+            <svg id="icon-novedades-global" class="w-6 h-6 text-gray-500 transform transition-transform duration-300 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </div>
+    </button>
+
+    <div id="novedades-aprobadas-global" class="p-6 bg-white">
         
-        <!-- Filtros -->
-        <div class="flex items-center space-x-6">
-            <span class="font-semibold text-gray-700">Filtrar por estado:</span>
-            <div class="flex items-center">
-                <input type="radio" id="filtro_todos" name="filtro_estado" value="todos" 
-                       class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" checked>
-                <label for="filtro_todos" class="ml-2 block text-sm text-gray-900">
-                    Mostrar Todos
-                </label>
-            </div>
-            <div class="flex items-center">
-                <input type="radio" id="filtro_pendientes" name="filtro_estado" value="pendientes" 
-                       class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                <label for="filtro_pendientes" class="ml-2 block text-sm text-gray-900">
-                    Mostrar solo con trámites pendientes en VRA
-                </label>
+        <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-6">
+                    <span class="font-semibold text-gray-700">Filtrar por estado:</span>
+                    <div class="flex items-center">
+                        <input type="radio" id="filtro_todos" name="filtro_estado" value="todos" 
+                               class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" checked>
+                        <label for="filtro_todos" class="ml-2 block text-sm text-gray-900">
+                            Mostrar Todos
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="radio" id="filtro_pendientes" name="filtro_estado" value="pendientes" 
+                               class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                        <label for="filtro_pendientes" class="ml-2 block text-sm text-gray-900">
+                            Mostrar solo con trámites pendientes en VRA
+                        </label>
+                    </div>
+                </div>
+                <a href="exportar_excel_novedades.php" 
+                   class="inline-flex items-center px-4 py-2 bg-green-500 text-white text-sm font-semibold rounded-lg shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors no-underline"
+                   target="_blank">
+                    <i class="fas fa-file-excel mr-2"></i>
+                    Exportar a Excel
+                </a>
             </div>
         </div>
-
-        <!-- Botón Exportar -->
-        <a href="exportar_excel_novedades.php" 
-           class="inline-flex items-center px-4 py-2 bg-green-500 text-white text-sm font-semibold rounded-lg shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors no-underline"
-           target="_blank">
-            <i class="fas fa-file-excel mr-2"></i>
-            Exportar a Excel
-        </a>
-
-    </div>
-</div>
 
         <div class="space-y-4" id="lista-facultades">
             <?php if (!empty($datos_agrupados_vra)): ?>
@@ -335,7 +343,7 @@ $estructura_vra_json = json_encode($datos_agrupados_vra);
                                         </button>
                                         <div class="accordion-body-departamento hidden p-2 bg-gray-100 border-t border-gray-200">
                                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 oficios-container">
-                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -343,12 +351,12 @@ $estructura_vra_json = json_encode($datos_agrupados_vra);
                         </div>
                     </div>
                 <?php endforeach; ?>
-         <?php else: ?>
+            <?php else: ?>
                 <p class="text-gray-500 text-center p-10">No hay novedades aprobadas por las facultades para este periodo.</p>
             <?php endif; ?>
         </div>
-        
-        </div> 
+    </div> 
+</div>
         <?php
 // --- INICIO: CÓDIGO PARA LA NUEVA DATATABLE DE APROBADOS ---
 
@@ -540,8 +548,87 @@ foreach ($solicitudes_agrupadas as $cedula => $oficios) {
     });
     // --- FIN: NUEVO BLOQUE DE ORDENAMIENTO ---
 }
-$conn->close();
 
+// =========================================================================
+// --- INICIO: CÓDIGO PARA EL HISTÓRICO DE ENVÍOS A RRHH (SECCIÓN 3) ---
+// =========================================================================
+// =========================================================================
+// --- INICIO: CÓDIGO PARA EL HISTÓRICO DE ENVÍOS A RRHH (SECCIÓN 3) ---
+// =========================================================================
+$sql_historico_rrhh = "
+    SELECT 
+        s.id_solicitud, 
+        s.oficio_con_fecha_vra, 
+        s.fecha_actualizacion, 
+        f.Nombre_fac_minb, d.depto_nom_propio,
+        s.tipo_docente, s.cedula, s.nombre, s.novedad,
+        s.oficio_con_fecha_fac,
+        s.tipo_dedicacion, s.tipo_dedicacion_r,
+        s.horas, s.horas_r
+    FROM solicitudes_working_copy s
+    JOIN deparmanentos d ON d.PK_DEPTO = s.departamento_id
+    JOIN facultad f ON f.PK_FAC = d.FK_FAC
+    WHERE s.estado_vra = 'APROBADO' 
+      AND s.anio_semestre = '$anio_semestre'
+      AND s.oficio_con_fecha_vra IS NOT NULL 
+      AND s.oficio_con_fecha_vra != ''
+    ORDER BY s.fecha_actualizacion DESC, s.oficio_con_fecha_vra DESC, s.nombre ASC
+";
+
+$resultado_hist = $conn->query($sql_historico_rrhh);
+$historico_rrhh_agrupado = [];
+
+if ($resultado_hist && $resultado_hist->num_rows > 0) {
+    $temp_agrupacion = [];
+    
+    // 1. Agrupar primero por Oficio VRA
+    while ($fila = $resultado_hist->fetch_assoc()) {
+        $ofVRA = $fila['oficio_con_fecha_vra'];
+        $cedula = $fila['cedula'];
+        $ofFac = $fila['oficio_con_fecha_fac'];
+        $nov = strtolower($fila['novedad']);
+        $id = $fila['id_solicitud'];
+        
+        // Formateamos la fecha de actualización para que se vea bonita (Ej: 2026-03-09)
+        $fecha_formateada = date('Y-m-d', strtotime($fila['fecha_actualizacion']));
+        
+        $temp_agrupacion[$ofVRA]['fecha'] = $fecha_formateada;
+        $temp_agrupacion[$ofVRA]['raw'][$cedula][$ofFac][$nov][$id] = $fila;
+    }
+
+    // 2. Aplicamos la misma lógica de "Adicionar + Eliminar = Modificar Vinculación"
+    foreach ($temp_agrupacion as $ofVRA => $dataVRA) {
+        $registros_procesados = [];
+        foreach ($dataVRA['raw'] as $cedula => $oficiosFac) {
+            foreach ($oficiosFac as $ofFac => $novedades) {
+                if (!empty($novedades['adicionar']) && !empty($novedades['eliminar'])) {
+                    $fila_final = reset($novedades['adicionar']);
+                    $fila_final['novedad_display'] = 'Modificar (Vinculación)';
+                    $registros_procesados[] = $fila_final;
+                } else {
+                    foreach ($novedades as $tipoNovedad => $grupo) {
+                        foreach ($grupo as $fila) {
+                            switch ($tipoNovedad) {
+                                case 'modificar': $fila['novedad_display'] = 'Modificar (Dedicación)'; break;
+                                case 'eliminar':  $fila['novedad_display'] = 'Liberar'; break;
+                                case 'adicionar': $fila['novedad_display'] = 'Vincular'; break;
+                                default:          $fila['novedad_display'] = $fila['novedad'];
+                            }
+                            $registros_procesados[] = $fila;
+                        }
+                    }
+                }
+            }
+        }
+        $historico_rrhh_agrupado[$ofVRA] = [
+            'fecha' => $dataVRA['fecha'],
+            'registros' => $registros_procesados
+        ];
+    }
+}
+// =========================================================================
+// --- FIN: CÓDIGO HISTÓRICO RRHH ---
+// =========================================================================
 
 ?>
     
@@ -658,10 +745,96 @@ if (!$tieneDatos) {
     <?php endif; ?>
 
 </div>
-    </div>
+ 
 </div>
+     <div class="bg-white rounded-lg shadow-md overflow-hidden mt-8 mb-8">
     
-   
+    <button class="w-full text-left py-4 px-6 flex justify-between items-center focus:outline-none transition-colors duration-200 bg-gray-50 hover:bg-gray-100 border-b border-gray-200"
+         onclick="document.getElementById('historico-rrhh-global').classList.toggle('hidden'); document.getElementById('icon-historico-global').classList.toggle('rotate-180');">
+        <span class="text-xl font-bold text-gray-800">
+            <i class="fas fa-history text-blue-600 mr-3"></i>
+            Histórico de Envíos a RRHH <span class="text-lg text-gray-500 font-normal ml-1">(<?php echo htmlspecialchars($anio_semestre); ?>)</span>
+        </span>
+        <div class="flex items-center">
+            <span class="text-sm text-gray-500 mr-3 font-normal">Mostrar / Ocultar</span>
+            <svg id="icon-historico-global" class="w-6 h-6 text-gray-500 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </div>
+    </button>
+
+    <div id="historico-rrhh-global" class="hidden p-6 bg-white">
+        <?php if (!empty($historico_rrhh_agrupado)): ?>
+            <div class="space-y-4">
+                <?php foreach ($historico_rrhh_agrupado as $oficio => $datos_oficio): ?>
+                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                        
+                        <div class="bg-white px-5 py-3.5 flex justify-between items-center cursor-pointer hover:bg-blue-50 transition-colors border-b border-gray-100"
+                             onclick="document.getElementById('hist-<?php echo md5($oficio); ?>').classList.toggle('hidden'); document.getElementById('icon-<?php echo md5($oficio); ?>').classList.toggle('rotate-180');">
+                            <div>
+                                <span class="font-bold text-gray-700 text-lg">
+                                    <i class="fas fa-paper-plane text-gray-400 mr-2"></i>Oficio VRA: <?php echo htmlspecialchars($oficio); ?>
+                                </span>
+                                <span class="ml-4 text-sm text-gray-500">
+                                    <i class="fas fa-calendar-alt mr-1"></i> <?php echo htmlspecialchars($datos_oficio['fecha']); ?>
+                                </span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full mr-4">
+                                    <?php echo count($datos_oficio['registros']); ?> Novedades
+                                </span>
+                                <i id="icon-<?php echo md5($oficio); ?>" class="fas fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                            </div>
+                        </div>
+                        
+                        <div id="hist-<?php echo md5($oficio); ?>" class="hidden p-0">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 table-sm text-sm">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left font-semibold text-gray-600">Novedad</th>
+                                            <th class="px-4 py-3 text-left font-semibold text-gray-600">Nombre</th>
+                                            <th class="px-4 py-3 text-left font-semibold text-gray-600">Cédula</th>
+                                            <th class="px-4 py-3 text-left font-semibold text-gray-600">Dedicación</th>
+                                            <th class="px-4 py-3 text-left font-semibold text-gray-600">Facultad / Depto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 bg-white">
+                                        <?php foreach ($datos_oficio['registros'] as $reg): ?>
+                                            <?php 
+                                                // Calcular dedicación para mostrar
+                                                $dedicacion = '';
+                                                if ($reg['tipo_docente'] === 'Ocasional') {
+                                                    $dedicacion = !empty($reg['tipo_dedicacion']) ? $reg['tipo_dedicacion'] : ($reg['tipo_dedicacion_r'] ?? '');
+                                                } elseif ($reg['tipo_docente'] === 'Catedra') {
+                                                    $total_horas = floatval($reg['horas']) + floatval($reg['horas_r']);
+                                                    $dedicacion = $total_horas . ' hrs';
+                                                }
+                                            ?>
+                                            <tr class="hover:bg-blue-50 transition-colors">
+                                                <td class="px-4 py-2 font-medium text-gray-700"><?php echo htmlspecialchars($reg['novedad_display']); ?></td>
+                                                <td class="px-4 py-2"><?php echo htmlspecialchars($reg['nombre']); ?></td>
+                                                <td class="px-4 py-2 text-gray-500"><?php echo htmlspecialchars($reg['cedula']); ?></td>
+                                                <td class="px-4 py-2 text-gray-500"><?php echo htmlspecialchars($dedicacion); ?></td>
+                                                <td class="px-4 py-2 text-xs text-gray-500"><?php echo htmlspecialchars($reg['Nombre_fac_minb'] . ' - ' . $reg['depto_nom_propio']); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                <i class="fas fa-inbox fa-3x text-gray-300 mb-3"></i>
+                <p class="text-gray-500 font-medium">No hay envíos históricos a RRHH registrados en este periodo.</p>
+            </div>
+        <?php endif; ?>
+    </div>
+    </div>
+
+    
+  
     
     <div id="detailsModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 h-full w-full hidden z-50">
         <div class="relative top-40 mx-auto p-5 border w-11/12 lg-w-4/5 shadow-lg rounded-md bg-white">

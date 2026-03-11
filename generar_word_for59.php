@@ -673,8 +673,58 @@ $rowObs->addCell()->addText($textoObs, $fontNormal);
 } catch (Exception $e) {
     ob_end_clean();
     error_log("Error FATAL en generar_word_for59.php: " . $e->getMessage());
-    echo "<h3 style='color:red;'>Error al generar el documento Word.</h3>";
-    echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
+    ?>
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Aviso - Acta no encontrada</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <style>
+            :root { --unicauca-blue: #002A9E; --unicauca-red: #8B0000; }
+            body { background-color: #f8f9fa; }
+            .modal-header { background-color: var(--unicauca-blue); color: white; border-bottom: none; }
+            .btn-unicauca { background-color: var(--unicauca-red); color: white; border: none; font-weight: 500; }
+            .btn-unicauca:hover { background-color: #a00000; color: white; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        </style>
+    </head>
+    <body>
+        <div class="modal fade" id="errorModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow-lg border-0">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-exclamation-circle me-2"></i> Documento no disponible</h5>
+                    </div>
+                    <div class="modal-body text-center py-5">
+                        <i class="fas fa-file-word text-muted mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <h5 class="mb-3 text-dark">Acta FOR-59 no registrada</h5>
+                        <p class="mb-1 text-secondary">No se pudo generar el documento Word porque aún no existe información guardada para este periodo académico.</p>
+                    </div>
+                    <div class="modal-footer justify-content-center bg-light border-top-0">
+                        <form action="consulta_todo_depto.php" method="POST" class="m-0">
+                            <input type="hidden" name="departamento_id" value="<?= htmlspecialchars($departamento_id) ?>">
+                            <input type="hidden" name="anio_semestre" value="<?= htmlspecialchars($anio_semestre) ?>">
+                            <button type="submit" class="btn btn-unicauca px-4 py-2">
+                                <i class="fas fa-arrow-left me-2"></i> Regresar a la Gestión
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                var myModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                myModal.show();
+            });
+        </script>
+    </body>
+    </html>
+    <?php
     exit;
 }
 ?>

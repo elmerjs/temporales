@@ -1,9 +1,37 @@
 <?php
 // Configuración de menú y seguridad
+
+// --- BLOQUE DE SEGURIDAD POR FECHAS (NUEVO) ---
+require 'conn.php';
+$anio_semestre_check = $_GET['anio_semestre'] ?? null;
+
+if ($anio_semestre_check) {
+    $sql_plazo = "SELECT ini_plazo_jefe, plazo_jefe FROM periodo WHERE nombre_periodo = ?";
+    $stmt_plazo = $conn->prepare($sql_plazo);
+    $stmt_plazo->bind_param("s", $anio_semestre_check);
+    $stmt_plazo->execute();
+    $res_plazo = $stmt_plazo->get_result()->fetch_assoc();
+
+    if ($res_plazo) {
+        $hoy = new DateTime();
+        $inicio = new DateTime($res_plazo['ini_plazo_jefe'] ?? '1000-01-01');
+        $fin = new DateTime($res_plazo['plazo_jefe'] ?? '1000-01-01');
+
+        if ($hoy < $inicio || $hoy > $fin) {
+            echo "<script>
+                    alert('ACCESO DENEGADO: El periodo de edición para " . htmlspecialchars($anio_semestre_check) . " no está activo o ya ha finalizado.');
+                    window.location.href='consulta_todo_depto.php?anio_semestre=" . urlencode($anio_semestre_check) . "';
+                  </script>";
+            exit;
+        }
+    }
+}
+// --- FIN BLOQUE DE SEGURIDAD ---
+
 $active_menu_item = 'gestion_depto';
 require('include/headerz.php'); 
 require 'funciones.php';
-require 'conn.php'; 
+//require 'conn.php'; 
 
 // 1. Recepción de parámetros y seguridad
 $departamento_id = $_GET['departamento_id'] ?? null;
@@ -1516,7 +1544,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="modal-footer p-1">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="importarAspirantes()">Importar al Punto 4</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="importarAspirantes()">Importar</button>
             </div>
         </div>
     </div>

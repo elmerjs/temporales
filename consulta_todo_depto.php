@@ -847,58 +847,69 @@ th {
                         </ul>
     </div>    
 
-    <?php if($tipo_usuario == 3): 
-        // =======================================================================
-        // 🎚️ INTERRUPTOR MAESTRO PARA GESTIÓN DE ACTA (FOR-59)
-        // true  = ACTIVO (Los botones funcionan)
-        // false = INACTIVO (Los botones se ven pero no hacen nada)
-        $modo_activo = true; 
-        if ($anio_semestre === '2026-1') {
-            $modo_activo = false;
-        }
-        // =======================================================================
+<?php if($tipo_usuario == 3): 
 
-        // 1. Lógica interna
-        $count_borrador = contarNovedadesEnBorrador($departamento_id, $anio_semestre);
-        
-        // Variables de estilo para Acta FOR-59
-        $clase_estado   = $modo_activo ? "" : "disabled";
-        $estilo_bloqueo = $modo_activo ? "" : "pointer-events: none; opacity: 0.6;";
-        
-        $word_bloqueado = (!$modo_activo || empty($id_acta_gestion));
-        $clase_word     = $word_bloqueado ? "disabled" : "";
-        $estilo_word    = $word_bloqueado ? "pointer-events: none; opacity: 0.6;" : "";
+    // 1. CONSULTA DE PLAZOS (Para el botón de Editar)
+    $query_plazo = $conn->prepare("SELECT ini_plazo_jefe, plazo_jefe FROM periodo WHERE nombre_periodo = ?");
+    $query_plazo->bind_param("s", $anio_semestre);
+    $query_plazo->execute();
+    $info_plazo = $query_plazo->get_result()->fetch_assoc();
 
-        // 2. Definición de URLs
-        $url_for59_edit = "gestion_for59.php?departamento_id=" . urlencode($departamento_id) . 
-                          "&anio_semestre=" . urlencode($anio_semestre) . 
-                          "&id_acta=" . $id_acta_gestion;
-        
-        $url_for59_word = "generar_word_for59.php?departamento_id=" . urlencode($departamento_id) . 
-                          "&anio_semestre=" . urlencode($anio_semestre) . 
-                          "&id_acta=" . $id_acta_gestion;
-        
-        $url_novedad    = "consulta_todo_depto_novedad.php?facultad_id=" . urlencode($facultad_id) . 
-                          "&anio_semestre=" . urlencode($anio_semestre) . 
-                          "&departamento_id=" . urlencode($departamento_id);
-    ?>
+    $hoy    = new DateTime(); 
+    $inicio = new DateTime($info_plazo['ini_plazo_jefe'] ?? '1000-01-01');
+    $fin    = new DateTime($info_plazo['plazo_jefe'] ?? '1000-01-01');
+
+    $puede_editar = false;
+    $mensaje_ayuda_edit = "";
+
+    // Lógica de fechas para la EDICIÓN
+    if ($hoy < $inicio) {
+        $puede_editar = false;
+        $mensaje_ayuda_edit = "El periodo de edición iniciará el: " . $inicio->format('d/m/Y');
+    } elseif ($hoy >= $inicio && $hoy <= $fin) {
+        $puede_editar = true;
+        $mensaje_ayuda_edit = $id_acta_gestion ? "Continuar con la edición del Acta PM-FO-4-FOR-59" : "Iniciar creación del Acta de Selección Docente";
+    } else {
+        $puede_editar = false;
+        $mensaje_ayuda_edit = "El periodo de edición cerró el: " . $fin->format('d/m/Y');
+    }
+
+    // 2. Definición de URLs
+    $url_for59_edit = "gestion_for59.php?departamento_id=" . urlencode($departamento_id) . 
+                      "&anio_semestre=" . urlencode($anio_semestre) . 
+                      "&id_acta=" . $id_acta_gestion;
+    
+    $url_for59_word = "generar_word_for59.php?departamento_id=" . urlencode($departamento_id) . 
+                      "&anio_semestre=" . urlencode($anio_semestre) . 
+                      "&id_acta=" . $id_acta_gestion;
+     // --- ESTAS SON LAS LÍNEAS QUE FALTABAN ---
+    $count_borrador = contarNovedadesEnBorrador($departamento_id, $anio_semestre);
+    $url_novedad    = "consulta_todo_depto_novedad.php?facultad_id=" . urlencode($facultad_id) . 
+                      "&anio_semestre=" . urlencode($anio_semestre) . 
+                      "&departamento_id=" . urlencode($departamento_id);
+    // -----------------------------------------
+?>
     
     <div class="d-flex align-items-center gap-2">
         
         <div class="btn-group" role="group" style="height: 38px;">
-            <a href="<?php echo htmlspecialchars($url_for59_edit); ?>" 
-               class="btn btn-outline-primary <?php echo $clase_estado; ?>" 
-               style="display: inline-flex; align-items: center; padding: 0 12px; border-radius: 6px 0 0 6px; font-weight: 600; border: 2px solid #002A9E; color: #002A9E; background: white; white-space: nowrap; text-decoration: none; font-size: 0.85rem; <?php echo $estilo_bloqueo; ?>"
-               title="Acta de Selección (Solo Inicio de Semestre)">
-
-                <i class="fas fa-file-signature me-2"></i> 
-                <span><?php echo $id_acta_gestion ? 'Editar Acta PM-FO-4-FOR-59' : 'Crear Acta PM-FO-4-FOR-59'; ?></span>
-            </a>
+            <span title="<?php echo htmlspecialchars($mensaje_ayuda_edit); ?>" 
+                style="display: flex; <?php echo !$puede_editar ? 'cursor: help;' : ''; ?>">
+                
+                <a href="<?php echo htmlspecialchars($url_for59_edit); ?>" 
+                    class="btn btn-outline-primary <?php echo !$puede_editar ? 'disabled' : ''; ?>" 
+                    style="display: inline-flex; align-items: center; padding: 0 12px; border-radius: 6px 0 0 6px; font-weight: 600; border: 2px solid #002A9E; color: #002A9E; background: white; white-space: nowrap; text-decoration: none; font-size: 0.85rem; height: 100%;
+                    <?php echo !$puede_editar ? 'opacity: 0.5; pointer-events: none;' : ''; ?>"> 
+                    
+                    <i class="fas <?php echo !$puede_editar ? 'fa-lock' : 'fa-file-signature'; ?> me-2"></i> 
+                    <span><?php echo $id_acta_gestion ? 'Editar Acta FOR-59' : 'Crear Acta FOR-59'; ?></span>
+                </a>
+            </span>
 
             <a href="<?php echo htmlspecialchars($url_for59_word); ?>" 
-               class="btn btn-outline-primary <?php echo $clase_word; ?>" 
-               style="display: inline-flex; align-items: center; padding: 0 10px; border-radius: 0 6px 6px 0; font-weight: 600; border: 2px solid #002A9E; border-left: none; color: #002A9E; background: white; <?php echo $estilo_word; ?>"
-               title="Descargar Acta de Inicio en formato Word (.docx)">
+               class="btn btn-outline-primary" 
+               style="display: inline-flex; align-items: center; padding: 0 10px; border-radius: 0 6px 6px 0; font-weight: 600; border: 2px solid #002A9E; border-left: none; color: #002A9E; background: white; height: 100%; opacity: 1; pointer-events: auto;"
+               title="Descargar Acta en formato Word">
                 <i class="fas fa-file-word"></i>
             </a>
         </div>
@@ -929,7 +940,7 @@ th {
         <?php endif; ?>
 
     </div>
-    <?php endif; ?>
+<?php endif; ?>
 </div>
 
     <?php

@@ -163,6 +163,7 @@ $stmt_check_vigencia->close();
 // Mostrar la lista de periodos existentes
 $sql_existing_periods = "SELECT 
     p.nombre_periodo AS periodo, 
+    p.ini_plazo_jefe,
     p.plazo_jefe,
     p.plazo_fac,
     p.plazo_vra,
@@ -616,6 +617,7 @@ $result_existing_periods = $conn->query($sql_existing_periods);
                         data-bs-toggle="modal" 
                         data-bs-target="#modalPlazos" 
                         data-nombre="<?php echo $row['periodo']; ?>"
+                        data-ini-jefe="<?php echo $row['ini_plazo_jefe']; ?>" 
                         data-jefe="<?php echo $row['plazo_jefe']; ?>"
                         data-fac="<?php echo $row['plazo_fac']; ?>"
                         data-vra="<?php echo $row['plazo_vra']; ?>">
@@ -836,8 +838,14 @@ $result_existing_periods = $conn->query($sql_existing_periods);
             <!-- Campo oculto con el nombre del periodo -->
             <input type="hidden" name="nombre_periodo" id="nombre_periodo">
 
+            
             <div class="mb-3">
-                <label for="plazo_jefe" class="form-label">Plazo Jefes de Departamento</label>
+                <label for="ini_plazo_jefe" class="form-label">Inicio Plazo Jefes</label>
+                <input type="date" class="form-control" name="ini_plazo_jefe" id="ini_plazo_jefe">
+            </div>
+
+            <div class="mb-3">
+                <label for="plazo_jefe" class="form-label">Fin Plazo Jefes (Plazo Máximo)</label>
                 <input type="date" class="form-control" name="plazo_jefe" id="plazo_jefe">
             </div>
             <div class="mb-3">
@@ -867,6 +875,7 @@ modalPlazos.addEventListener('show.bs.modal', function (event) {
   var button = event.relatedTarget;
 
   var nombre = button.getAttribute('data-nombre');
+  var iniJefe = button.getAttribute('data-ini-jefe'); // Capturar nuevo dato
   var jefe = button.getAttribute('data-jefe');
   var fac = button.getAttribute('data-fac');
   var vra = button.getAttribute('data-vra');
@@ -874,6 +883,7 @@ modalPlazos.addEventListener('show.bs.modal', function (event) {
   // Pasar valores al modal
   modalPlazos.querySelector('#nombre_periodo').value = nombre;
   modalPlazos.querySelector('#tituloPeriodo').innerText = nombre;
+  modalPlazos.querySelector('#ini_plazo_jefe').value = iniJefe; // Asignar al input
   modalPlazos.querySelector('#plazo_jefe').value = jefe;
   modalPlazos.querySelector('#plazo_fac').value = fac;
   modalPlazos.querySelector('#plazo_vra').value = vra;

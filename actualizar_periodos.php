@@ -19,7 +19,8 @@ $field = $_POST['field'];
 $value = $_POST['value'];
 
 // Validar campos permitidos
-$campos_permitidos = ['inicio_sem', 'fin_sem', 'inicio_sem_oc', 'fin_sem_oc', 'valor_punto'];
+$campos_permitidos = ['ini_plazo_jefe', 'inicio_sem', 'fin_sem', 'inicio_sem_oc', 'fin_sem_oc', 'valor_punto'];
+
 if (!in_array($field, $campos_permitidos)) {
     echo json_encode(['success' => false, 'message' => 'Campo no permitido']);
     exit;

@@ -653,7 +653,7 @@ $sugerencias = []; // Dejamos el array vacío para que cargue rápido. Los datos
             </div>
             <div class="modal-footer p-1">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="importarAspirantes()">Importar al Punto 4</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="importarAspirantes()">Importar</button>
             </div>
         </div>
     </div>
