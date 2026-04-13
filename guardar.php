@@ -2,6 +2,118 @@
 session_start(); // Iniciar la sesión al principio del archivo
 require 'funciones.php';
 
+/**
+ * Parsea el string de títulos (separado por saltos de línea) y asigna cada título
+ * a la categoría correspondiente: doctorado, maestría, especialización, pregrado,
+ * y los no reconocidos a otro_estudio.
+ *
+ * @param string $titulosStr Texto con los títulos (usualmente de asp_titulos)
+ * @return array Arreglo asociativo con las claves: pregrado, especializacion, maestria, doctorado, otro_estudio
+ */
+function parseTitulosPHP($titulosStr) {
+    $parsed = [
+        'pregrado' => '',
+        'especializacion' => '',
+        'maestria' => '',
+        'doctorado' => '',
+        'otro_estudio' => ''
+    ];
+
+    if (empty($titulosStr)) {
+        return $parsed;
+    }
+
+    // Definir palabras clave para cada tipo de estudio (en mayúsculas para comparar)
+    $keywords = [
+        'doctorado' => ['DOCTORADO EN', 'DOCTOR', 'DOCTORA', 'PH.D.', 'PHD'],
+        'maestria' => [
+            'MAESTRIA EN', 'MAESTRÍA EN', 'MAGISTER EN', 'MASTER EN',
+            'MAGISTER', 'MAESTRO', 'MASTER', 'MAGÍSTER', 'MAESTRÍA', 'MAESTRA', 'MÁSTER'
+        ],
+        'especializacion' => ['ESPECIALIZACION EN', 'ESPECIALIZACIÓN EN', 'ESP.', 'ESPECIALISTA'],
+        'pregrado' => [
+            'LICENCIADO EN', 'LICENCIADA EN', 'LICENCIATURA EN',
+            'PROFESIONAL EN', 'INGENIERO EN', 'INGENIERA EN',
+            'ABOGADO', 'ABOGADA', 'ADMINISTRADOR DE', 'ADMINISTRADORA DE',
+            'BIOLOGO', 'BIOLOGA', 'QUIMICO', 'QUÍMICO', 'CIRUJANO', 'ANTROPOLOGO',
+            'ENFERMERO', 'ENFERMERA', 'TECNICO EN', 'TÉCNICO EN', 'TECNOLOGO EN', 'TECNÓLOGO EN',
+            'MEDICO', 'MÉDICO', 'MATEMATICO', 'MATEMÁTICO', 'CONTADOR', 'ECONOMISTA',
+            'BACHILLER', 'NORMALISTA', 'ARQUITECTO', 'ARQUITECTA', 'FILOSOFO', 'FILOSOFA',
+            'PSICOLOGO', 'PSICOLOGA', 'CITOHISTOTECNOLOGO', 'BACTERIOLOGO', 'BACTERIOLOGA',
+            'LABORATORISTA', 'GEOTECNOLOGO', 'GEOTECNOLOGA', 'GEOGRAFO', 'GEOGRAFA',
+            'ODONTOLOGO', 'ODONTOLOGA', 'NUTRICIONISTA', 'FISIOTERAPEUTA',
+            'COMUNICADOR', 'PERIODISTA', 'DISEÑADOR', 'SOCIOLOGO', 'HISTORIADOR',
+            'POLITOLOGO', 'QUÍMICO FARMACÉUTICO', 'ZOOTECNISTA', 'AGRONOMO',
+            'INGENIERO', 'INGENIERA',
+            'LICENCIADO', 'LICENCIADA', 'LICENCIATURA',
+            'TECNICO', 'TÉCNICO', 'TECNOLOGO', 'TECNÓLOGO',
+            'ADMINISTRADOR', 'ADMINISTRADORA',
+            'BACHILLER', 'NORMALISTA',
+            'MÚSICA', 'ARTE', 'GUIA'
+        ]
+    ];
+
+    // Dividir por saltos de línea
+    $lines = preg_split('/[\r\n]+/', $titulosStr);
+    $unmatched = [];
+
+    foreach ($lines as $line) {
+        $trimmed = trim($line);
+        if ($trimmed === '') continue;
+
+        $upperTrimmed = mb_strtoupper($trimmed);
+
+        // 1. Doctorado (máxima prioridad)
+        if (empty($parsed['doctorado'])) {
+            foreach ($keywords['doctorado'] as $kw) {
+                if (strpos($upperTrimmed, $kw) === 0) {
+                    $parsed['doctorado'] = $trimmed;
+                    break 2; // Salir del foreach y continuar con la siguiente línea
+                }
+            }
+        }
+
+        // 2. Maestría
+        if (empty($parsed['maestria'])) {
+            foreach ($keywords['maestria'] as $kw) {
+                if (strpos($upperTrimmed, $kw) === 0) {
+                    $parsed['maestria'] = $trimmed;
+                    break 2;
+                }
+            }
+        }
+
+        // 3. Especialización
+        if (empty($parsed['especializacion'])) {
+            foreach ($keywords['especializacion'] as $kw) {
+                if (strpos($upperTrimmed, $kw) === 0) {
+                    $parsed['especializacion'] = $trimmed;
+                    break 2;
+                }
+            }
+        }
+
+        // 4. Pregrado
+        if (empty($parsed['pregrado'])) {
+            foreach ($keywords['pregrado'] as $kw) {
+                if (strpos($upperTrimmed, $kw) === 0) {
+                    $parsed['pregrado'] = $trimmed;
+                    break 2;
+                }
+            }
+        }
+
+        // Si no encaja en ninguna categoría, se acumula para otro_estudio
+        $unmatched[] = $trimmed;
+    }
+
+    if (!empty($unmatched)) {
+        $parsed['otro_estudio'] = implode("\n", $unmatched);
+    }
+
+    return $parsed;
+}
+
 // Verificar si se ha enviado el formulario
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Establecer conexión a la base de datos
@@ -26,7 +138,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo 'alert("No hay registros para guardar.");';
         echo 'window.location.href = "indexsolicitud.php?tipo_docente=' . urlencode($tipo_docente) . '&anio_semestre=' . urlencode($anio_semestre) . '";';
         echo '</script>';
-        exit; // Asegúrate de que el script no continúe ejecutándose
+        exit;
     }
 
     $cierreperiodo = obtenerperiodo($anio_semestre);
@@ -37,19 +149,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo 'alert("El departamento no corresponde al usuario.\\nAño semestre del usuario: ' . $anio_semestre . '\\nDepartamento seleccionado: ' . $departamento_id . '");';
         echo 'window.location.href = "indexsolicitud.php?tipo_docente=' . urlencode($tipo_docente) . '&anio_semestre=' . urlencode($anio_semestre) . '";';
         echo '</script>';
-        exit; // Asegúrate de que el script no continúe ejecutándose
+        exit;
     } elseif ($cierreperiodo == '1') {
         echo '<script type="text/javascript">';
         echo 'alert("El periodo está cerrado.\\n' . $anio_semestre . '");';
         echo 'window.location.href = "indexsolicitud.php?tipo_docente=' . urlencode($tipo_docente) . '&anio_semestre=' . urlencode($anio_semestre) . '";';
         echo '</script>';
-        exit; // Asegúrate de que el script no continúe ejecutándose
+        exit;
     } elseif ($envio_fac === '1') {
         echo '<script type="text/javascript">';
         echo 'alert("Informe de facultad enviado a VRA\\nNo se pueden hacer más cargues.");';
         echo 'window.location.href = "indexsolicitud.php?tipo_docente=' . urlencode($tipo_docente) . '&anio_semestre=' . urlencode($anio_semestre) . '";';
         echo '</script>';
-        exit; // Asegúrate de que el script no continúe ejecutándose
+        exit;
     } else {
         require 'cn.php';
 
@@ -74,7 +186,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     window.location.href = 'indexsolicitud.php?tipo_docente=" . urlencode($tipo_docente) . "&anio_semestre=" . urlencode($anio_semestre) . "';
                 }
             </script>";
-            // Guardar datos en la sesión
             $_SESSION['facultad_id'] = $facultad_id;
             $_SESSION['departamento_id'] = $departamento_id;
             $_SESSION['anio_semestre'] = $anio_semestre;
@@ -86,15 +197,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     window.location.href = 'indexsolicitud.php?tipo_docente=" . urlencode($tipo_docente) . "&anio_semestre=" . urlencode($anio_semestre) . "';
                 }
             </script>";
-
-            // Guardar datos en la sesión
             $_SESSION['facultad_id'] = $facultad_id;
             $_SESSION['departamento_id'] = $departamento_id;
             $_SESSION['anio_semestre'] = $anio_semestre;
             $_SESSION['tipo_docente'] = $tipo_docente;
         } else {
             // Verificar si las cédulas ya existen en la base de datos
-            $cedulas_existentes = cedulasExistentesall($conn, $anio_semestre, $departamento_id, $cedulas); // cambiamos cedulasExistentes x cedulasExistentesall    
+            $cedulas_existentes = cedulasExistentesall($conn, $anio_semestre, $departamento_id, $cedulas);
 
             if (!empty($cedulas_existentes)) {
                 $cedulas_existentes_msgs = [];
@@ -110,42 +219,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     alert('Las siguientes cédulas ya están registradas para este periodo: $cedulas_existentes_str');
                     window.location.href = 'indexsolicitud.php?tipo_docente=" . urlencode($tipo_docente) . "&anio_semestre=" . urlencode($anio_semestre) . "';
                 </script>";
-
-                exit; // Asegúrate de que el script no continúe ejecutándose
+                exit;
             }
-            //si no estan en la bd  aspirantes::
 
             $cedulas_faltantes = validarCedulasEnPeriodo($cedulas, $anio_semestre);
 
             if (!empty($cedulas_faltantes)) {
                 $mensaje = "Las siguientes cédulas no registran en la base de aspirantes para este periodo $anio_semestre:\\n";
-
-                // Generar el mensaje con cédula y nombre
                 foreach ($cedulas_faltantes as $cedula => $nombre) {
                     $mensaje .= "Cédula: $cedula - $nombre\\n";
                 }
-
-                echo "<script>
-                    alert('$mensaje');
-                </script>";
-                // No detenemos la ejecución aquí, continuamos con el resto de las cédulas
+                echo "<script>alert('$mensaje');</script>";
             }
 
             // Filtrar las cédulas que sí están en la base de aspirantes
- $cedulas_validas = array_diff($cedulas, array_keys($cedulas_faltantes));
+            $cedulas_validas = array_diff($cedulas, array_keys($cedulas_faltantes));
 
             // Insertar los datos de las cédulas válidas
             foreach ($cedulas_validas as $cedula) {
-                $index = array_search($cedula, $cedulas); // Encontrar el índice original de la cédula
+                $index = array_search($cedula, $cedulas);
                 $nombre = $_POST['nombre'][$index];
                 $tipo_dedicacion = isset($_POST['tipo_dedicacion'][$index]) ? $_POST['tipo_dedicacion'][$index] : null;
                 $tipo_dedicacion_r = isset($_POST['tipo_dedicacion_r'][$index]) ? $_POST['tipo_dedicacion_r'][$index] : null;
-                //$horas_r = isset($_POST['horas_r'][$index]) ? (int)$_POST['horas_r'][$index] : 0; // Conversión a entero
-                //$horas = isset($_POST['horas'][$index]) ? (int)$_POST['horas'][$index] : 0;       // Conversión a entero
-                $horas_r = isset($_POST['horas_r'][$index]) ? (float)$_POST['horas_r'][$index] : 0; // Conversión a float
-                $horas = isset($_POST['horas'][$index]) ? (float)$_POST['horas'][$index] : 0;       // Conversión a float
+                $horas_r = isset($_POST['horas_r'][$index]) ? (float)$_POST['horas_r'][$index] : 0;
+                $horas = isset($_POST['horas'][$index]) ? (float)$_POST['horas'][$index] : 0;
               
-                // Validación: suma de horas no puede ser mayor a 12
                 if (($horas + $horas_r) > 12) {
                     echo "<script>
                         alert('El total de horas no puede ser mayor a 12 para el docente con cédula: $cedula');
@@ -153,6 +251,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </script>";
                     exit;
                 }
+
                 if ($tipo_docente == "Ocasional") {
                     $sede = empty($tipo_dedicacion) ? "Regionalización" : "Popayán";
                 } elseif ($tipo_docente == "Catedra") {
@@ -166,27 +265,76 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 } else {
                     $sede = null;
                 }
+
                 $anexa_hv_docente_nuevo = $_POST['anexa_hv_docente_nuevo'][$index];
                 $actualiza_hv_antiguo = $_POST['actualiza_hv_antiguo'][$index];
 
-                $sql = "INSERT INTO solicitudes (anio_semestre, facultad_id, departamento_id, tipo_docente, cedula, nombre, tipo_dedicacion, tipo_dedicacion_r, horas, horas_r, sede, anexa_hv_docente_nuevo, actualiza_hv_antiguo) 
-                        VALUES ('$anio_semestre', '$facultad_id', '$departamento_id', '$tipo_docente', '$cedula', '$nombre', '$tipo_dedicacion', '$tipo_dedicacion_r', '$horas', '$horas_r', '$sede', '$anexa_hv_docente_nuevo', '$actualiza_hv_antiguo')";
+                // --- Obtener datos de estudios desde aspirante ---
+                $pregrado = '';
+                $especializacion = '';
+                $maestria = '';
+                $doctorado = '';
+                $otro_estudio = '';
+
+                $anio = substr($anio_semestre, 0, 4); // Extrae "2026" de "2026-2"
+                $sql_asp = "SELECT asp_titulos FROM aspirante 
+                               WHERE fk_asp_doc_tercero = '$cedula' 
+                                 AND fk_asp_periodo LIKE '$anio%' 
+                               ORDER BY fk_asp_periodo DESC 
+                               LIMIT 1";
+                $result_asp = $conn->query($sql_asp);
+                if ($result_asp && $result_asp->num_rows > 0) {
+                    $row_asp = $result_asp->fetch_assoc();
+                    $titulos_raw = $row_asp['asp_titulos'];
+                    if (!empty($titulos_raw)) {
+                        $estudios = parseTitulosPHP($titulos_raw);
+                        $pregrado = $estudios['pregrado'];
+                        $especializacion = $estudios['especializacion'];
+                        $maestria = $estudios['maestria'];
+                        $doctorado = $estudios['doctorado'];
+                        $otro_estudio = $estudios['otro_estudio'];
+                    }
+                }
+
+                // Escapar valores para evitar errores de sintaxis SQL (inyección básica)
+                $cedula_esc = $conn->real_escape_string($cedula);
+                $nombre_esc = $conn->real_escape_string($nombre);
+                $tipo_dedicacion_esc = $conn->real_escape_string($tipo_dedicacion);
+                $tipo_dedicacion_r_esc = $conn->real_escape_string($tipo_dedicacion_r);
+                $sede_esc = $conn->real_escape_string($sede);
+                $anexa_hv_esc = $conn->real_escape_string($anexa_hv_docente_nuevo);
+                $actualiza_hv_esc = $conn->real_escape_string($actualiza_hv_antiguo);
+                $pregrado_esc = $conn->real_escape_string($pregrado);
+                $especializacion_esc = $conn->real_escape_string($especializacion);
+                $maestria_esc = $conn->real_escape_string($maestria);
+                $doctorado_esc = $conn->real_escape_string($doctorado);
+                $otro_estudio_esc = $conn->real_escape_string($otro_estudio);
+
+                $sql = "INSERT INTO solicitudes 
+                        (anio_semestre, facultad_id, departamento_id, tipo_docente, cedula, nombre, 
+                         tipo_dedicacion, tipo_dedicacion_r, horas, horas_r, sede, 
+                         anexa_hv_docente_nuevo, actualiza_hv_antiguo,
+                         pregrado, especializacion, maestria, doctorado, otro_estudio) 
+                        VALUES (
+                            '$anio_semestre', '$facultad_id', '$departamento_id', '$tipo_docente', 
+                            '$cedula_esc', '$nombre_esc', 
+                            '$tipo_dedicacion_esc', '$tipo_dedicacion_r_esc', '$horas', '$horas_r', '$sede_esc', 
+                            '$anexa_hv_esc', '$actualiza_hv_esc',
+                            '$pregrado_esc', '$especializacion_esc', '$maestria_esc', '$doctorado_esc', '$otro_estudio_esc'
+                        )";
+
                 if ($conn->query($sql) !== TRUE) {
                     echo "Error al insertar solicitud: " . $conn->error;
                 }
             }
 
-            // Guardar datos en la sesión
             $_SESSION['facultad_id'] = $facultad_id;
             $_SESSION['departamento_id'] = $departamento_id;
             $_SESSION['anio_semestre'] = $anio_semestre;
             $_SESSION['tipo_docente'] = $tipo_docente;
 
-            // Cerrar conexión
             $conn->close();
 
-            // Redirigir a consulta.php
-            // Antes de redirigir, muestra un formulario oculto
             echo "<form id='redirectForm' action='consulta_todo_depto.php' method='POST'>
                 <input type='hidden' name='departamento_id' value='" . htmlspecialchars($departamento_id) . "'>
                 <input type='hidden' name='anio_semestre' value='" . htmlspecialchars($anio_semestre) . "'>
@@ -194,7 +342,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <p>Para completar la redirección, por favor, habilite JavaScript en su navegador.</p>
                 </noscript>
             </form>";
-
             echo "<script>
                 document.getElementById('redirectForm').submit();
             </script>";

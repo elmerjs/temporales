@@ -59,7 +59,7 @@ $elaboro = $_GET['elaboro'];
 $nombre_fac = $_GET['nombre_fac'];
 $num_acta = $_GET['acta'] ?? '';
 $fecha_acta = $_GET['fecha_acta'] ?? '';
-
+$id_acta_db = $_GET['id_acta'] ?? null; // <--- Nueva línea para recibir el ID numérico
 // Formatear la fecha
 setlocale(LC_TIME, 'es_ES.UTF-8', 'es_ES', 'Spanish_Spain', 'es');
 $fecha_acta_b = '';
@@ -469,9 +469,13 @@ if (!empty($cambio_vinculacion_data)) {
         $sql_set_add = "estado_depto = 'ENVIADO', 
                         oficio_depto = '$num_oficio', 
                         fecha_oficio_depto = '$fecha_oficio', 
-                        oficio_con_fecha = '$oficio_con_fecha_depto',
+                        oficio_con_fecha = '$oficio_con_fecha_depto'"; 
+        // SIEMPRE guardar acta en la parte de adición
+        /*
+        ,
                         numero_acta59 = '$num_acta', 
-                        fecha_acta59 = $fecha_acta_sql"; // SIEMPRE guardar acta en la parte de adición
+                        fecha_acta59 = $fecha_acta_sql
+        */
 
         $sql_update_adicionar = "UPDATE solicitudes_working_copy SET $sql_set_add WHERE id_solicitud = '$id_solicitud_adicionar'";
         $con->query($sql_update_adicionar); 
@@ -706,7 +710,8 @@ while ($row_novedad_tipo = $resultado_novedad_tipos->fetch_assoc()) {
 
         // 4. CONDICIÓN: Si es 'adicionar', agregamos los campos del acta
         if ($novedad_actual_row == 'adicionar' || $novedad_actual_row == 'adicion') {
-            $sql_set .= ", numero_acta59 = '$num_acta', fecha_acta59 = $fecha_acta_sql";
+            // Agregamos id_acta59 a la cadena de actualización
+            $sql_set .= ", numero_acta59 = '$num_acta', fecha_acta59 = $fecha_acta_sql, id_acta59 = " . ($id_acta_db !== 'NULL' ? (int)$id_acta_db : "NULL");
         }
 
         // 5. Ejecutamos

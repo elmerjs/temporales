@@ -4,7 +4,12 @@ $active_menu_item = 'novedades';
 require('include/headerz.php'); 
 require 'funciones.php';
 require 'conn.php'; 
-
+if (isset($_GET['error'])) {
+    echo '<div class="container mt-3"><div class="alert alert-danger alert-dismissible fade show" role="alert">
+            ' . htmlspecialchars(urldecode($_GET['error'])) . '
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div></div>';
+}
 // 1. Recepción de parámetros
 $departamento_id = $_GET['departamento_id'] ?? null;
 $anio_semestre = $_GET['anio_semestre'] ?? null;
@@ -123,6 +128,10 @@ $sugerencias = []; // Dejamos el array vacío para que cargue rápido. Los datos
             font-weight: bold;
             text-align: center;
         }
+        .is-invalid {
+            border-color: #dc3545 !important;
+            background-color: #fff0f0 !important;
+        }
     </style>
 </head>
 <body>
@@ -138,7 +147,7 @@ $sugerencias = []; // Dejamos el array vacío para que cargue rápido. Los datos
         </button>
     </div>
 
-    <form action="guardar_acta_novedades.php" method="POST" id="formActa">
+    <form action="guardar_acta_novedades.php" method="POST" id="formActa" onsubmit="return validarFormulario();">
 
         <input type="hidden" name="id_acta" value="<?= $id_acta ?>">
         
@@ -156,11 +165,16 @@ $sugerencias = []; // Dejamos el array vacío para que cargue rápido. Los datos
                     <label class="form-label small fw-bold">Fecha</label>
                     <input type="date" name="fecha_reunion" class="form-control" value="<?= $datos['fecha_reunion'] ?? date('Y-m-d') ?>">
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold">Serie, Subserie / No de acta</label>
+               
+                    
+                   <div class="col-md-4">
+                    <label class="form-label small fw-bold">
+                        Serie, Subserie / No de acta <span class="text-danger">*</span>
+                    </label>
                     <input type="text" name="numero_acta" class="form-control" 
-       placeholder="Ej: 8.3.11-1.57/XX" 
-       value="<?= htmlspecialchars($valor_acta_mostrar) ?>">
+                       placeholder="Ej: 8.3.11-1.57/XX" 
+                       value="<?= htmlspecialchars($valor_acta_mostrar) ?>">
+               
                 </div>
             </div>
         </div>
@@ -661,6 +675,7 @@ $sugerencias = []; // Dejamos el array vacío para que cargue rápido. Los datos
 
 <script src="https://cdn.ckeditor.com/ckeditor5/34.0.0/classic/ckeditor.js"></script>
 <script>
+    
     function confirmarDescargaWord() {
     // Mensaje claro para el usuario
     const mensaje = "Recuerde que para generar el Word con la información actualizada, primero debe haber hecho clic en 'Guardar Borrador' o 'Finalizar Acta'.\n\n¿Desea descargar el documento con los últimos cambios guardados?";
@@ -698,6 +713,9 @@ $sugerencias = []; // Dejamos el array vacío para que cargue rápido. Los datos
     
     // Función para guardar el acta y regresar al panel de novedades
 function guardarYRegresar() {
+     if (!validarNumeroActa()) {
+        return;  // Detiene el envío si el campo está vacío
+    }
     const form = document.getElementById('formActa');
     if (!form) {
         alert('Error: No se encontró el formulario.');
@@ -1520,6 +1538,9 @@ function verificarIntegridadP5yP7() {
 }
 
     function confirmarFinalizacionConIntegridad() {
+        if (!validarNumeroActa()) {
+        return false;
+    }
     // 1. Verificar si existen alertas de integridad (los badges rojos)
     const alertas = document.querySelectorAll('.alerta-p5');
     
@@ -1530,6 +1551,48 @@ function verificarIntegridadP5yP7() {
 
     // 2. Si todo está correcto, pedir la confirmación normal
     return confirm('¿Está seguro de FINALIZAR el Acta de Novedades?\n\nEsto dejará el documento listo para impresión.');
+}
+    /**
+ * Valida que el número de acta no esté vacío.
+ * @returns {boolean} true si es válido, false en caso contrario.
+ */
+/**
+ * Valida que el número de acta no esté vacío.
+ * Si está vacío, ofrece la opción de salir sin guardar.
+ * @returns {boolean} true si es válido, false en cualquier otro caso.
+ */
+function validarNumeroActa() {
+    const input = document.querySelector('input[name="numero_acta"]');
+    const valor = input.value.trim();
+    
+    if (valor === '') {
+        // Obtener los parámetros necesarios para la redirección
+        const departamento_id = document.querySelector('input[name="departamento_id"]').value;
+        const anio_semestre = document.querySelector('input[name="anio_semestre"]').value;
+        
+        // Confirmación con dos botones
+        const salir = confirm(
+            '❌ El campo "Serie, Subserie / No de acta" es obligatorio.\n\n' +
+            '¿Desea salir sin guardar? (Se perderán los cambios)'
+        );
+        
+        if (salir) {
+            // Redirigir al panel principal sin guardar
+            window.location.href = `consulta_todo_depto_novedad.php?departamento_id=${departamento_id}&anio_semestre=${anio_semestre}`;
+            return false; // Evita cualquier acción posterior
+        } else {
+            // Permanecer en el formulario
+            input.focus();
+            input.classList.add('is-invalid');
+            return false;
+        }
+    }
+    
+    input.classList.remove('is-invalid');
+    return true;
+}
+    function validarFormulario() {
+    return validarNumeroActa();  // Llama a la función central
 }
 </script>
 </body>

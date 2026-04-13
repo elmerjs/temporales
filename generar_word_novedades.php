@@ -725,20 +725,34 @@ for ($i = 1; $i <= $filasMostrar; $i++) {
     // ------------------------------------------------------------
     // 12. OBSERVACIONES
     // ------------------------------------------------------------
-  // ------------------------------------------------------------
-// 12. OBSERVACIONES
+// 12. TABLA DE OBSERVACIONES (CORREGIDA PARA AJUSTE AUTOMÁTICO)
 // ------------------------------------------------------------
 $section->addTextBreak(1);
 $section->addText("OBSERVACIONES", $fontBold);
+
+// Creamos la tabla forzando el ancho al 100% de la página
 $tableObs = $section->addTable([
-    'borderSize'  => 2,
+    'borderSize'  => 6,           // Un borde un poco más visible (opcional)
     'borderColor' => '000000',
-    'width'       => 100 * 50,
-    'unit'        => TblWidth::PERCENT
+    'width'       => 100 * 50,    // 100% del ancho disponible
+    'unit'        => TblWidth::PERCENT,
+    'cellMargin'  => 100          // Margen interno para que el texto no pegue al borde
 ]);
-$rowObs = $tableObs->addRow(Converter::cmToTwip(1.5), ['exactHeight' => true]);
+
+// Añadimos la fila. Quitamos 'exactHeight' para que si el texto es muy largo, 
+// la tabla crezca hacia abajo automáticamente en lugar de cortar el texto.
+$rowObs = $tableObs->addRow(Converter::cmToTwip(1.5)); 
+
 $textoObs = limpiarTextoXML($datos['observaciones'] ?? '');
-$rowObs->addCell()->addText($textoObs, $fontNormal);
+
+if (empty(trim($textoObs))) {
+    $textoObs = "Sin observaciones adicionales.";
+}
+
+// EL CAMBIO CLAVE: Definir addCell(9000) o un valor alto.
+// Al darle un ancho fijo a la celda dentro de una tabla de 100%, 
+// Word obliga al texto a hacer "Word Wrap" (ajuste de línea).
+$rowObs->addCell(9500)->addText($textoObs, $fontNormal);
     // ------------------------------------------------------------
     // 13. NOTA FINAL
     // ------------------------------------------------------------

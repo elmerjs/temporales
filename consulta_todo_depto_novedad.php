@@ -2148,15 +2148,16 @@ echo ")</h4>";
 
         if ($last_acta_modal) {
             // 2. Verificamos si esta acta YA FUE UTILIZADA (Enviada a Facultad)
-            // Si existen registros con estado 'ENVIADO' que tengan este número de acta, se considera cerrada.
-            $num_verif = $last_acta_modal['numero_acta'];
+            // Evaluamos estrictamente por el ID numérico del acta
+            $id_verif = $last_acta_modal['id_acta'];
             
             $sql_check_uso = "SELECT 1 FROM solicitudes_working_copy 
                               WHERE departamento_id = ? AND anio_semestre = ? 
-                              AND numero_acta59 = ? AND estado_depto = 'ENVIADO' LIMIT 1";
+                              AND id_acta59 = ? AND estado_depto = 'ENVIADO' LIMIT 1";
             
             $stmt_cu = $conn->prepare($sql_check_uso);
-            $stmt_cu->bind_param("sss", $departamento_id, $anio_semestre, $num_verif);
+            // Cambiamos a "ssi" (String, String, Integer)
+            $stmt_cu->bind_param("ssi", $departamento_id, $anio_semestre, $id_verif);
             $stmt_cu->execute();
             $ya_usada = $stmt_cu->get_result()->num_rows > 0;
             $stmt_cu->close();
@@ -2168,7 +2169,6 @@ echo ")</h4>";
                 $fecha_acta = $last_acta_modal['fecha_reunion'];
             }
             // Si $ya_usada es verdadero, dejamos $num_acta y $fecha_acta vacíos ("").
-            // Esto hará que el modal aparezca vacío, obligando a generar/escribir una nueva acta para el nuevo paquete.
         }
         // --- FIN: LÓGICA INTELIGENTE ---
 
@@ -3034,13 +3034,16 @@ if (!empty($data_modificar)) {
 
             if ($last_acta) {
                 // B. Verificar si esta acta YA FUE UTILIZADA en un envío anterior (Histórico)
-                $num_acta_verif = $last_acta['numero_acta'];
+                $id_acta_verif = $last_acta['id_acta']; // <-- Capturamos el ID numérico
+                
+                // Cambiamos numero_acta59 por id_acta59
                 $sql_uso = "SELECT 1 FROM solicitudes_working_copy 
                             WHERE departamento_id = ? AND anio_semestre = ? 
-                            AND numero_acta59 = ? AND estado_depto = 'ENVIADO' LIMIT 1";
+                            AND id_acta59 = ? AND estado_depto = 'ENVIADO' LIMIT 1";
                 
                 $stmt_uso = $conn->prepare($sql_uso);
-                $stmt_uso->bind_param("sss", $departamento_id, $anio_semestre, $num_acta_verif);
+                // Cambiamos a "ssi" (String, String, Integer)
+                $stmt_uso->bind_param("ssi", $departamento_id, $anio_semestre, $id_acta_verif);
                 $stmt_uso->execute();
                 $es_historica = $stmt_uso->get_result()->num_rows > 0;
                 $stmt_uso->close();
@@ -3923,7 +3926,7 @@ async function submitForm() {
         const fechaActa = document.getElementById('fecha_acta').value;
         const folios = document.getElementById('folios').value;
         const nombrefac = "<?php echo urlencode($nombre_fac); ?>";
-
+const idActaGestionar = "<?php echo $last_acta_modal['id_acta'] ?? ''; ?>";
         // Construimos la URL para el script que genera el Word
         const url = 'oficio_depto_novedad.php?folios=' + folios +
             '&departamento_id=' + departamentoId +
@@ -3933,7 +3936,8 @@ async function submitForm() {
             '&fecha_oficio=' + encodeURIComponent(fechaOficio) +
             '&elaboro=' + encodeURIComponent(elaboro) +
             '&acta=' + encodeURIComponent(acta) +
-            '&fecha_acta=' + encodeURIComponent(fechaActa);
+            '&fecha_acta=' + encodeURIComponent(fechaActa) +
+            '&id_acta=' + idActaGestionar; // <--- AQUÍ LO AGREGAS
         
         // Redirigimos a la página para generar el Word
         window.location.href = url;

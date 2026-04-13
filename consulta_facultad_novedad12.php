@@ -146,7 +146,7 @@ if ($tipo_usuario == 3) {
     $oficios = $stmt_oficios->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt_oficios->close();
 
-    $sql_solicitudes = "SELECT * FROM solicitudes_working_copy WHERE departamento_id = ? AND anio_semestre = ?";
+    $sql_solicitudes = "SELECT *, id_acta59 AS id_acta_vinculada FROM solicitudes_working_copy WHERE departamento_id = ? AND anio_semestre = ?";
     $stmt_solicitudes = $conn->prepare($sql_solicitudes);
     $stmt_solicitudes->bind_param("is", $id_departamento, $anio_semestre);
     $stmt_solicitudes->execute();
@@ -238,13 +238,9 @@ if ($tipo_usuario == 3) {
 }
 elseif ($tipo_usuario == 2) {
     // --- LÓGICA PARA FACULTAD ---
-    $sql_facultad = "SELECT d.depto_nom_propio AS nombre_departamento, s.*, a.id_acta AS id_acta_vinculada
+    $sql_facultad = "SELECT d.depto_nom_propio AS nombre_departamento, s.*, s.id_acta59 AS id_acta_vinculada
                  FROM solicitudes_working_copy s 
                  JOIN deparmanentos d ON s.departamento_id = d.PK_DEPTO 
-                 LEFT JOIN actas_seleccion_novedades a 
-                     ON s.numero_acta59 = a.numero_acta 
-                     AND s.departamento_id = a.departamento_id 
-                     AND s.anio_semestre = a.anio_semestre
                  WHERE s.facultad_id = ? AND s.anio_semestre = ? AND s.oficio_con_fecha IS NOT NULL 
                  ORDER BY d.depto_nom_propio ASC, s.fecha_oficio_depto ASC, s.oficio_depto ASC";
     $stmt_facultad = $conn->prepare($sql_facultad);
@@ -345,6 +341,7 @@ $oficio_statuses_facultad[$nombre_depto][$oficio_fecha] = [
 // ===== TERMINA EL CÓDIGO MEJORADO =====
             }
         }
+    
  // ===================================================================
 // ===== INICIA CORRECCIÓN: Procesar cada oficio por separado =====
 // ===================================================================
@@ -591,17 +588,19 @@ if ($tipo_usuario == 3 && isset($con) && !$con->connect_error) {
                     // ===== TERMINA LA NUEVA LÓGICA DE FILTRADO =====
 
                     // --- 🕵️‍♂️ DETECTIVE DE ACTAS: BUSCAR SI ESTE OFICIO TIENE ACTA ---
+                    // --- 🕵️‍♂️ DETECTIVE DE ACTAS: BUSCAR SI ESTE OFICIO TIENE ACTA ---
                     $acta_id_para_descarga = null;
                     $tooltip_acta = "";
                     
-                    // Paso 1: Buscar si alguna solicitud en este oficio tiene numero_acta59
-                    $sql_detectar_acta = "SELECT numero_acta59 
+                    // Buscamos DIRECTAMENTE el id_acta59 en las solicitudes de este oficio
+                    // Ignoramos los que sean NULL o 0
+                    $sql_detectar_acta = "SELECT id_acta59, numero_acta59 
                                           FROM solicitudes_working_copy 
                                           WHERE departamento_id = ? 
                                           AND anio_semestre = ? 
                                           AND oficio_con_fecha = ? 
-                                          AND numero_acta59 IS NOT NULL 
-                                          AND numero_acta59 != '' 
+                                          AND id_acta59 IS NOT NULL 
+                                          AND id_acta59 > 0 
                                           LIMIT 1";
                     
                     if ($stmt_da = $conn->prepare($sql_detectar_acta)) {
@@ -610,29 +609,15 @@ if ($tipo_usuario == 3 && isset($con) && !$con->connect_error) {
                         $res_da = $stmt_da->get_result();
                         
                         if ($fila_acta = $res_da->fetch_assoc()) {
-                            $num_acta_encontrada = $fila_acta['numero_acta59'];
+                            // Extraemos el ID numérico real directamente (ej. 24)
+                            $acta_id_para_descarga = $fila_acta['id_acta59'];
+                            
+                            $num_acta_encontrada = $fila_acta['numero_acta59'] ?? 'S/N';
                             $tooltip_acta = "Acta N° " . htmlspecialchars($num_acta_encontrada);
-                            
-                            // Paso 2: Si hay número, buscamos el ID real en la tabla de actas
-                            $sql_id_acta = "SELECT id_acta 
-                                            FROM actas_seleccion_novedades 
-                                            WHERE departamento_id = ? 
-                                            AND anio_semestre = ? 
-                                            AND numero_acta = ? 
-                                            LIMIT 1";
-                            
-                            if ($stmt_ia = $conn->prepare($sql_id_acta)) {
-                                $stmt_ia->bind_param("iss", $id_departamento, $anio_semestre, $num_acta_encontrada);
-                                $stmt_ia->execute();
-                                $res_ia = $stmt_ia->get_result();
-                                if ($fila_id = $res_ia->fetch_assoc()) {
-                                    $acta_id_para_descarga = $fila_id['id_acta'];
-                                }
-                                $stmt_ia->close();
-                            }
                         }
                         $stmt_da->close();
                     }
+                    // -------------------------------------------------------------
                     // -------------------------------------------------------------
 
                     // Definición de Estilos y Colores
@@ -1279,6 +1264,8 @@ function renderizarContenidoAcordeon(headerElement) {
     let tarjetasRenderizadas = 0;
     for (const oficio in oficiosDepto) {
         const statusOficio = statusesDepto[oficio];
+        
+        
         if (filtroSeleccionado === 'pendientes' && (!statusOficio || statusOficio.facultad !== 'En Proceso')) {
             continue;
         }
@@ -1286,16 +1273,28 @@ function renderizarContenidoAcordeon(headerElement) {
         tarjetasRenderizadas++;
 
         // Obtener las solicitudes de este oficio para buscar el acta
+        // Obtener las solicitudes de este oficio para buscar el acta
+        // Obtener las solicitudes de este oficio para buscar el acta
         const solicitudesOficio = oficiosDepto[oficio];
         let idActa = null;
-        let numeroActa = null;
+        let numeroActaText = null;
         let deptoId = null;
+
         if (solicitudesOficio.length > 0) {
-            deptoId = solicitudesOficio[0].departamento_id; // todas comparten el mismo
-            const solicitudConActa = solicitudesOficio.find(s => s.id_acta_vinculada);
+            deptoId = solicitudesOficio[0].departamento_id; 
+
+            // BÚSQUEDA ESTRICTA DE VERDAD
+            const solicitudConActa = solicitudesOficio.find(s => {
+                const id = s.id_acta_vinculada; // Solo usamos el alias explícito
+                // Debe ser un NÚMERO o un STRING NUMÉRICO mayor a 0
+                const parsedId = parseInt(id, 10);
+                return !isNaN(parsedId) && parsedId > 0; 
+            });
+
             if (solicitudConActa) {
-                idActa = solicitudConActa.id_acta_vinculada;
-                numeroActa = solicitudConActa.numero_acta59; // CORRECCIÓN: variable correcta de la BD
+                // Asignamos el ID parseado y limpio
+                idActa = parseInt(solicitudConActa.id_acta_vinculada, 10); 
+                numeroActaText = solicitudConActa.numero_acta59 || 'S/N'; 
             }
         }
 
@@ -1314,16 +1313,17 @@ function renderizarContenidoAcordeon(headerElement) {
 
         // 2. CONSTRUIR BOTÓN DEL ACTA FOR59 (Color Amarillo, solo si existe)
         let botonActaHtml = '';
-        if (idActa) {
+        
+        // Ahora idActa solo será verdadero si es un número válido y mayor a 0
+        if (idActa !== null && idActa > 0) { 
             botonActaHtml = `
                 <a href="generar_word_novedades.php?id_acta=${idActa}&departamento_id=${deptoId}&anio_semestre=${encodeURIComponent(anioSemestre)}" 
-                   title="Descargar Acta FOR59 (Acta N° ${numeroActa || 'S/N'})"
+                   title="Descargar Acta FOR59 (Acta N° ${numeroActaText})"
                    class="flex items-center gap-2 px-3 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 rounded-md border border-yellow-300 transition-colors text-sm font-medium shadow-sm">
                     <i class="fas fa-file-contract text-yellow-600"></i>
                     <span class="hidden xl:inline">FOR59</span>
                 </a>`;
         }
-
         const statusObj = statusOficio || { facultad: 'Desconocido', vra: 'Desconocido' };
         const status_fac = statusObj.facultad;
         const borderColorClass = (status_fac === 'En Proceso') ? 'border-red-300' : 'border-[#003366]';

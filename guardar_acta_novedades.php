@@ -15,14 +15,36 @@ function obtenerIdFacultadLocal($departamento_id, $conn) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // 1. Datos básicos
+
+    // =============================================
+    // 1. VALIDACIÓN OBLIGATORIA: Número de Acta (debe ir PRIMERO)
+    // =============================================
+    $numero_acta = trim($_POST['numero_acta'] ?? '');
+    if (empty($numero_acta)) {
+        $isAjax = !empty($_POST['ajax']) && $_POST['ajax'] == 1;
+        
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => 'El campo "Serie, Subserie / No de acta" es obligatorio.'
+            ]);
+            exit;
+        } else {
+            $departamento_id = $_POST['departamento_id'] ?? '';
+            $anio_semestre   = $_POST['anio_semestre'] ?? '';
+            $error_msg = urlencode('⚠️ El número de acta es obligatorio. Por favor, complételo antes de guardar.');
+            header("Location: gestion_acta_novedades.php?departamento_id=$departamento_id&anio_semestre=$anio_semestre&error=$error_msg");
+            exit;
+        }
+    }
+
+    // 2. Resto de datos básicos (después de la validación)
     $id_acta         = $_POST['id_acta'] ?? '';
     $departamento_id = $_POST['departamento_id'];
     $anio_semestre   = $_POST['anio_semestre'];
     $lugar_reunion   = $_POST['lugar_reunion'] ?? '';
     $fecha_reunion   = $_POST['fecha_reunion'] ?? '';
-    $numero_acta     = $_POST['numero_acta'] ?? '';
-    
     // VALIDACIÓN: Si no llega acción, asumimos borrador
     $accion = $_POST['accion'] ?? 'borrador'; 
 
@@ -206,4 +228,5 @@ if ($id_acta) {
     $stmt->close();
     $conn->close();
 }
+
 ?>
