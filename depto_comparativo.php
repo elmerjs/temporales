@@ -45,6 +45,9 @@ $facultad_id = isset($_POST['facultad_id']) ? $_POST['facultad_id'] : null;
     $departamento_id = $_POST['departamento_id'];
     $anio_semestre = $_POST['anio_semestre'];
     $periodo_anterior = $_POST['anio_semestre_anterior'];
+    $periodo_anterior = !empty($periodo_anterior) 
+        ? $periodo_anterior 
+        : obtenerPeriodoAnterior($anio_semestre);
 $origen = $_POST['origen'] ?? null;
 
  $aniose= $anio_semestre;
@@ -1060,7 +1063,7 @@ if (isset($_POST['envia'])) {
                     $cedulasPeriodoAnteriorPorTipoActual[] = $rowCedula['cedula'];
                 }
             }
-         $periodo_ant_real= obtenerPeriodoAnterior($anio_semestre);   
+         $periodo_ant_real= obtenerPeriodoAnterior($anio_semestre); 
            // --- MAIN QUERY TO GET PROFESSORS FOR THE CURRENT TABLE ---
 $sql = "SELECT
     s_actual.*,
@@ -1072,10 +1075,12 @@ $sql = "SELECT
         CASE s_actual.tipo_docente
             WHEN 'Ocasional' THEN 380
             WHEN 'Catedra' THEN 3.5
-            ELSE NULL -- O un valor por defecto si existen otros tipos de docente
+            ELSE NULL
         END
-    ) AS puntos_periodo_anterior, -- Puntos del periodo anterior con valor por defecto
-    s_anterior.tipo_docente AS tipo_docente_periodo_anterior
+    ) AS puntos_periodo_anterior,
+    s_anterior.tipo_docente    AS tipo_docente_periodo_anterior,
+    s_anterior.tipo_dedicacion  AS tipo_dedicacion_anterior,      -- ← AÑADIR
+    s_anterior.tipo_dedicacion_r AS tipo_dedicacion_r_anterior     -- ← AÑADIR
 FROM
     solicitudes AS s_actual
 JOIN
@@ -1084,22 +1089,22 @@ JOIN
     facultad ON (facultad.PK_FAC = s_actual.facultad_id)
 LEFT JOIN
     solicitudes AS s_anterior ON (
-        s_anterior.cedula = s_actual.cedula
+        s_anterior.cedula          = s_actual.cedula
+        AND s_actual.cedula        != '222'            -- ← AGREGAR ESTA LÍNEA
         AND s_anterior.departamento_id = s_actual.departamento_id
-        AND s_anterior.facultad_id = s_actual.facultad_id
-        AND s_anterior.anio_semestre = '$periodo_ant_real'
-                AND s_anterior.tipo_docente = s_actual.tipo_docente -- ¡NUEVA CONDICIÓN!
-
-        AND (s_anterior.estado <> 'an' OR s_anterior.estado IS NULL)
+        AND s_anterior.facultad_id     = s_actual.facultad_id
+        AND s_anterior.anio_semestre   = '$periodo_anterior'
+        AND s_anterior.tipo_docente    = s_actual.tipo_docente
+        AND (s_anterior.estado = 'an' OR s_anterior.estado IS NULL)
     )
 WHERE
-    s_actual.facultad_id = '$facultad_id'
+    s_actual.facultad_id    = '$facultad_id'
     AND s_actual.departamento_id = '$departamento_id'
-    AND s_actual.anio_semestre = '$anio_semestre'
-    AND s_actual.tipo_docente = '$tipo_docente' -- ¡CORREGIDO: Usando la variable PHP $tipo_docente!
-    AND (s_actual.estado <> 'an' OR s_actual.estado IS NULL)
+    AND s_actual.anio_semestre   = '$anio_semestre'
+    AND s_actual.tipo_docente    = '$tipo_docente'
+    AND (s_actual.estado = 'an' OR s_actual.estado IS NULL)
 ORDER BY
-    s_actual.nombre ASC;";
+    s_actual.nombre ASC";
             
             $result = $conn->query($sql);
           // --- HTML OUTPUT FOR THE SECTION HEADER AND BUTTON ---
@@ -1243,6 +1248,24 @@ if ($tipo_docente == 'Ocasional') {
                     $total_proyect = 0; // Initialize variable for accumulating total
                 $contadorCambioAOcasional = 0; // Contará los profesores que eran Cátedra y ahora son Ocasional
                         $contadorCambioACatedra = 0;   // Contará los profesores que eran Ocasional y ahora son Cátedra
+                    $cedulasOtroDeptoPeriodoAnterior = [];
+                $sqlOtroDepto = "
+                    SELECT s.cedula, d.depto_nom_propio AS nom_depto
+                    FROM solicitudes s
+                    JOIN deparmanentos d ON d.PK_DEPTO = s.departamento_id
+                    WHERE s.departamento_id != '$departamento_id'
+                      AND s.anio_semestre  = '$periodo_anterior'
+                      AND (s.estado = 'an' OR s.estado IS NULL)
+                ";
+                $resOtroDepto = $conn->query($sqlOtroDepto);
+                if ($resOtroDepto) {
+                    while ($rowOD = $resOtroDepto->fetch_assoc()) {
+                        if (!isset($cedulasOtroDeptoPeriodoAnterior[$rowOD['cedula']])) {
+                            $cedulasOtroDeptoPeriodoAnterior[$rowOD['cedula']] = $rowOD['nom_depto'];
+                        }
+                    }
+                }
+
 
                     // --- LOOP TO DISPLAY EACH PROFESSOR'S ROW ---
                     while ($row = $result->fetch_assoc()) {
@@ -1252,39 +1275,87 @@ if ($tipo_docente == 'Ocasional') {
                         $tooltipText = '';  // Reset for each row
 
                         // --- DETERMINE PROFESSOR'S STATUS FOR THIS ROW ---
-                        $cambioTipo = false;
-                        if (isset($cedulasPeriodoAnteriorGlobal[$cedula])) {
-                            if ($cedulasPeriodoAnteriorGlobal[$cedula] !== $tipo_docente) {
-                                $cambioTipo = true;
-                            }
-                        }
+                        // --- DETERMINE PROFESSOR'S STATUS FOR THIS ROW ---
 
-                        // 2. Is this professor "new" to this specific type of vinculación in the current period?
-                        $esNueva = !in_array($cedula, $cedulasPeriodoAnteriorPorTipoActual);
+// 1. ¿Cambió de tipo vinculación (Ocasional ↔ Catedra)?
+$cambioTipo = false;
+if (isset($cedulasPeriodoAnteriorGlobal[$cedula])) {
+    if ($cedulasPeriodoAnteriorGlobal[$cedula] !== $tipo_docente) {
+        $cambioTipo = true;
+    }
+}
 
-                        // --- APPLY CSS CLASSES AND SET THE SINGLE TOOLTIP BASED ON PRIORITY ---
-                        if ($cambioTipo) {
-                            $claseFila = 'fondo-amarillo';
-                            $claseTexto = 'cedula-nueva';
-                            $tooltipText = 'Este profesor tuvo vinculación temporal diferente en el periodo anterior ('.$periodo_anterior.')';
+// 2. ¿Es nuevo en este tipo de vinculación en este departamento?
+$esNueva = !in_array($cedula, $cedulasPeriodoAnteriorPorTipoActual);
 
+// 3. NUEVO: ¿Cambió dedicación TC↔MT? (solo Ocasional, mismo depto, mismo tipo)
+$cambioDedic      = false;
+$infoCambioDedic  = '';
+if ($tipo_docente === 'Ocasional' && !$cambioTipo && !$esNueva) {
+    $dedicActual    = strtoupper(trim($row['tipo_dedicacion']         ?? ''));
+    $dedicRActual   = strtoupper(trim($row['tipo_dedicacion_r']       ?? ''));
+    $dedicAnterior  = strtoupper(trim($row['tipo_dedicacion_anterior']  ?? ''));
+    $dedicRAnterior = strtoupper(trim($row['tipo_dedicacion_r_anterior'] ?? ''));
 
-                        } elseif ($esNueva) {
-                            $claseTexto = 'cedula-nueva';
-                            $tooltipText = 'Profesor nuevo para este periodo, no registrado en el periodo anterior ('.$periodo_anterior.')';
+    // Solo aplica si realmente había dato anterior (no es NULL/vacío)
+    if (!empty($dedicAnterior) || !empty($dedicRAnterior)) {
+        $dedicDeAntes = !empty($dedicAnterior)  ? $dedicAnterior  : $dedicRAnterior;
+        $dedicDeAhora = !empty($dedicActual)    ? $dedicActual    : $dedicRActual;
+        if ($dedicDeAntes !== $dedicDeAhora) {
+            $cambioDedic     = true;
+            $infoCambioDedic = "Cambio de dedicación: $dedicDeAntes → $dedicDeAhora (período anterior: $periodo_anterior)";
+        }
+    }
+}
 
-                            $contadorVerdes++;
-                            if ($tipo_docente == 'Ocasional') {
-                                $contadorVerdesOc++;
-                            } else {
-                                $contadorVerdesCa++;
-                            }
-                        }
+// 4. NUEVO: ¿Es nuevo aquí pero existía en otro departamento el período anterior?
+$vieneDeOtroDepto  = false;
+$infoDeptAnterior  = '';
+if ($esNueva && isset($cedulasOtroDeptoPeriodoAnterior[$cedula])) {
+    $vieneDeOtroDepto = true;
+    $infoDeptAnterior = "En $periodo_anterior estuvo en: " . $cedulasOtroDeptoPeriodoAnterior[$cedula];
+}
 
-                        $titleAttribute = '';
-                        if (!empty($tooltipText)) {
-                            $titleAttribute = "title=\"" . htmlspecialchars($tooltipText) . "\"";
-                        }
+// --- APPLY CSS CLASSES AND SET TOOLTIP (orden de prioridad) ---
+if ($cambioTipo) {
+    // Original: cambio Ocasional ↔ Catedra
+    $claseFila  = 'fondo-amarillo';
+    $claseTexto = 'cedula-nueva';
+    $tooltipText = "Este profesor tuvo vinculación temporal diferente en el periodo anterior ($periodo_anterior).";
+
+} elseif ($cambioDedic) {
+    // NUEVO: mismo depto, Ocasional, pero cambió TC↔MT
+    $claseFila   = 'fondo-cambio-dedic';
+    $claseTexto  = 'cedula-cambio-dedic';
+    $tooltipText = $infoCambioDedic;
+
+} elseif ($esNueva && $vieneDeOtroDepto) {
+    // NUEVO: nuevo aquí, pero venía de otro departamento
+    $claseFila   = 'fondo-otro-depto';
+    $claseTexto  = 'cedula-nueva';   // mantiene azul
+    $tooltipText = "Profesor nuevo en este departamento. $infoDeptAnterior";
+    $contadorVerdes++;
+    if ($tipo_docente == 'Ocasional') $contadorVerdesOc++;
+    else $contadorVerdesCa++;
+
+} elseif ($esNueva) {
+    // Original: nuevo sin historial en ningún lado
+    $claseTexto  = 'cedula-nueva';
+    $tooltipText = "Profesor nuevo para este periodo, no registrado en el periodo anterior ($periodo_anterior).";
+    $contadorVerdes++;
+    if ($tipo_docente == 'Ocasional') $contadorVerdesOc++;
+    else $contadorVerdesCa++;
+}
+// ← AGREGAR ESTO AL FINAL, ANTES DEL $titleAttribute
+if ($cedula === '222') {
+    $claseFila   = '';
+    $claseTexto  = '';
+    $tooltipText = '';
+}
+$titleAttribute = '';
+if (!empty($tooltipText)) {
+    $titleAttribute = "title=\"" . htmlspecialchars($tooltipText) . "\"";
+}
 
                         // --- OUTPUT THE TABLE ROW AND ITS CELLS ---
                         echo "<tr class='$claseFila' $titleAttribute>";
@@ -1948,12 +2019,16 @@ $(document).ready(function(){
 </script>';
             
     
-echo "<div style='margin-bottom: 10px; font-size: 0.9em;'>
-  <strong>Nota:</strong> 
-  <span style='color: blue; font-weight: bold;'>En azul:</span> Profesores nuevos; (Ocasionales: {$contadorVerdesOc}; Cátedra: {$contadorVerdesCa}) - Total: {$contadorVerdes} &nbsp;|&nbsp;
-  <span style='color: red; font-weight: bold;'>En rojo:</span> Profesores que ya no continúan. (Ocasionales: {$contadorRojosOc}, Cátedra: {$contadorRojosCa}) - Total: {$contadorRojos} &nbsp;|&nbsp;
-  <span style='background-color: yellow; color: blue; font-weight: bold;'>&nbsp;Cambio de vinculación&nbsp;</span>:  Profesores que cambian de tipo de vinculación en el periodo actual.
-</div>  ";
+echo '<div style="margin-bottom:10px; font-size:0.9em">';
+echo '<strong>Nota:</strong> &nbsp;';
+echo '<span style="color:blue;font-weight:bold">En azul</span>: Profesores nuevos — Ocasionales: '.$contadorVerdesOc.' | Cátedra: '.$contadorVerdesCa.' — Total: '.$contadorVerdes.'&nbsp;&nbsp;';
+echo '<span style="color:red;font-weight:bold">En rojo</span>: Profesores que ya no continúan. Ocasionales: '.$contadorRojosOc.', Cátedra: '.$contadorRojosCa.' — Total: '.$contadorRojos.'&nbsp;&nbsp;';
+echo '<span style="background-color:yellow;color:blue;font-weight:bold">&nbsp;Cambio de vinculación&nbsp;</span>: Profesores que cambian de tipo (Ocasional↔Cátedra).&nbsp;&nbsp;';
+
+// ── NUEVOS ──
+echo '<span style="background-color:#fff0d6;color:#7b3f00;font-weight:bold">&nbsp;🔄 Cambio dedicación&nbsp;</span>: Ocasionales que cambiaron TC↔MT (pase el cursor para ver el detalle).&nbsp;&nbsp;';
+echo '<span style="background-color:#e0f7fa;color:blue;font-weight:bold">&nbsp;🏫 De otro depto&nbsp;</span>: Profesor nuevo aquí pero estuvo en otro departamento (pase el cursor para ver cuál).&nbsp;&nbsp;';
+echo '</div>';
     
 // Calcular el porcentaje de cambio (manteniendo tus variables exactas)
 $diferencia = $total_consolidado - $total_cosolidado_ant;
@@ -3771,7 +3846,27 @@ if (!empty($interpretaciones)) {
         margin-top: 10px;
     }
 }
+/* ── Cambio de dedicación TC↔MT (Ocasional, mismo depto) ── */
+.fondo-cambio-dedic {
+    background-color: #fff0d6 !important;  /* naranja muy suave */
+}
+.cedula-cambio-dedic {
+    color: #7b3f00 !important;             /* marrón oscuro */
+    font-weight: bold;
+}
 
+/* ── Nuevo en este depto, venía de otro departamento ── */
+.fondo-otro-depto {
+    background-color: #e0f7fa !important;  /* turquesa muy suave */
+}
+.fondo-otro-depto .cedula-nueva {
+    color: blue !important;               /* mantiene azul original */
+}
+
+/* ── Tooltip "bombillito" visual ── */
+td[title], tr[title] {
+    cursor: help;
+}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

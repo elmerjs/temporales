@@ -858,20 +858,24 @@ th {
     $hoy    = new DateTime(); 
     $inicio = new DateTime($info_plazo['ini_plazo_jefe'] ?? '1000-01-01');
     $fin    = new DateTime($info_plazo['plazo_jefe'] ?? '1000-01-01');
-
+    $fin_for59 = clone $fin; 
+    $fin_for59->modify('+20 days');
     $puede_editar = false;
     $mensaje_ayuda_edit = "";
 
     // Lógica de fechas para la EDICIÓN
+
+
+    // Lógica de fechas para la EDICIÓN - AHORA USA EL PLAZO EXTENDIDO
     if ($hoy < $inicio) {
         $puede_editar = false;
         $mensaje_ayuda_edit = "El periodo de edición iniciará el: " . $inicio->format('d/m/Y');
-    } elseif ($hoy >= $inicio && $hoy <= $fin) {
+    } elseif ($hoy >= $inicio && $hoy <= $fin_for59) { // <--- CAMBIO AQUÍ
         $puede_editar = true;
         $mensaje_ayuda_edit = $id_acta_gestion ? "Continuar con la edición del Acta PM-FO-4-FOR-59" : "Iniciar creación del Acta de Selección Docente";
     } else {
         $puede_editar = false;
-        $mensaje_ayuda_edit = "El periodo de edición cerró el: " . $fin->format('d/m/Y');
+        $mensaje_ayuda_edit = "El periodo de edición cerró el: " . $fin_for59->format('d/m/Y'); // <--- CAMBIO AQUÍ
     }
 
     // 2. Definición de URLs

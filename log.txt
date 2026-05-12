@@ -880,3 +880,178 @@ Inicio del proceso para id_depto_periodo: 2101Datos recibidos: id_depto_periodo=
 fk_depto_dp obtenido: 37Email obtenido: jefaturacipol@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2101
 Inicio del proceso para id_depto_periodo: 2104Datos recibidos: id_depto_periodo=2104, estado=aceptar, observacion=, anio_semestre=2026-1
 fk_depto_dp obtenido: 40Email obtenido: derechopenal@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2104
+Inicio del proceso para id_depto_periodo: 2165Datos recibidos: id_depto_periodo=2165, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 44Email obtenido: estructuras@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2165
+Inicio del proceso para id_depto_periodo: 2168Datos recibidos: id_depto_periodo=2168, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 47Email obtenido: jefaturaambiental@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2168
+Inicio del proceso para id_depto_periodo: 2166Datos recibidos: id_depto_periodo=2166, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 45Email obtenido: jefaturageotecnia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2166
+Inicio del proceso para id_depto_periodo: 2169Datos recibidos: id_depto_periodo=2169, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 48Email obtenido: jefaturavias@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2169
+Inicio del proceso para id_depto_periodo: 2167Datos recibidos: id_depto_periodo=2167, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 46Email obtenido: jefaturahidraulica@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2167
+Inicio del proceso para id_depto_periodo: 2170Datos recibidos: id_depto_periodo=2170, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 49Email obtenido: dep.teleco@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2170
+Inicio del proceso para id_depto_periodo: 2171Datos recibidos: id_depto_periodo=2171, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 50Email obtenido: fiet-tm@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2171
+Inicio del proceso para id_depto_periodo: 2172Datos recibidos: id_depto_periodo=2172, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 51Email obtenido: deic@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2172
+Inicio del proceso para id_depto_periodo: 2173Datos recibidos: id_depto_periodo=2173, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 52Email obtenido: jefaturasx@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2173
+Inicio del proceso para id_depto_periodo: 2132Datos recibidos: id_depto_periodo=2132, estado=rechazar, observacion=PENDIENTE INGRESAR EL PROFESOR NN, anio_semestre=2026-2
+fk_depto_dp obtenido: 11Email obtenido: enfermeria@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2132
+Inicio del proceso para id_depto_periodo: 2154Datos recibidos: id_depto_periodo=2154, estado=rechazar, observacion=Se devuelve para ingresar una docente de catedra, anio_semestre=2026-2
+fk_depto_dp obtenido: 33Email obtenido: jefaturapedagogia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2154
+Inicio del proceso para id_depto_periodo: 2131Datos recibidos: id_depto_periodo=2131, estado=rechazar, observacion=SE COLOCO POR ERROR ANEXA HOJA DE VIDA Y LOS PROFESORES YA VIENEN CONTRATADOS DE PERIODOS ANTERIORES, anio_semestre=2026-2
+fk_depto_dp obtenido: 10Email obtenido: fonoaudiologia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2131
+Inicio del proceso para id_depto_periodo: 2159Datos recibidos: id_depto_periodo=2159, estado=rechazar, observacion=Sin observación, anio_semestre=2026-2
+fk_depto_dp obtenido: 38Email obtenido: jefaturacs@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2159
+Inicio del proceso para id_depto_periodo: 2122Datos recibidos: id_depto_periodo=2122, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 1Email obtenido: artesplasticas@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2122
+Inicio del proceso para id_depto_periodo: 2123Datos recibidos: id_depto_periodo=2123, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 2Email obtenido: jefadiseno@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2123
+Inicio del proceso para id_depto_periodo: 2124Datos recibidos: id_depto_periodo=2124, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 3Email obtenido: depmusica@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2124
+Inicio del proceso para id_depto_periodo: 2148Datos recibidos: id_depto_periodo=2148, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 27Email obtenido: deptohistoria@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2148
+Inicio del proceso para id_depto_periodo: 2178Datos recibidos: id_depto_periodo=2178, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 57Email obtenido: coordinacionpfi@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2178
+Inicio del proceso para id_depto_periodo: 2147Datos recibidos: id_depto_periodo=2147, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 26Email obtenido: jefaturageografia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2147
+Inicio del proceso para id_depto_periodo: 2138Datos recibidos: id_depto_periodo=2138, estado=rechazar, observacion=POR ERROR INVOLUNTARIO SE OBVIO INGRESAR UN PERFIL OMT COMO NN, anio_semestre=2026-2
+fk_depto_dp obtenido: 17Email obtenido: dpediatria@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2138
+Inicio del proceso para id_depto_periodo: 2164Datos recibidos: id_depto_periodo=2164, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 43Email obtenido: construccion@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2164
+Inicio del proceso para id_depto_periodo: 2155Datos recibidos: id_depto_periodo=2155, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 34Email obtenido: depfisica@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2155
+Inicio del proceso para id_depto_periodo: 2152Datos recibidos: id_depto_periodo=2152, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 31Email obtenido: biologia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2152
+Inicio del proceso para id_depto_periodo: 2157Datos recibidos: id_depto_periodo=2157, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 36Email obtenido: jefaturaquimica@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2157
+Inicio del proceso para id_depto_periodo: 2154Datos recibidos: id_depto_periodo=2154, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 33Email obtenido: jefaturapedagogia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2154
+Inicio del proceso para id_depto_periodo: 2156Datos recibidos: id_depto_periodo=2156, estado=rechazar, observacion=Se devuelve para ajustes en la información de actualización de hoja de vida de 3 docentes, anio_semestre=2026-2
+fk_depto_dp obtenido: 35Email obtenido: matematicas@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2156
+Inicio del proceso para id_depto_periodo: 2153Datos recibidos: id_depto_periodo=2153, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 32Email obtenido: pfidere@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2153
+Inicio del proceso para id_depto_periodo: 2137Datos recibidos: id_depto_periodo=2137, estado=rechazar, observacion=SE DEBEN REALIZAR AJUSTES EN EL ACTA Y OFICIO EN CUANTO AL CAMBIO DE CONTRATACION DEL PROFESOR JASON ANDRES CASALLAS BELTRAN POR OTRO PROFESIONAL, anio_semestre=2026-2
+fk_depto_dp obtenido: 16Email obtenido: patologia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2137
+Inicio del proceso para id_depto_periodo: 2146Datos recibidos: id_depto_periodo=2146, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 25Email obtenido: jefaturad_filosofia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2146
+Inicio del proceso para id_depto_periodo: 2138Datos recibidos: id_depto_periodo=2138, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 17Email obtenido: dpediatria@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2138
+Inicio del proceso para id_depto_periodo: 2133Datos recibidos: id_depto_periodo=2133, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 12Email obtenido: ginecologia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2133
+Inicio del proceso para id_depto_periodo: 2145Datos recibidos: id_depto_periodo=2145, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 24Email obtenido: jefaturadei@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2145
+Inicio del proceso para id_depto_periodo: 2131Datos recibidos: id_depto_periodo=2131, estado=rechazar, observacion=LA PROFESORA KAREN POTOSI OTC LO ASUME A PARTIR DEL 2026-2 LA FACULTAD CIENCIAS AGRARIAS- SE AJUSTA LABOR ACADÉMICA DE DOS DOCENTES, anio_semestre=2026-2
+fk_depto_dp obtenido: 10Email obtenido: fonoaudiologia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2131
+Inicio del proceso para id_depto_periodo: 2153Datos recibidos: id_depto_periodo=2153, estado=rechazar, observacion=Se devuelve para ajuste de hora catedra, anio_semestre=2026-2
+fk_depto_dp obtenido: 32Email obtenido: pfidere@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2153
+Inicio del proceso para id_depto_periodo: 2138Datos recibidos: id_depto_periodo=2138, estado=rechazar, observacion=COLOCAR PERIODO ACADÉMICO EN EL ACTA DE SELECCIÓN-PUNTO 1, anio_semestre=2026-2
+fk_depto_dp obtenido: 17Email obtenido: dpediatria@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2138
+Inicio del proceso para id_depto_periodo: 2138Datos recibidos: id_depto_periodo=2138, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 17Email obtenido: dpediatria@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2138
+Inicio del proceso para id_depto_periodo: 2129Datos recibidos: id_depto_periodo=2129, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 8Email obtenido: cirugia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2129
+Inicio del proceso para id_depto_periodo: 2156Datos recibidos: id_depto_periodo=2156, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 35Email obtenido: matematicas@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2156
+Inicio del proceso para id_depto_periodo: 2153Datos recibidos: id_depto_periodo=2153, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 32Email obtenido: pfidere@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2153
+Inicio del proceso para id_depto_periodo: 2134Datos recibidos: id_depto_periodo=2134, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 13Email obtenido: minterna@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2134
+Inicio del proceso para id_depto_periodo: 2129Datos recibidos: id_depto_periodo=2129, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 8Email obtenido: cirugia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2129
+Inicio del proceso para id_depto_periodo: 2138Datos recibidos: id_depto_periodo=2138, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 17Email obtenido: dpediatria@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2138
+Inicio del proceso para id_depto_periodo: 2128Datos recibidos: id_depto_periodo=2128, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 7Email obtenido: dcfisiologicas@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2128
+Inicio del proceso para id_depto_periodo: 2127Datos recibidos: id_depto_periodo=2127, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 6Email obtenido: dptoanestesia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2127
+Inicio del proceso para id_depto_periodo: 2139Datos recibidos: id_depto_periodo=2139, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 18Email obtenido: jefaturadca@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2139
+Inicio del proceso para id_depto_periodo: 2140Datos recibidos: id_depto_periodo=2140, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 19Email obtenido: depto.ccontables@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2140
+Inicio del proceso para id_depto_periodo: 2158Datos recibidos: id_depto_periodo=2158, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 37Email obtenido: jefaturacipol@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2158
+Inicio del proceso para id_depto_periodo: 2159Datos recibidos: id_depto_periodo=2159, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 38Email obtenido: jefaturacs@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2159
+Inicio del proceso para id_depto_periodo: 2161Datos recibidos: id_depto_periodo=2161, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 40Email obtenido: derechopenal@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2161
+Inicio del proceso para id_depto_periodo: 2160Datos recibidos: id_depto_periodo=2160, estado=rechazar, observacion=Ajustar número oficio remisorio, anio_semestre=2026-2
+fk_depto_dp obtenido: 39Email obtenido: derecholaboral@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2160
+Inicio del proceso para id_depto_periodo: 2160Datos recibidos: id_depto_periodo=2160, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 39Email obtenido: derecholaboral@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2160
+Inicio del proceso para id_depto_periodo: 2139Datos recibidos: id_depto_periodo=2139, estado=rechazar, observacion=1. Luis Angel Meneses C. SI tiene actualización de HV<br />
+2. Angela Alban NO actualizó HV<br />
+3. Sirley Bolaños dice que entrega HV pero no se anexa<br />
+4. Juan David López NO anexa HV y NO actualiza<br />
+5. Andres Maya SI anexa HV<br />
+6. Ana Perez NO actualiza HV<br />
+7. María Valverde dice que entrega HV pero no se anexa<br />
+8. Corregir número del acta: 8.8.6-3.58/01 y revisar la fecha, ya que no coincide con la fecha que aparece en el oficio 8.8.6-31/09 y en los FOR 45, anio_semestre=2026-2
+fk_depto_dp obtenido: 18Email obtenido: jefaturadca@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2139
+Inicio del proceso para id_depto_periodo: 2141Datos recibidos: id_depto_periodo=2141, estado=rechazar, observacion=1. Corregir código del acta de selección conforme a las indicaciones dadas mediante correo electrónico desde 2024.<br />
+2. El número del acta debe coincidir con el número de acta del oficio 8.8.14-31/30 del 21 de abril, anio_semestre=2026-2
+fk_depto_dp obtenido: 20Email obtenido: departamentoturismo@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2141
+Inicio del proceso para id_depto_periodo: 2135Datos recibidos: id_depto_periodo=2135, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 14Email obtenido: mdsocial@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2135
+Inicio del proceso para id_depto_periodo: 2142Datos recibidos: id_depto_periodo=2142, estado=rechazar, observacion=1. Urbano Cristhian SI actualizó HV<br />
+2. Jesus Andres Burbano SI actualizó HV<br />
+3. Jaime Burbano SI actualizó HV<br />
+4. Corregir número de Acta de acuerdo a indicaciones enviadas mediante correo electrónico, anio_semestre=2026-2
+fk_depto_dp obtenido: 21Email obtenido: jefedceconomicas@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2142
+Inicio del proceso para id_depto_periodo: 2143Datos recibidos: id_depto_periodo=2143, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 22Email obtenido: antropo@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2143
+Inicio del proceso para id_depto_periodo: 2151Datos recibidos: id_depto_periodo=2151, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 30Email obtenido: componentefish@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2151
+Inicio del proceso para id_depto_periodo: 2178Datos recibidos: id_depto_periodo=2178, estado=rechazar, observacion=EL PROFESOR JUAN PABLO LOZADA ASUME LA LABOR DE DOCENTE TIEMPO COMPLETO EN EL DEPARTAMENTO DE LENGUAS Y EN OFICIO DEL 29 DE ABRIL DEL PRESENTE AÑO, EL PROFESOR INFORMA SU DESVINCULACIÓN AL PFI., anio_semestre=2026-2
+fk_depto_dp obtenido: 57Email obtenido: coordinacionpfi@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2178
+Inicio del proceso para id_depto_periodo: 2163Datos recibidos: id_depto_periodo=2163, estado=rechazar, observacion=Se devuelve por ajuste, anio_semestre=2026-2
+fk_depto_dp obtenido: 42Email obtenido: derechopublico@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2163
+Inicio del proceso para id_depto_periodo: 2136Datos recibidos: id_depto_periodo=2136, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 15Email obtenido: deptomorfo@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2136
+Inicio del proceso para id_depto_periodo: 2139Datos recibidos: id_depto_periodo=2139, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 18Email obtenido: jefaturadca@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2139
+Inicio del proceso para id_depto_periodo: 2140Datos recibidos: id_depto_periodo=2140, estado=rechazar, observacion=Ajustar profesora Eliana Fernández, ya que según Res. VRA 059 de 2026, solo pueden actualizar HV profesores que cambian de vinculación o nuevos profesores., anio_semestre=2026-2
+fk_depto_dp obtenido: 19Email obtenido: depto.ccontables@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2140
+Inicio del proceso para id_depto_periodo: 2142Datos recibidos: id_depto_periodo=2142, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 21Email obtenido: jefedceconomicas@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2142
+Inicio del proceso para id_depto_periodo: 2137Datos recibidos: id_depto_periodo=2137, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 16Email obtenido: patologia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2137
+Inicio del proceso para id_depto_periodo: 2127Datos recibidos: id_depto_periodo=2127, estado=rechazar, observacion=CORRECCION NUMERO CONSECUTIVO ACTA DE SELECCIÓN 014 POR 018, anio_semestre=2026-2
+fk_depto_dp obtenido: 6Email obtenido: dptoanestesia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2127
+Inicio del proceso para id_depto_periodo: 2131Datos recibidos: id_depto_periodo=2131, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 10Email obtenido: fonoaudiologia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2131
+Inicio del proceso para id_depto_periodo: 2127Datos recibidos: id_depto_periodo=2127, estado=rechazar, observacion=ERROR EN FECHA DE OFICIO, anio_semestre=2026-2
+fk_depto_dp obtenido: 6Email obtenido: dptoanestesia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2127
+Inicio del proceso para id_depto_periodo: 2130Datos recibidos: id_depto_periodo=2130, estado=rechazar, observacion=CORRECCION FOR 45 DOCENTE CATEDRA, anio_semestre=2026-2
+fk_depto_dp obtenido: 9Email obtenido: fisioterapia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2130
+Inicio del proceso para id_depto_periodo: 2127Datos recibidos: id_depto_periodo=2127, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 6Email obtenido: dptoanestesia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2127
+Inicio del proceso para id_depto_periodo: 2144Datos recibidos: id_depto_periodo=2144, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 23Email obtenido: jefeespaliteratura@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2144
+Inicio del proceso para id_depto_periodo: 2150Datos recibidos: id_depto_periodo=2150, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 29Email obtenido: deptolinguistica@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2150
+Inicio del proceso para id_depto_periodo: 2130Datos recibidos: id_depto_periodo=2130, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 9Email obtenido: fisioterapia@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2130
+Inicio del proceso para id_depto_periodo: 2140Datos recibidos: id_depto_periodo=2140, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 19Email obtenido: depto.ccontables@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2140
+Inicio del proceso para id_depto_periodo: 2141Datos recibidos: id_depto_periodo=2141, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 20Email obtenido: departamentoturismo@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2141
+Inicio del proceso para id_depto_periodo: 2125Datos recibidos: id_depto_periodo=2125, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 4Email obtenido: jefaturadptoagroindustria@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2125
+Inicio del proceso para id_depto_periodo: 2126Datos recibidos: id_depto_periodo=2126, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 5Email obtenido: jefeagropecuaria@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2126
+Inicio del proceso para id_depto_periodo: 2178Datos recibidos: id_depto_periodo=2178, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 57Email obtenido: coordinacionpfi@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2178
+Inicio del proceso para id_depto_periodo: 2149Datos recibidos: id_depto_periodo=2149, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 28Email obtenido: dptolenguase@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2149
+Inicio del proceso para id_depto_periodo: 2132Datos recibidos: id_depto_periodo=2132, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 11Email obtenido: enfermeria@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2132
+Inicio del proceso para id_depto_periodo: 2158Datos recibidos: id_depto_periodo=2158, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 37Email obtenido: jefaturacipol@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2158
+Inicio del proceso para id_depto_periodo: 2162Datos recibidos: id_depto_periodo=2162, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 41Email obtenido: jdprivado@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2162
+Inicio del proceso para id_depto_periodo: 2163Datos recibidos: id_depto_periodo=2163, estado=aceptar, observacion=, anio_semestre=2026-2
+fk_depto_dp obtenido: 42Email obtenido: derechopublico@unicauca.edu.coProceso finalizado correctamente para id_depto_periodo: 2163

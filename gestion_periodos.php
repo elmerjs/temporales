@@ -705,12 +705,11 @@ $result_existing_periods = $conn->query($sql_existing_periods);
                 </button>
 
                 <!-- Botón para abrir el modal de Cargar Puntos -->
-                <button 
-                    type="button" 
-                    class="btn btn-success btn-sm cargar-puntos-btn" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#cargarPuntosModal" 
-                    data-periodo="<?php echo $row['periodo']; ?>">
+                <button type="button" 
+                        class="btn btn-success btn-sm cargar-puntos-btn" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#modalSeleccionCarga" 
+                        data-periodo="<?php echo $row['periodo']; ?>">
                     Cargar Puntos
                 </button>
             </td>
@@ -719,6 +718,45 @@ $result_existing_periods = $conn->query($sql_existing_periods);
         <?php } ?>
     </tbody>
 </table>
+        <!-- Modal para ingreso directo de puntos -->
+<div class="modal fade" id="modalIngresoDirecto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ingreso Directo de Puntos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="periodoDirecto" value="">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="tablaPuntosDirecto">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cédula</th>
+                                <th>Puntos</th>
+                                <th style="width: 50px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="fila-punto">
+                                <td><input type="text" class="form-control form-control-sm" placeholder="Número de cédula"></td>
+                                <td><input type="number" step="any" class="form-control form-control-sm" placeholder="Puntos"></td>
+                                <td class="text-center"><button type="button" class="btn btn-danger btn-sm eliminar-fila"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-2">
+                    <button type="button" class="btn btn-secondary btn-sm" id="agregarFilaPunto"><i class="fas fa-plus"></i> Agregar fila</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="guardarPuntosDirecto">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- Modal para Cargar Aspirantes -->
 <div class="modal fade" id="cargarAspirantesModal" tabindex="-1" aria-labelledby="cargarAspirantesLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -865,9 +903,156 @@ $result_existing_periods = $conn->query($sql_existing_periods);
     </form>
   </div>
 </div>
+<!-- Modal de selección de método -->
+<div class="modal fade" id="modalSeleccionCarga" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cargar Puntos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p>Seleccione el método de carga:</p>
+                <div class="d-grid gap-3">
+                    <button type="button" class="btn btn-primary" id="btnCargarExcel">
+                        <i class="fas fa-file-excel me-2"></i> Cargar desde Excel
+                    </button>
+                    <button type="button" class="btn btn-success" id="btnCargarDirecto">
+                        <i class="fas fa-edit me-2"></i> Ingreso directo en línea
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>    
     
-    
-    
+ <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Almacenar el periodo cuando se abre el selector
+    let periodoSeleccionado = '';
+    const btnCargarPuntos = document.querySelectorAll('.cargar-puntos-btn');
+    btnCargarPuntos.forEach(btn => {
+        btn.addEventListener('click', function() {
+            periodoSeleccionado = this.getAttribute('data-periodo');
+            document.getElementById('periodoDirecto').value = periodoSeleccionado;
+        });
+    });
+
+    // Botón para cargar desde Excel (abre modal existente)
+    document.getElementById('btnCargarExcel').addEventListener('click', function() {
+        // Cerrar selector
+        bootstrap.Modal.getInstance(document.getElementById('modalSeleccionCarga')).hide();
+        // Abrir modal de carga de archivo (el original)
+        const modalExcel = new bootstrap.Modal(document.getElementById('cargarPuntosModal'));
+        // Asignar periodo al modal de Excel
+        document.getElementById('modalPeriodoPuntos').value = periodoSeleccionado;
+        modalExcel.show();
+    });
+
+    // Botón para ingreso directo
+    document.getElementById('btnCargarDirecto').addEventListener('click', function() {
+        bootstrap.Modal.getInstance(document.getElementById('modalSeleccionCarga')).hide();
+        // Limpiar tabla (dejar solo una fila)
+        const tbody = document.querySelector('#tablaPuntosDirecto tbody');
+        tbody.innerHTML = '';
+        agregarFilaPunto(); // añadir una fila vacía
+        const modalDirecto = new bootstrap.Modal(document.getElementById('modalIngresoDirecto'));
+        modalDirecto.show();
+    });
+
+    // Función para agregar fila
+    function agregarFilaPunto() {
+        const tbody = document.querySelector('#tablaPuntosDirecto tbody');
+        const newRow = document.createElement('tr');
+        newRow.className = 'fila-punto';
+        newRow.innerHTML = `
+            <td><input type="text" class="form-control form-control-sm" placeholder="Número de cédula"></td>
+            <td><input type="number" step="any" class="form-control form-control-sm" placeholder="Puntos"></td>
+            <td class="text-center"><button type="button" class="btn btn-danger btn-sm eliminar-fila"><i class="fas fa-trash"></i></button></td>
+        `;
+        tbody.appendChild(newRow);
+        // Asignar evento eliminar a nuevo botón
+        newRow.querySelector('.eliminar-fila').addEventListener('click', function() {
+            if (tbody.children.length > 1) {
+                newRow.remove();
+            } else {
+                toastr.warning('Debe quedar al menos una fila');
+            }
+        });
+    }
+
+    document.getElementById('agregarFilaPunto').addEventListener('click', agregarFilaPunto);
+
+    // Eliminar fila (evento delegado)
+    document.querySelector('#tablaPuntosDirecto tbody').addEventListener('click', function(e) {
+        if (e.target.classList.contains('eliminar-fila') || e.target.closest('.eliminar-fila')) {
+            const btn = e.target.closest('.eliminar-fila');
+            const row = btn.closest('tr');
+            const tbody = row.parentNode;
+            if (tbody.children.length > 1) {
+                row.remove();
+            } else {
+                toastr.warning('Debe quedar al menos una fila');
+            }
+        }
+    });
+
+    // Guardar puntos vía AJAX
+    document.getElementById('guardarPuntosDirecto').addEventListener('click', function() {
+        const periodo = document.getElementById('periodoDirecto').value;
+        const filas = document.querySelectorAll('#tablaPuntosDirecto tbody .fila-punto');
+        let datos = [];
+        let errores = false;
+
+        filas.forEach(fila => {
+            const cedulaInput = fila.querySelector('input[placeholder*="cédula"]');
+            const puntosInput = fila.querySelector('input[placeholder*="Puntos"]');
+            const cedula = cedulaInput.value.trim();
+            const puntos = puntosInput.value.trim();
+
+            if (cedula === '' || puntos === '') {
+                toastr.error('Todos los campos deben estar diligenciados');
+                errores = true;
+                return;
+            }
+            if (isNaN(puntos)) {
+                toastr.error(`La cédula ${cedula} tiene un valor de puntos no numérico`);
+                errores = true;
+                return;
+            }
+            datos.push({ cedula: cedula, puntos: parseFloat(puntos) });
+        });
+
+        if (errores) return;
+
+        if (datos.length === 0) {
+            toastr.warning('No hay datos para guardar');
+            return;
+        }
+
+        // Enviar petición AJAX
+        fetch('actualizar_puntos_directo.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ periodo: periodo, puntos: datos })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                toastr.success(data.message || 'Puntos actualizados correctamente');
+                bootstrap.Modal.getInstance(document.getElementById('modalIngresoDirecto')).hide();
+                // Opcional: recargar tabla o mostrar mensaje
+            } else {
+                toastr.error(data.message || 'Error al actualizar');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            toastr.error('Error de conexión');
+        });
+    });
+});
+</script>   
 <!-- Script para pasar datos al modal  plaoos-->
 <script>
 var modalPlazos = document.getElementById('modalPlazos');

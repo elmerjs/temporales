@@ -17,6 +17,9 @@ if ($anio_semestre_check) {
         $inicio = new DateTime($res_plazo['ini_plazo_jefe'] ?? '1000-01-01');
         $fin = new DateTime($res_plazo['plazo_jefe'] ?? '1000-01-01');
 
+        // --- EXCEPCIÓN PARA EL FOR59: Sumamos 20 días al plazo original ---
+        $fin->modify('+20 days'); 
+
         if ($hoy < $inicio || $hoy > $fin) {
             echo "<script>
                     alert('ACCESO DENEGADO: El periodo de edición para " . htmlspecialchars($anio_semestre_check) . " no está activo o ya ha finalizado.');

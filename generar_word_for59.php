@@ -193,6 +193,12 @@ try {
 $fontCursiva = ['name' => 'Arial', 'size' => 10, 'italic' => true];
 
     // --- PUNTO 1 Y 2 ---
+ // --- PUNTO 1 (Periodo académico) ---
+$textRun1 = $celdaDesarrollo->addTextRun($estiloComprimido);
+$textRun1->addText("1. Periodo académico: ", $fontBold);
+$textRun1->addText(limpiarTextoXML($anio_semestre), $fontNormal);
+$celdaDesarrollo->addTextBreak(0); // pequeño espacio visual
+    
 $textRun2 = $celdaDesarrollo->addTextRun($estiloComprimido);
 $textRun2->addText("2. Verificación de Asistencia de los integrantes del Comité de selección ", $fontBold);
 $textRun2->addText("(Acuerdo Superior 017 de 2009, artículo 6: “…Se conformará un Comité de Selección de Docentes, que contará con cinco integrantes, a saber: el Decano o su delegado, el Jefe del Departamento, el Coordinador del programa y dos profesores de planta, preferiblemente del área, nombrados en reunión de Departamento…”) ",  $fontCursiva);
@@ -234,11 +240,85 @@ $textRun2->addText("(Acuerdo Superior 017 de 2009, artículo 6: “…Se conform
         $textRun->addText("3. Definición del Perfil o perfiles requeridos según la necesidad académica ", $fontBold);
         $textRun->addText("(Nivel Académico, Énfasis o Formación Particular y Experiencia)", $fontBoldItalic);
     if (!empty($datos['punto_3_perfiles'])) {
-        $htmlSeguro = limpiarHTMLparaWordSeguro($datos['punto_3_perfiles']);
-        try {
+        $htmlOriginal = $datos['punto_3_perfiles'];
+        // Limpiar igual que en otros puntos
+        $htmlOriginal = stripslashes($htmlOriginal);
+        $htmlOriginal = html_entity_decode($htmlOriginal, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $htmlOriginal = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $htmlOriginal);
+        $htmlOriginal = str_replace(['&nbsp;', "\xc2\xa0"], ' ', $htmlOriginal);
+        // Quitar envolturas <figure>
+        $htmlOriginal = preg_replace('/<\/?figure[^>]*>/i', '', $htmlOriginal);
+
+        // Intentar detectar si hay una tabla
+        if (stripos($htmlOriginal, '<table') !== false) {
+            // Procesar como tabla manual (igual que punto 5)
+            try {
+                $dom = new DOMDocument();
+                libxml_use_internal_errors(true);
+                $dom->loadHTML('<?xml encoding="utf-8" ?>' . $htmlOriginal, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+                libxml_clear_errors();
+                libxml_use_internal_errors(false);
+
+                $tablas = $dom->getElementsByTagName('table');
+                if ($tablas->length > 0) {
+                    $tablaWord = $celdaDesarrollo->addTable([
+                        'borderSize'  => 2,
+                        'borderColor' => '000000',
+                        'cellMargin'  => 40,
+                        'width'       => 100 * 50,
+                         'unit'        => \PhpOffice\PhpWord\SimpleType\TblWidth::PERCENT,
+                        'layout'      => \PhpOffice\PhpWord\Style\Table::LAYOUT_FIXED,
+                                        ]);
+
+                    $filas = $tablas->item(0)->getElementsByTagName('tr');
+                    $rowIndex = 0;
+                    foreach ($filas as $fila) {
+                        $rowWord = $tablaWord->addRow($altoMinimo);
+                        $celdas = $fila->childNodes;
+                        $colIndex = 0;
+                       foreach ($celdas as $celda) {
+                            if ($celda->nodeName == 'td' || $celda->nodeName == 'th') {
+                                $esEncabezado = ($rowIndex === 0 || $celda->nodeName == 'th');
+                                $bg = $esEncabezado ? 'F2F2F2' : null;
+
+                                // Obtener HTML interno de la celda (respetando formato)
+                                $innerHtml = '';
+                                foreach ($celda->childNodes as $child) {
+                                    $innerHtml .= $celda->ownerDocument->saveHTML($child);
+                                }
+                                // Si no hay HTML interno, usar el texto plano
+                                if (empty(trim(strip_tags($innerHtml)))) {
+                                    $innerHtml = htmlspecialchars(trim($celda->textContent));
+                                }
+
+                                // Crear celda
+                                $cell = $rowWord->addCell(null, ['bgColor' => $bg, 'valign' => 'center']);
+                                // Insertar el contenido con formato
+                                try {
+                                    $styledHtml = '<div style="font-family: Arial; font-size: 9pt;">' . $innerHtml . '</div>';
+\PhpOffice\PhpWord\Shared\Html::addHtml($cell, $styledHtml, false, false);
+                                } catch (Exception $e) {
+                                    // Fallback a texto limpio
+                                    $cell->addText(limpiarTextoXML(trim($celda->textContent)), ['name' => 'Arial', 'size' => 9], $estiloComprimido);
+                                }
+                                $colIndex++;
+                            }
+                        }
+                        $rowIndex++;
+                    }
+                } else {
+                    // Si no se encuentra tabla, usar addHtml como fallback
+                    $htmlSeguro = limpiarHTMLparaWordSeguro($datos['punto_3_perfiles']);
+                    \PhpOffice\PhpWord\Shared\Html::addHtml($celdaDesarrollo, $htmlSeguro, false, false);
+                }
+            } catch (Exception $e) {
+                // Si falla todo, al menos mostrar el texto plano
+                $celdaDesarrollo->addText(limpiarTextoXML(strip_tags($datos['punto_3_perfiles'])), $fontNormal, $estiloComprimido);
+            }
+        } else {
+            // No hay tabla: usar addHtml normalmente
+            $htmlSeguro = limpiarHTMLparaWordSeguro($datos['punto_3_perfiles']);
             \PhpOffice\PhpWord\Shared\Html::addHtml($celdaDesarrollo, $htmlSeguro, false, false);
-        } catch (Exception $e) {
-            $celdaDesarrollo->addText("[Error al mostrar contenido HTML]", ['color' => 'FF0000']);
         }
         $celdaDesarrollo->addTextBreak(0);
     }
@@ -279,9 +359,13 @@ $textRun2->addText("(Acuerdo Superior 017 de 2009, artículo 6: “…Se conform
             $row->addCell(null, ['valign' => 'center'])->addText(limpiarTextoXML($nivel), $fontTable, $estiloComprimido);
             $row->addCell(null, ['valign' => 'center'])->addText(limpiarTextoXML($experiencia), $fontTable, $estiloComprimido);
             $row->addCell(null, ['valign' => 'center'])->addText(limpiarTextoXML($productividad), $fontTable, $estiloComprimido);
-            $contador++;
+               $contador++;
         }
-    } elseif (empty($datos['punto_3_perfiles'])) {
+    } // <-- Esta llave cierra el if (!empty($perfiles_data)...
+
+    // Si no hay contenido libre ni tabla, mostrar mensaje
+    $tieneContenidoLibre = !empty($datos['punto_3_perfiles']) && trim(strip_tags($datos['punto_3_perfiles'])) !== '';
+    if (!$tieneContenidoLibre && (empty($perfiles_data) || !is_array($perfiles_data))) {
         $celdaDesarrollo->addText("No se definieron perfiles.", $fontNormal, $estiloComprimido);
     }
 
